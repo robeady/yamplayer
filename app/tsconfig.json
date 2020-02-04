@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist/backend",
+        "sourceMap": true,
+        "module": "commonjs",
+        "target": "ES2018",
+        "jsx": "react",
+        "strict": true,
+        "esModuleInterop": true,
+        "resolveJsonModule": true
+    },
+    // we only use tsc on the backend files
+    "include": ["./src/backend/**/*"]
+}

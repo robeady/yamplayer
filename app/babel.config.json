@@ -1,0 +1,25 @@
+{
+    "presets": [
+        [
+            "@babel/preset-env",
+            {
+                "targets": {
+                    "browsers": "> 2%",
+                    "node": "12"
+                }
+            }
+        ],
+        "@babel/preset-typescript",
+        "@babel/preset-react"
+    ],
+    "plugins": [
+        "@babel/plugin-proposal-numeric-separator",
+        [
+            "@babel/plugin-proposal-class-properties",
+            {
+                "loose": true
+            }
+        ],
+        "react-hot-loader/babel"
+    ]
+}

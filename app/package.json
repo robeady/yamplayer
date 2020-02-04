@@ -1,0 +1,53 @@
+{
+  "name": "yamplayer2",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "electron:serve-hot": "env NODE_ENV=development webpack-dev-server --hot",
+    "electron:build": "env NODE_ENV=development webpack",
+    "electron:start": "env NODE_ENV=development electron src/main.js",
+    "backend:compile-watch": "tsc --watch",
+    "backend:start": "nodemon dist/backend/index.js",
+    "test": "jest src",
+    "develop": "concurrently -k \"npm:backend:compile-watch\" \"npm:backend:start\" \"npm:electron:serve-hot\" \"npm:electron:start\""
+  },
+  "dependencies": {
+    "axios": "0.19.2",
+    "egoroof-blowfish": "2.2.1",
+    "express": "4.17.1",
+    "howler": "2.1.3",
+    "react": "16.12.0",
+    "react-dom": "16.12.0",
+    "react-hot-loader": "4.12.19",
+    "tough-cookie": "2.5.0"
+  },
+  "devDependencies": {
+    "@babel/core": "7.8.4",
+    "@babel/plugin-proposal-class-properties": "7.5.5",
+    "@babel/plugin-proposal-numeric-separator": "^7.8.3",
+    "@babel/preset-env": "7.8.4",
+    "@babel/preset-react": "7.8.3",
+    "@babel/preset-typescript": "7.8.3",
+    "@hot-loader/react-dom": "^16.11.0",
+    "@types/express": "^4.17.2",
+    "@types/howler": "2.1.2",
+    "@types/jest": "^25.1.1",
+    "@types/react": "^16.9.19",
+    "@types/react-dom": "^16.9.5",
+    "@types/tough-cookie": "2.3.6",
+    "babel-jest": "25.1.0",
+    "babel-loader": "8.0.6",
+    "concurrently": "5.1.0",
+    "core-js": "3.6.4",
+    "electron": "7.1.11",
+    "fork-ts-checker-webpack-plugin": "1.5.0",
+    "jest": "25.1.0",
+    "nodemon": "2.0.2",
+    "prettier": "1.19.1",
+    "typescript": "3.7.5",
+    "webpack": "4.41.5",
+    "webpack-cli": "3.3.10",
+    "webpack-dev-server": "3.10.1",
+    "webpack-merge": "4.2.2"
+  }
+}
