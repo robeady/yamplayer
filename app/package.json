@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "electron:build:FORGOT_WHAT_THIS_DOES": "cross-env NODE_ENV=development webpack",
-    "electron:serve-hot": "cross-env NODE_ENV=development webpack-dev-server --hot",
+    "electron:serve-hot": "cross-env NODE_ENV=development webpack-dev-server --hot --port 8180",
     "electron:start": "cross-env NODE_ENV=development electron src/main.js",
     "backend:start": "ts-node-dev --type-check --no-notify src/backend/index.ts",
     "test": "jest src",

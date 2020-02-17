@@ -30,7 +30,7 @@ const appConfig = {
 
 const developmentConfig = {
     output: {
-        publicPath: "http://localhost:8080/",
+        publicPath: "http://localhost:8180/",
     },
     resolve: {
         alias: {
