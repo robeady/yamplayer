@@ -2,26 +2,10 @@
 
 ## Run application
 
-First you should start to watch application folder via webpack to enable hot-reloading
+`npm run develop`
 
-```bash
-npm watch
-```
+## Run tests
 
-In another terminal window run application
+`npm run test`
 
-```bash
-npm start
-```
-
-## Compile application [haven't tried this yet!]
-
-```bash
-npm build
-```
-
-In another terminal window run application
-
-```bash
-npm start
-```
+For watch mode, `npm run test:watch`. This only re-runs tests relevant to files that changed since the last commit.

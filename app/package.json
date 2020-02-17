@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "electron:serve-hot": "env NODE_ENV=development webpack-dev-server --hot",
-    "electron:build": "env NODE_ENV=development webpack",
-    "electron:start": "env NODE_ENV=development electron src/main.js",
-    "backend:compile-watch": "tsc --watch",
-    "backend:start": "nodemon dist/backend/index.js",
+    "electron:build:FORGOT_WHAT_THIS_DOES": "cross-env NODE_ENV=development webpack",
+    "electron:serve-hot": "cross-env NODE_ENV=development webpack-dev-server --hot",
+    "electron:start": "cross-env NODE_ENV=development electron src/main.js",
+    "backend:start": "tsc-watch --onSuccess \"node dist/backend/index.js\"",
     "test": "jest src",
-    "develop": "concurrently -k \"npm:backend:compile-watch\" \"npm:backend:start\" \"npm:electron:serve-hot\" \"npm:electron:start\""
+    "test:watch": "jest src --watch",
+    "develop": "concurrently -k \"npm:backend:start\" \"npm:electron:serve-hot\" \"npm:electron:start\""
   },
   "dependencies": {
     "axios": "0.19.2",
@@ -39,11 +39,12 @@
     "babel-loader": "8.0.6",
     "concurrently": "5.1.0",
     "core-js": "3.6.4",
+    "cross-env": "^7.0.0",
     "electron": "7.1.11",
     "fork-ts-checker-webpack-plugin": "1.5.0",
     "jest": "25.1.0",
-    "nodemon": "2.0.2",
     "prettier": "1.19.1",
+    "tsc-watch": "4.1.0",
     "typescript": "3.7.5",
     "webpack": "4.41.5",
     "webpack-cli": "3.3.10",

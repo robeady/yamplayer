@@ -31,7 +31,7 @@ const makeHowl = async (buffer: Uint8Array) => {
     return howl
 }
 
-const Player = () => {
+const Player = (props: { enabled: boolean }) => {
     const [howl, setHowl] = useState(null as Howl | null)
     const [playHandle, setPlayhandle] = useState(null as number | null)
     const [playing, setPlaying] = useState(false)
@@ -46,6 +46,7 @@ const Player = () => {
         <>
             We are {playing ? "playing" : "paused"}.<br />
             <button
+                disabled={!props.enabled}
                 onClick={() => {
                     if (!howl) {
                         alert("not ready yet")
