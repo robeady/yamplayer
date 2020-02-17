@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "outDir": "./dist/backend",
+        "outDir": "./dist",
         "sourceMap": true,
         "module": "commonjs",
         "target": "ES2018",
@@ -9,6 +9,5 @@
         "esModuleInterop": true,
         "resolveJsonModule": true
     },
-    // we only use tsc on the backend files
-    "include": ["./src/backend/**/*"]
+    "include": ["./src/**/*"]
 }

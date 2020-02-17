@@ -6,7 +6,7 @@
     "electron:build:FORGOT_WHAT_THIS_DOES": "cross-env NODE_ENV=development webpack",
     "electron:serve-hot": "cross-env NODE_ENV=development webpack-dev-server --hot",
     "electron:start": "cross-env NODE_ENV=development electron src/main.js",
-    "backend:start": "tsc-watch --onSuccess \"node dist/backend/index.js\"",
+    "backend:start": "ts-node-dev --type-check --no-notify src/backend/index.ts",
     "test": "jest src",
     "test:watch": "jest src --watch",
     "develop": "concurrently -k \"npm:backend:start\" \"npm:electron:serve-hot\" \"npm:electron:start\""
@@ -44,7 +44,7 @@
     "fork-ts-checker-webpack-plugin": "1.5.0",
     "jest": "25.1.0",
     "prettier": "1.19.1",
-    "tsc-watch": "4.1.0",
+    "ts-node-dev": "1.0.0-pre.44",
     "typescript": "3.7.5",
     "webpack": "4.41.5",
     "webpack-cli": "3.3.10",
