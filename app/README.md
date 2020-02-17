@@ -18,7 +18,7 @@ This starts 3 things concurrently:
 2. electron app, with hot-reloading enabled, which pulls from:
 3. electron server, which compiles the bundle in hot-reload mode, using babel and forking typescript compilation into a separate processs
 
-Press ctrl-c to exit and it should cleanup all the subprocesses.
+Press ctrl-c or close the electron window to exit and it should cleanup all the subprocesses.
 
 ## Run tests
 
