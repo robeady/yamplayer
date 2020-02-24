@@ -3,7 +3,7 @@ import React from "react"
 import Counter from "./Counter"
 import Player from "./Player"
 import { TrackSearch } from "./TrackSearch"
-import { Playback } from "./playback/Player"
+import { Playback, PlaybackProvider } from "./playback/Player"
 import { NowPlaying } from "./NowPlaying"
 import { Library } from "./library/library"
 
