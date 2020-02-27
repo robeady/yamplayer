@@ -87,7 +87,8 @@ export const Library = stateContextButHooky(useLibraryState)
 //
 //
 
-type Setter<S> = (update: S | ((oldState: S) => S)) => void
+type SetterArg<S> = S | ((oldState: S) => S)
+type Setter<S> = (update: SetterArg<S>) => void
 
 interface Args<S> {
     get: () => S
@@ -171,4 +172,103 @@ export function betterHooky<P, V>(useIt: (props: P) => V) {
         )),
         use: <T extends unknown>(selector: (state: V) => T) => useContextSelector(Context, selector),
     }
+}
+
+//
+//
+//
+//
+// SOMETHING SIMPLER
+//
+//
+//
+
+abstract class StateManager<Props, State> {
+    constructor(protected props: Props, private getState: () => State, protected setState: SetState<State>) {}
+
+    abstract initialState: State
+
+    public get state() {
+        return this.getState()
+    }
+
+    protected set(update: SetterArg<State>) {
+        return this.setState(update)
+    }
+
+    protected merge<K extends keyof State>(
+        update: ((prevState: Readonly<State>) => Pick<State, K> | State | null) | (Pick<State, K> | State | null),
+    ) {
+        return this.setState(update)
+    }
+}
+
+class LibraryClassy extends StateManager<{ backendUrl: string }, LibraryState> {
+    private client = remote<DeezerApiClient>(`${this.props.backendUrl}/deezer`)
+
+    initialState = {
+        searchResultsByQuery: {},
+    }
+
+    search = async (query: string): Promise<TrackSearchResult[]> => {
+        if (query in this.state.searchResultsByQuery) {
+            return this.state.searchResultsByQuery[query]
+        } else {
+            const results = await this.client.searchTracks(query)
+            this.set(s => ({
+                searchResultsByQuery: { ...s.searchResultsByQuery, [query]: results },
+            }))
+            return results
+        }
+    }
+}
+
+const toExport = doTheStateThing(LibraryClassy)
+
+//
+//
+// AND THE IMPLEMENTATION...
+//
+//
+//
+
+interface SetState<S, P = unknown> {
+    <K extends keyof S>(
+        state: ((prevState: Readonly<S>, props: Readonly<P>) => Pick<S, K> | S | null) | (Pick<S, K> | S | null),
+        callback?: () => void,
+    ): void
+}
+
+type StateManagerConstructor<Props, State, Class extends StateManager<Props, State>> = new (
+    props: Props,
+    getState: () => State,
+    setState: SetState<State>,
+) => Class
+
+function createStateProvider<Props, State, Class extends StateManager<Props, State>>(
+    stateManagerClass: StateManagerConstructor<Props, State, Class>,
+    Context: React.Context<Class>,
+) {
+    return class StateProvider extends React.PureComponent<Props, State> {
+        stateManager: Class
+
+        constructor(props: Props) {
+            super(props)
+            this.stateManager = new stateManagerClass(props, () => this.state, this.setState)
+            this.state = this.stateManager.initialState
+        }
+
+        render() {
+            return <Context.Provider value={this.stateManager}>{this.props.children}</Context.Provider>
+        }
+    }
+}
+
+function doTheStateThing<Props, State, Class extends StateManager<Props, State>>(
+    stateManagerClass: StateManagerConstructor<Props, State, Class>,
+) {
+    const Context = createSelectableContext<Class>(undefined!)
+    const Provider = createStateProvider(stateManagerClass, Context)
+    const use = <D extends unknown>(selector: (value: Class) => D) => useContextSelector(Context, selector)
+    return { Provider, use }
 }
