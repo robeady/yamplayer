@@ -52,8 +52,8 @@ async function downloadAndDecryptTrack(id: string) {
 
 export function TrackSearch() {
     const [results, setResults] = useState(null as TrackSearchResult[] | null)
-    const { playTrack } = Playback.use(p => p.actions)
-    const { search } = Library.use(l => l)
+    const { playTrack } = Playback.useActions()
+    const { search } = Library.useActions()
     return (
         <>
             <SearchBox onSubmit={query => search(query).then(setResults)} />

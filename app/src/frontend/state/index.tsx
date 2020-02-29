@@ -1,25 +1,34 @@
-import React, { PropsWithChildren } from "react"
-import { createContext, useContextSelector } from "use-context-selector"
+import React, { PropsWithChildren, ReactType } from "react"
+import { createContext as createSelectableContext, useContextSelector } from "use-context-selector"
 
-interface StateContext<S> {
-    Provider: React.Provider<S>
-    useContextValue: <T extends unknown>(selector: (state: S) => T) => T
+// TODO: better name
+interface StateContext<Props, State, Actions> {
+    useState(): State
+    useState<T>(selector: (state: State) => T): T
+    useActions(): Actions
+    Provider: ReactType<Props>
 }
 
-export function stateContext<S>(): StateContext<S> {
-    const Context = createContext<S>(undefined!)
+export function createState<Props, State, Actions>(
+    useCustomState: (props: Props) => readonly [State, Actions],
+): StateContext<Props, State, Actions> {
+    const StateContext = createSelectableContext<State>(undefined!)
+    // TODO: we could use an ordinary context here, but maybe it's better to the two contexts behave consistently with each other?
+    const ActionsContext = createSelectableContext<Actions>(undefined!)
     return {
-        Provider: Context.Provider,
-        useContextValue: <T extends unknown>(selector: (state: S) => T) => useContextSelector(Context, selector),
+        useState: <T extends unknown>(selector?: (state: State) => T) =>
+            useContextSelector(StateContext, selector ?? (identity as any)) as any,
+        useActions: () => useContextSelector(ActionsContext, identity),
+        // TODO: do we need some memo here?
+        Provider: (props: PropsWithChildren<Props>) => {
+            const [state, actions] = useCustomState(props)
+            return (
+                <ActionsContext.Provider value={actions}>
+                    <StateContext.Provider value={state}>{props.children}</StateContext.Provider>
+                </ActionsContext.Provider>
+            )
+        },
     }
 }
 
-export function stateContextButHooky<P, V>(useIt: (props: P) => V) {
-    const Context = createContext<V>(undefined!)
-    return {
-        Provider: React.memo((props: PropsWithChildren<P>) => (
-            <Context.Provider value={useIt(props)}>{props.children}</Context.Provider>
-        )),
-        use: <T extends unknown>(selector: (state: V) => T) => useContextSelector(Context, selector),
-    }
-}
+const identity = <T extends unknown>(t: T) => t

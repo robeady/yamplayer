@@ -2,7 +2,7 @@ import React from "react"
 import { Playback } from "./playback/Player"
 
 export const NowPlaying = () => {
-    const p = Playback.use(p => p)
+    const p = Playback.useState()
     return (
         <header>
             Playing: {p.playingTrackTitle || "nothing right now"}
