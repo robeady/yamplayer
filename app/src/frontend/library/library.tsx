@@ -1,7 +1,7 @@
 import { Dict } from "../util/types"
 import { TrackSearchResult, DeezerApiClient } from "../../backend/deezer/gateway"
 import { remote } from "../../backend/rpc/client"
-import { useState, useMemo } from "react"
+import { useState, useMemo, ReactType } from "react"
 import { createState } from "../state"
 
 interface Query<T> {
@@ -37,6 +37,14 @@ function useLibraryState(props: { backendUrl: string }) {
         },
     }
 
+    const queries = {
+        useLibraryTracks: {
+            select: (s: typeof state) => s.libraryTrackIds,
+            fetch: (set: typeof setState) =>
+                client.searchTracks("todo actual query").then(() => set(s => ({ ...s, libraryTrackIds: [] }))),
+        },
+    }
+
     return [state, actions] as const
 }
 
@@ -47,4 +55,4 @@ export const Library = createState(useLibraryState)
 //
 // what's a better API around queries?
 // how about you write
-// const search = useQuery(Library.useActions().search)
+// const [trackIdsInLibrary, ...] = Library.queries.useTrackIds()
