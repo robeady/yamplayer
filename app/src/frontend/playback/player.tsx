@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from "react"
 import { createState } from "../state"
+import { Howl } from "howler"
 
 const makeHowl = (volume: number, buffer: Uint8Array) => {
     const blob = new Blob([buffer])
