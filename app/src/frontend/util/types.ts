@@ -1,1 +1,3 @@
-export type Dict<T = unknown> = Record<string, T>
+export type Dict<T = unknown> = {
+    [key: string]: T | undefined
+}

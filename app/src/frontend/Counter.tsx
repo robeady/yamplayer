@@ -1,35 +1,36 @@
-import * as React from 'react'
+import * as React from "react"
 
 class Counter extends React.Component<{}, { count: number }> {
-  interval: number | null = null
+    interval: number | null = null
 
-  constructor(props : any) {
-    super(props)
-    this.state = { count: 0 }
-  }
+    constructor(props: any) {
+        super(props)
+        this.state = { count: 0 }
+    }
 
-  componentDidMount() {
-    this.interval = window.setInterval(
-      () => this.setState(prevState => ({ count: prevState.count + 1 })),
-      2000,
-    )
-  }
+    componentDidMount() {
+        this.interval = window.setInterval(() => this.setState(prevState => ({ count: prevState.count + 1 })), 2000)
+    }
 
-  generateString1() {
-    return "1"
-  }
+    generateString1() {
+        return "1"
+    }
 
-  generateString2 = ()  => {
-    return "1"
-  }
+    generateString2 = () => {
+        return "1"
+    }
 
-  componentWillUnmount() {
-    clearInterval(this.interval!)
-  }
+    componentWillUnmount() {
+        clearInterval(this.interval!)
+    }
 
-  render() {
-    return <span>{this.state.count} - {this.generateString1()} - {this.generateString2()}</span>
-  }
+    render() {
+        return (
+            <span>
+                {this.state.count} - {this.generateString1()} - {this.generateString2()}
+            </span>
+        )
+    }
 }
 
 export default Counter

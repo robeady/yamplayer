@@ -1,6 +1,8 @@
-import React, { useState } from "react"
+/** @jsx jsx */
+import { jsx } from "theme-ui"
+import { useState, useEffect, Fragment } from "react"
 import { remote } from "../backend/rpc/client"
-import { DeezerApiClient, TrackSearchResult } from "../backend/deezer/gateway"
+import { DeezerApiClient } from "../backend/deezer/gateway"
 import { DeezerCodec } from "../backend/deezer/DeezerCodec"
 import { Playback } from "./playback/Player"
 import { Library } from "./library/library"
@@ -11,6 +13,7 @@ function SearchBox(props: { onSubmit: (text: string) => void }) {
         <label>
             Search tracks:{" "}
             <input
+                sx={{ border: 0, background: "#eee", fontSize: 2, p: 2 }}
                 type="text"
                 value={text}
                 onChange={e => setText(e.target.value)}
@@ -32,7 +35,11 @@ function SearchResults(props: { tracks: Track[]; onClick: (trackId: string) => v
     return (
         <ol>
             {props.tracks.map(t => (
-                <li key={t.id} onClick={() => props.onClick(t.id)}>
+                <li
+                    sx={{ "&:hover": { color: "primary", cursor: "pointer" } }}
+                    key={t.id}
+                    onClick={() => props.onClick(t.id)}
+                >
                     {t.title} – {t.artistName}
                 </li>
             ))}
@@ -51,24 +58,41 @@ async function downloadAndDecryptTrack(id: string) {
 }
 
 export function TrackSearch() {
-    const [results, setResults] = useState(null as TrackSearchResult[] | null)
-    const { playTrack } = Playback.useActions()
-    const { search } = Library.useActions()
+    const [searchQuery, setSearchQuery] = useState(null as string | null)
+
+    const { playTrack } = Playback.useDispatch()
+    const { update } = Library.useDispatch()
+
+    // let's implement the search query here
+    const searchResults = Library.useState(s => searchQuery && s.searchResultsByQuery[searchQuery])
+
+    useEffect(() => {
+        async function fetchSearchResults() {
+            if (searchResults === undefined && searchQuery !== null) {
+                console.log(`searching for ${searchQuery}`)
+                const results = await client.searchTracks(searchQuery)
+                console.log(`results: ${JSON.stringify(results)}`)
+                update(s => void (s.searchResultsByQuery[searchQuery] = results))
+            }
+        }
+        fetchSearchResults()
+    }, [searchQuery, searchResults, update])
+
     return (
-        <>
-            <SearchBox onSubmit={query => search(query).then(setResults)} />
+        <Fragment>
+            <SearchBox onSubmit={setSearchQuery} />
             <SearchResults
-                tracks={(results ?? []).map(r => ({
+                tracks={(searchResults || []).map(r => ({
                     title: r.track.title,
                     id: r.track.externalId,
                     artistName: r.artist.name,
                 }))}
                 onClick={async id => {
-                    const result = results!.find(t => t.track.externalId === id)
+                    const result = (searchResults || []).find(t => t.track.externalId === id)
                     const buffer = await downloadAndDecryptTrack(id)
                     playTrack(result!.track.title, buffer)
                 }}
             />
-        </>
+        </Fragment>
     )
 }
