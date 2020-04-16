@@ -6,11 +6,14 @@ import { TrackSearch } from "./TrackSearch"
 import { Playback } from "./playback/Player"
 import { NowPlaying } from "./NowPlaying"
 import { Library } from "./library/library"
-import theme from "./styles/theme"
+import { css } from "linaria"
 
 const App = () => (
     <Providers>
-        <div>
+        <div
+            className={css`
+                background-color: #eee;
+            `}>
             <NowPlaying />
             <hr />
             <TrackSearch />
