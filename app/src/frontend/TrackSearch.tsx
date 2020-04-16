@@ -1,6 +1,4 @@
-/** @jsx jsx */
-import { jsx } from "theme-ui"
-import { useState, useEffect, Fragment } from "react"
+import React, { useState, useEffect, Fragment } from "react"
 import { remote } from "../backend/rpc/client"
 import { DeezerApiClient } from "../backend/deezer/gateway"
 import { DeezerCodec } from "../backend/deezer/DeezerCodec"
@@ -38,8 +36,7 @@ function SearchResults(props: { tracks: Track[]; onClick: (trackId: string) => v
                 <li
                     sx={{ "&:hover": { color: "primary", cursor: "pointer" } }}
                     key={t.id}
-                    onClick={() => props.onClick(t.id)}
-                >
+                    onClick={() => props.onClick(t.id)}>
                     {t.title} – {t.artistName}
                 </li>
             ))}

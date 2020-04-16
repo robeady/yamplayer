@@ -6,7 +6,6 @@ import { TrackSearch } from "./TrackSearch"
 import { Playback } from "./playback/Player"
 import { NowPlaying } from "./NowPlaying"
 import { Library } from "./library/library"
-import { ThemeProvider } from "theme-ui"
 import theme from "./styles/theme"
 
 const App = () => (
@@ -28,11 +27,9 @@ const App = () => (
 
 function Providers(props: PropsWithChildren<{}>) {
     return (
-        <ThemeProvider theme={theme}>
-            <Playback.Provider volume={0.2}>
-                <Library.Provider backendUrl="http://127.0.0.1:8280">{props.children}</Library.Provider>
-            </Playback.Provider>
-        </ThemeProvider>
+        <Playback.Provider volume={0.2}>
+            <Library.Provider backendUrl="http://127.0.0.1:8280">{props.children}</Library.Provider>
+        </Playback.Provider>
     )
 }
 
