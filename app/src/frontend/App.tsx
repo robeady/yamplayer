@@ -4,7 +4,6 @@ import Counter from "./Counter"
 import Player from "./Player"
 import { TrackSearch } from "./TrackSearch"
 import { Playback } from "./playback/Player"
-import { NowPlaying } from "./NowPlaying"
 import { Library } from "./library/library"
 import { css } from "linaria"
 
@@ -12,17 +11,36 @@ const App = () => (
     <Providers>
         <div
             className={css`
-                background-color: #eee;
+                height: 100vh;
+                display: grid;
+                grid-template-areas:
+                    "leftNav main"
+                    "player player";
+                grid-template-columns: 200px auto;
+                grid-template-rows: auto 100px;
             `}>
-            <NowPlaying />
-            <hr />
-            <TrackSearch />
-            <hr />
-            <footer>
-                <Counter />
-                <br />
-                <br />
+            <main
+                className={css`
+                    grid-area: main;
+                    overflow-y: scroll;
+                `}>
+                <TrackSearch />
+            </main>
+            <nav
+                className={css`
+                    grid-area: leftNav;
+                    border-right: 1px solid grey;
+                `}>
+                No nav yet, links will go here
+            </nav>
+            <footer
+                className={css`
+                    grid-area: player;
+                    border-top: 1px solid grey;
+                `}>
                 <Player enabled={true} />
+                <br />
+                <Counter />
             </footer>
         </div>
     </Providers>
@@ -30,7 +48,7 @@ const App = () => (
 
 function Providers(props: PropsWithChildren<{}>) {
     return (
-        <Playback.Provider volume={0.2}>
+        <Playback.Provider volume={0.1}>
             <Library.Provider backendUrl="http://127.0.0.1:8280">{props.children}</Library.Provider>
         </Playback.Provider>
     )

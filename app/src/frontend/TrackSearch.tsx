@@ -4,6 +4,7 @@ import { DeezerApiClient } from "../backend/deezer/gateway"
 import { DeezerCodec } from "../backend/deezer/DeezerCodec"
 import { Playback } from "./playback/Player"
 import { Library } from "./library/library"
+import { css } from "linaria"
 
 function SearchBox(props: { onSubmit: (text: string) => void }) {
     const [text, setText] = useState("")
@@ -11,7 +12,6 @@ function SearchBox(props: { onSubmit: (text: string) => void }) {
         <label>
             Search tracks:{" "}
             <input
-                sx={{ border: 0, background: "#eee", fontSize: 2, p: 2 }}
                 type="text"
                 value={text}
                 onChange={e => setText(e.target.value)}
@@ -34,7 +34,9 @@ function SearchResults(props: { tracks: Track[]; onClick: (trackId: string) => v
         <ol>
             {props.tracks.map(t => (
                 <li
-                    sx={{ "&:hover": { color: "primary", cursor: "pointer" } }}
+                    className={css`
+                        cursor: pointer;
+                    `}
                     key={t.id}
                     onClick={() => props.onClick(t.id)}>
                     {t.title} – {t.artistName}
