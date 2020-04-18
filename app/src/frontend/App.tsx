@@ -3,9 +3,10 @@ import React, { PropsWithChildren } from "react"
 import Counter from "./Counter"
 import Player from "./Player"
 import { TrackSearch } from "./TrackSearch"
-import { Playback } from "./playback/Player"
+import { Playback } from "./playback/playback"
 import { Library } from "./library/library"
 import { css } from "linaria"
+import { AudioPlayer } from "./playback/AudioPlayer"
 
 const App = () => (
     <Providers>
@@ -38,7 +39,7 @@ const App = () => (
                     grid-area: player;
                     border-top: 1px solid grey;
                 `}>
-                <Player enabled={true} />
+                <Player />
                 <br />
                 <Counter />
             </footer>
@@ -48,7 +49,7 @@ const App = () => (
 
 function Providers(props: PropsWithChildren<{}>) {
     return (
-        <Playback.Provider volume={0.1}>
+        <Playback.Provider player={new AudioPlayer(0.1)}>
             <Library.Provider backendUrl="http://127.0.0.1:8280">{props.children}</Library.Provider>
         </Playback.Provider>
     )

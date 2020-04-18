@@ -4,7 +4,7 @@ import { createContext as createSelectableContext, useContextSelector } from "us
 
 const identity = <T extends unknown>(t: T) => t
 
-type ImmerUpdater<State> = (recipe: (draft: Draft<State>) => undefined) => void
+type ImmerUpdater<State> = (recipe: (draft: Draft<State>) => void) => void
 
 interface ActionArgs<State> {
     setState: Dispatch<SetStateAction<State>>
@@ -59,5 +59,10 @@ export function createState<State, Props, Dispatch>(useCustomState: (props: Prop
 }
 
 export function immerise<State>(setState: Dispatch<SetStateAction<State>>): ImmerUpdater<State> {
-    return (recipe: (draft: Draft<State>) => undefined) => setState(produce(recipe) as any)
+    return (recipe: (draft: Draft<State>) => void) =>
+        setState(
+            produce(draft => {
+                recipe(draft)
+            }),
+        )
 }

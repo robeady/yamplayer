@@ -1,51 +1,15 @@
 import * as React from "react"
-import { Playback } from "./playback/Player"
+import { Playback } from "./playback/playback"
 
-// const mainProcessAxios = Electron.remote.getGlobal("axios") as typeof import("axios")["default"]
-
-// BELOW: old test code for downloading a song
-
-// const searchAndDownloadFromGateway = async (query: string) => {
-//     const client = remote<DeezerApiClient>("http://127.0.0.1:8280/deezer")
-//     const tracks = await client.searchTracks(query)
-//     const deezerId = tracks[0].track.externalId
-//     const url = await client.getTrackUrl(deezerId)
-//     const response = await fetch(url)
-//     const buffer = await response.arrayBuffer()
-//     const sngId = deezerId.split(":")[1]
-//     return new DeezerCodec().decodeTrack(new Uint8Array(buffer), sngId)
-// }
-
-// const makeHowl = (buffer: Uint8Array) => {
-//     const blob = new Blob([buffer])
-//     const url = URL.createObjectURL(blob)
-//     const howl = new Howl({
-//         src: url,
-//         format: "flac",
-//         volume: 0.3,
-//         onloaderror: (id, e) => console.error(e),
-//         onplayerror: (id, e) => console.error(e),
-//     })
-//     return howl
-// }
-
-const Player = (props: { enabled: boolean }) => {
+const Player = () => {
     const playing = !Playback.useState(s => s.paused)
-    const { pause, play } = Playback.useDispatch()
-    // const [playHandle, setPlayhandle] = useState(null as number | null)
-    // const [playing, setPlaying] = useState(false)
-    // useEffect(() => {
-    //     searchAndDownloadFromGateway("give life back to music")
-    //         // downloadSong()
-    //         .then(makeHowl)
-    //         .then(setHowl)
-    // }, [])
+    const volume = Playback.useState(s => s.volume)
+    const { pause, play, setVolume, skipNext } = Playback.useDispatch()
 
     return (
         <>
-            We are {playing ? "playing" : "paused"}.<br />
+            <button>Previous</button>
             <button
-                disabled={!props.enabled}
                 onClick={() => {
                     if (playing) {
                         pause()
@@ -53,8 +17,34 @@ const Player = (props: { enabled: boolean }) => {
                         play()
                     }
                 }}>
-                play-pause
+                Play/Pause
             </button>
+            <button onClick={() => skipNext()}>Next</button>
+            <span>We are {playing ? "playing" : "paused"}. Volume: </span>
+            <input
+                type="number"
+                value={volume}
+                step={0.01}
+                min={0}
+                max={1}
+                onChange={e => setVolume(parseFloat(e.target.value))}
+            />
+            <NowPlaying />
+        </>
+    )
+}
+;``
+function NowPlaying() {
+    const queue = Playback.useState(s => s.queue)
+    return (
+        <>
+            <br />
+            <span>Now playing:</span>
+            <ol>
+                {queue.map(item => (
+                    <li>{item.title}</li>
+                ))}
+            </ol>
         </>
     )
 }

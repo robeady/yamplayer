@@ -2,7 +2,7 @@ import React, { useState, useEffect, Fragment } from "react"
 import { remote } from "../backend/rpc/client"
 import { DeezerApiClient } from "../backend/deezer/gateway"
 import { DeezerCodec } from "../backend/deezer/DeezerCodec"
-import { Playback } from "./playback/Player"
+import { Playback } from "./playback/playback"
 import { Library } from "./library/library"
 import { css } from "linaria"
 
@@ -27,22 +27,35 @@ interface Track {
     id: string
     title: string
     artistName: string
+    coverImageUrl: string
 }
 
 function SearchResults(props: { tracks: Track[]; onClick: (trackId: string) => void }) {
     return (
-        <ol>
+        <div>
             {props.tracks.map(t => (
-                <li
+                <div
                     className={css`
-                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        margin: 8px;
                     `}
-                    key={t.id}
-                    onClick={() => props.onClick(t.id)}>
-                    {t.title} – {t.artistName}
-                </li>
+                    key={t.id}>
+                    <img src={t.coverImageUrl} height={32} />
+                    <span
+                        onClick={() => props.onClick(t.id)}
+                        className={css`
+                            cursor: pointer;
+                            margin-left: 8px;
+                            &:hover {
+                                color: hsl(330, 80%, 35%);
+                            }
+                        `}>
+                        {t.title} – {t.artistName}
+                    </span>
+                </div>
             ))}
-        </ol>
+        </div>
     )
 }
 
@@ -59,7 +72,7 @@ async function downloadAndDecryptTrack(id: string) {
 export function TrackSearch() {
     const [searchQuery, setSearchQuery] = useState(null as string | null)
 
-    const { playTrack } = Playback.useDispatch()
+    const { enqueueTrack } = Playback.useDispatch()
     const { update } = Library.useDispatch()
 
     // let's implement the search query here
@@ -85,11 +98,12 @@ export function TrackSearch() {
                     title: r.track.title,
                     id: r.track.externalId,
                     artistName: r.artist.name,
+                    coverImageUrl: r.album.coverImageUrl,
                 }))}
                 onClick={async id => {
                     const result = (searchResults || []).find(t => t.track.externalId === id)
                     const buffer = await downloadAndDecryptTrack(id)
-                    playTrack(result!.track.title, buffer)
+                    enqueueTrack(result!.track.title, buffer)
                 }}
             />
         </Fragment>
