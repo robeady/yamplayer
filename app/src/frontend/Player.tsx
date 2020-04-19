@@ -2,25 +2,16 @@ import * as React from "react"
 import { Playback } from "./playback/playback"
 
 const Player = () => {
-    const playing = !Playback.useState(s => s.paused)
+    const status = Playback.useState(s => s.status)
     const volume = Playback.useState(s => s.volume)
-    const { pause, play, setVolume, skipNext } = Playback.useDispatch()
+    const { setVolume, skipNext } = Playback.useDispatch()
 
     return (
         <>
             <button>Previous</button>
-            <button
-                onClick={() => {
-                    if (playing) {
-                        pause()
-                    } else {
-                        play()
-                    }
-                }}>
-                Play/Pause
-            </button>
+            <PlayPauseButton />
             <button onClick={() => skipNext()}>Next</button>
-            <span>We are {playing ? "playing" : "paused"}. Volume: </span>
+            <span>We are {status.state}. Volume: </span>
             <input
                 type="number"
                 value={volume}
@@ -33,7 +24,19 @@ const Player = () => {
         </>
     )
 }
-;``
+
+function PlayPauseButton() {
+    const status = Playback.useState(s => s.status)
+    const { pause, unpause } = Playback.useDispatch()
+    if (status.state === "stopped") {
+        return <button disabled>Stopped</button>
+    } else if (status.state === "paused") {
+        return <button onClick={unpause}>Play</button>
+    } else {
+        return <button onClick={pause}>Pause</button>
+    }
+}
+
 function NowPlaying() {
     const queue = Playback.useState(s => s.queue)
     return (

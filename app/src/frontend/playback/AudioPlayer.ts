@@ -40,28 +40,41 @@ export class AudioPlayer {
         }
     }
 
-    /** Pauses playback and returns true, or if nothing is playing does nothing and returns false */
-    pause(): boolean {
+    /** Pauses playback and returns the position in secs at which playback is paused,
+     * or if nothing is playing does nothing and returns null */
+    pause(): number | null {
         if (this.howl) {
             this.howl.pause()
-            return true
+            return this.howl.seek() as number
         } else {
-            return false
+            return null
         }
     }
 
-    /** Resumes playback and returns true, or if nothing is playing does nothing and returns false */
+    /** Resumes playback and returns the position in secs at which playback resumed from,
+     * or if nothing is playing does nothing and returns false */
     unpause() {
         if (this.howl) {
+            const position = this.howl.seek() as number
             this.howl.play()
-            return true
+            return position
         } else {
-            return false
+            return null
         }
     }
 
+    /** Skips to the next track in the queue */
     skipNext() {
         this.playNextFromQueue()
+    }
+
+    /** Gets the position in seconds from the start of the current track, or null if nothing is playing */
+    positionSecs(): number | null {
+        if (this.howl) {
+            return this.howl.seek() as number
+        } else {
+            return null
+        }
     }
 
     /** Seeks the playing track to the given offset in seconds and returns true,
@@ -104,6 +117,7 @@ export class AudioPlayer {
         const nextTrackData = this.queue.shift()
         if (nextTrackData) {
             this.howl = this.createHowlAndPlay(nextTrackData)
+            this.howl.seek(180)
         }
     }
 }
