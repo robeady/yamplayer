@@ -5,18 +5,16 @@ import { AudioPlayer } from "./AudioPlayer"
 type TrackBuffer = Uint8Array
 
 function usePlayerState(props: { player: AudioPlayer }) {
-    useEffect(() => {
-        // subscribe to player events
-        return () => {
-            // unsubscribe from player events
-        }
-    }, [])
     const [state, setState] = useState({
         paused: false,
         volume: props.player.volume,
         queue: [] as { id: string; title: string; buffer: TrackBuffer }[],
     })
-    const update = immerise(setState)
+    const update = useMemo(() => immerise(setState), [])
+    useEffect(() => {
+        const subId = props.player.subscribe(() => update(s => s.queue.shift()))
+        return () => props.player.unsubscribe(subId)
+    }, [props.player, update])
     const actions = useMemo(
         () => ({
             // playTrack: (trackTitle: string, trackData: TrackBuffer) => {

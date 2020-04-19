@@ -103,7 +103,7 @@ export function TrackSearch() {
                 onClick={async id => {
                     const result = (searchResults || []).find(t => t.track.externalId === id)
                     const buffer = await downloadAndDecryptTrack(id)
-                    enqueueTrack(result!.track.title, buffer)
+                    enqueueTrack(id, result!.track.title, buffer)
                 }}
             />
         </Fragment>

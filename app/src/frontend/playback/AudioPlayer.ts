@@ -1,10 +1,29 @@
 import { Howl } from "howler"
+import { Dict } from "../util/types"
+import { idSequence } from "../util/ids"
+import { forEach } from "lodash"
+
+type AudioPlayerEvent = { type: "trackEnded" }
+type EventCallback = (event: AudioPlayerEvent) => void
 
 export class AudioPlayer {
     queue: Uint8Array[] = []
     howl: Howl | null = null
 
+    eventSubscribers: Dict<EventCallback> = {}
+    nextEventSubscriberId = idSequence()
+
     constructor(public volume: number) {}
+
+    subscribe(callback: EventCallback) {
+        const id = this.nextEventSubscriberId()
+        this.eventSubscribers[id] = callback
+        return id
+    }
+
+    unsubscribe(subscriptionId: string) {
+        delete this.eventSubscribers[subscriptionId]
+    }
 
     /** Play a track, replacing the existing queue */
     play(trackData: Uint8Array) {
@@ -71,16 +90,20 @@ export class AudioPlayer {
             autoplay: true,
             onloaderror: (id, e) => console.error(e),
             onplayerror: (id, e) => console.error(e),
-            onend: () => this.playNextFromQueue(),
+            onend: () => {
+                this.playNextFromQueue()
+                // TODO: why does it think the callback can be undefined
+                forEach(this.eventSubscribers, cb => cb!({ type: "trackEnded" }))
+            },
         })
         return howl
     }
 
     private playNextFromQueue() {
         this.howl?.unload()
-        const nextData = this.queue.shift()
-        if (nextData) {
-            this.howl = this.createHowlAndPlay(nextData)
+        const nextTrackData = this.queue.shift()
+        if (nextTrackData) {
+            this.howl = this.createHowlAndPlay(nextTrackData)
         }
     }
 }
