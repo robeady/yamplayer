@@ -24,6 +24,7 @@ const App = () => (
                 className={css`
                     grid-area: main;
                     overflow-y: scroll;
+                    padding: 16px;
                 `}>
                 <TrackSearch />
             </main>

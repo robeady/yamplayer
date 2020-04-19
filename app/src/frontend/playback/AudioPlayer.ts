@@ -117,7 +117,6 @@ export class AudioPlayer {
         const nextTrackData = this.queue.shift()
         if (nextTrackData) {
             this.howl = this.createHowlAndPlay(nextTrackData)
-            this.howl.seek(180)
         }
     }
 }

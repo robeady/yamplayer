@@ -12,6 +12,7 @@
     "develop": "concurrently -k \"npm:backend:start\" \"npm:electron:serve-hot\" \"npm:electron:start\""
   },
   "dependencies": {
+    "@types/react-slider": "1.0.0",
     "axios": "0.19.2",
     "egoroof-blowfish": "2.2.1",
     "express": "4.17.1",
@@ -24,6 +25,8 @@
     "react-dom": "16.12.0",
     "react-hot-loader": "4.12.19",
     "react-router-dom": "5.1.2",
+    "react-slider": "1.0.3",
+    "react-zondicons": "1.1.9",
     "tough-cookie": "2.5.0",
     "use-context-selector": "1.0.1"
   },
