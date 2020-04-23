@@ -1,7 +1,7 @@
 import { hot } from "react-hot-loader/root"
 import React, { PropsWithChildren } from "react"
 import Counter from "./Counter"
-import Player from "./Player"
+import Player, { NowPlaying } from "./Player"
 import { TrackSearch } from "./TrackSearch"
 import { Playback } from "./playback/playback"
 import { Library } from "./library/library"
@@ -14,39 +14,55 @@ const App = () => (
             className={css`
                 height: 100vh;
                 display: grid;
-                grid-template-areas:
-                    "leftNav main"
-                    "player player";
-                grid-template-columns: 200px auto;
-                grid-template-rows: auto 100px;
+                grid-template-rows: minmax(0, 1fr) 120px;
             `}>
-            <main
-                className={css`
-                    grid-area: main;
-                    overflow-y: scroll;
-                    padding: 16px;
-                `}>
-                <TrackSearch />
-            </main>
-            <nav
-                className={css`
-                    grid-area: leftNav;
-                    border-right: 1px solid grey;
-                `}>
-                No nav yet, links will go here
-            </nav>
+            <Main />
             <footer
                 className={css`
-                    grid-area: player;
                     border-top: 1px solid grey;
                 `}>
                 <Player />
-                <br />
-                <Counter />
             </footer>
         </div>
     </Providers>
 )
+
+function Main() {
+    const showNowPlaying = true
+    return (
+        <div
+            className={css`
+                display: flex;
+            `}>
+            <nav
+                className={css`
+                    width: 200px;
+                    border-right: 1px solid gainsboro;
+                `}>
+                No nav yet, links will go here
+                <br />
+                <Counter />
+            </nav>
+            <main
+                className={css`
+                    flex: 1;
+                    overflow-y: auto;
+                    padding: 16px;
+                `}>
+                <TrackSearch />
+            </main>
+            {showNowPlaying && (
+                <aside
+                    className={css`
+                        border-left: 1px solid gainsboro;
+                        width: 300px;
+                    `}>
+                    <NowPlaying />
+                </aside>
+            )}
+        </div>
+    )
+}
 
 function Providers(props: PropsWithChildren<{}>) {
     return (

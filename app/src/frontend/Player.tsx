@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Playback } from "./playback/playback"
-import { Play, Pause, ForwardStep, BackwardStep } from "react-zondicons"
+import { ForwardStep, BackwardStep } from "react-zondicons"
 import { css } from "linaria"
 import { PlayPauseButton } from "./atoms/PlayPause"
 import ReactSlider from "react-slider"
@@ -16,7 +16,7 @@ const Player = () => {
             className={css`
                 display: grid;
                 align-items: center;
-                grid-template-columns: 300px auto 500px 500px;
+                grid-template-columns: 300px auto 500px;
             `}>
             <div>
                 <span>We are {status.state}. Volume: </span>
@@ -43,8 +43,8 @@ const Player = () => {
                 />
                 <div
                     className={css`
-                        margin-left: 16px;
-                        margin-right: 16px;
+                        margin-left: 12px;
+                        margin-right: 12px;
                     `}>
                     <PlayPause size={28} />
                 </div>
@@ -58,7 +58,6 @@ const Player = () => {
                 />
             </div>
             <ProgressBar />
-            <NowPlaying />
         </div>
     )
 }
@@ -127,7 +126,7 @@ function PlayPause(props: { size: number }) {
     }
 }
 
-function NowPlaying() {
+export function NowPlaying() {
     const queue = Playback.useState(s => s.queue)
     return (
         <div>
