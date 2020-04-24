@@ -19,7 +19,7 @@ const App = () => (
             <Main />
             <footer
                 className={css`
-                    border-top: 1px solid grey;
+                    border-top: 1px solid gainsboro;
                 `}>
                 <Player />
             </footer>
