@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Playback } from "./playback/playback"
-import { ForwardStep, BackwardStep } from "react-zondicons"
+import SkipPrevious from "./icons/skip_previous.svg"
+import SkipNext from "./icons/skip_next.svg"
 import { css } from "linaria"
 import { PlayPauseButton } from "./atoms/PlayPause"
 import ReactSlider from "react-slider"
@@ -35,25 +36,28 @@ const Player = () => {
                     align-items: center;
                     justify-self: center;
                 `}>
-                <BackwardStep
+                <SkipPrevious
                     className={css`
-                        fill: #666;
+                        cursor: pointer;
                     `}
-                    size={28}
+                    width={36}
+                    height={36}
+                    fill="#666"
                 />
                 <div
                     className={css`
                         margin-left: 12px;
                         margin-right: 12px;
                     `}>
-                    <PlayPause size={28} />
+                    <PlayPause size={36} />
                 </div>
-                <ForwardStep
+                <SkipNext
                     className={css`
-                        fill: #666;
                         cursor: pointer;
                     `}
-                    size={28}
+                    fill="#666"
+                    width={36}
+                    height={36}
                     onClick={() => skipNext()}
                 />
             </div>

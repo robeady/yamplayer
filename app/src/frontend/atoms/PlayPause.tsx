@@ -1,5 +1,6 @@
 import React from "react"
-import { Pause, Play } from "react-zondicons"
+import PlayArrow from "../icons/play_arrow.svg"
+import Pause from "../icons/pause.svg"
 import { css } from "linaria"
 
 export function PlayPauseButton(props: {
@@ -10,14 +11,9 @@ export function PlayPauseButton(props: {
 }) {
     const icon =
         props.icon === "play" ? (
-            <Play
-                className={css`
-                    margin: 0 -2px 0 2px;
-                `}
-                size={props.size}
-            />
+            <PlayArrow width={props.size} height={props.size} />
         ) : (
-            <Pause size={props.size} />
+            <Pause width={props.size} height={props.size} />
         )
     return (
         <div
@@ -25,7 +21,7 @@ export function PlayPauseButton(props: {
                 background: hsl(270, 80%, 60%);
                 border-radius: 50%;
                 cursor: pointer;
-                padding: 8px;
+                padding: 6px;
                 fill: white;
                 line-height: 0;
                 &:hover {

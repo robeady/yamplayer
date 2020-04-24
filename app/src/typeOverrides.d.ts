@@ -11,3 +11,8 @@ declare module "linaria" {
 
     export function cx(...classNames: Array<string | false | undefined | null | 0>): string
 }
+
+declare module "*.svg" {
+    const component: React.ComponentType<React.SVGProps<SVGSVGElement>>
+    export default component
+}

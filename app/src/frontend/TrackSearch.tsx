@@ -6,7 +6,7 @@ import { Playback } from "./playback/playback"
 import { Library } from "./library/library"
 import { css } from "linaria"
 import { styled } from "linaria/react"
-import { Play } from "react-zondicons"
+import PlayArrow from "./icons/play_arrow.svg"
 
 function SearchBox(props: { onSubmit: (text: string) => void }) {
     const [text, setText] = useState("")
@@ -99,14 +99,15 @@ function PlayCircle(props: { displayed: boolean; size: number; onClick: () => vo
                 cursor: pointer;
             `}
             onClick={props.onClick}>
-            <Play
+            <PlayArrow
                 className={css`
                     display: block;
                     padding: 4px;
                     margin: 0 -2px 0 2px;
                     fill: white;
                 `}
-                size={props.size - 8}
+                width={props.size - 8}
+                height={props.size - 8}
             />
         </div>
     )
