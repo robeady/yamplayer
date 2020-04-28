@@ -7,6 +7,7 @@ import { Library } from "./library/library"
 import { css } from "linaria"
 import { styled } from "linaria/react"
 import PlayArrow from "./icons/play_arrow.svg"
+import { Slider } from "./components/Slider"
 
 function SearchBox(props: { onSubmit: (text: string) => void }) {
     const [text, setText] = useState("")

@@ -1,5 +1,5 @@
 import { hot } from "react-hot-loader/root"
-import React, { PropsWithChildren } from "react"
+import React, { PropsWithChildren, useRef } from "react"
 import Counter from "./Counter"
 import Player, { NowPlaying } from "./Player"
 import { TrackSearch } from "./TrackSearch"
@@ -14,7 +14,7 @@ const App = () => (
             className={css`
                 height: 100vh;
                 display: grid;
-                grid-template-rows: minmax(0, 1fr) 120px;
+                grid-template-rows: minmax(0, 1fr) auto;
             `}>
             <Main />
             <footer
@@ -65,8 +65,10 @@ function Main() {
 }
 
 function Providers(props: PropsWithChildren<{}>) {
+    // a ref has consistent identity across hot reloads
+    const playerRef = useRef(new AudioPlayer(0.1))
     return (
-        <Playback.Provider player={new AudioPlayer(0.1)}>
+        <Playback.Provider player={playerRef.current}>
             <Library.Provider backendUrl="http://127.0.0.1:8280">{props.children}</Library.Provider>
         </Playback.Provider>
     )

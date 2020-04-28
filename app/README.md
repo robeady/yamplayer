@@ -23,3 +23,7 @@ Press ctrl-c or close the electron window to exit and it should cleanup all the 
 ## Run tests
 
 `npm run test` or `npm run test:watch`
+
+## Design
+
+https://www.figma.com/file/UL3IcZhYuqSxL31gvCydxl/Yamplayer-app

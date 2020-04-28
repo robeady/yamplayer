@@ -6,14 +6,21 @@ import { forEach } from "lodash"
 type AudioPlayerEvent = { type: "trackEnded" }
 type EventCallback = (event: AudioPlayerEvent) => void
 
+const HOWL_VOLUME_RATIO = 0.25
+
 export class AudioPlayer {
     queue: Uint8Array[] = []
     howl: Howl | null = null
+    _volume: number
+    muted = false
+    instanceId = Math.random()
 
     eventSubscribers: Dict<EventCallback> = {}
     nextEventSubscriberId = idSequence()
 
-    constructor(public volume: number) {}
+    constructor(initialVolume: number) {
+        this._volume = initialVolume
+    }
 
     subscribe(callback: EventCallback) {
         const id = this.nextEventSubscriberId()
@@ -88,9 +95,21 @@ export class AudioPlayer {
         }
     }
 
+    /** get the current volume */
+    volume() {
+        return this._volume
+    }
+
+    /** Set the volume of the player */
     setVolume(volume: number) {
-        this.howl?.volume(volume)
-        this.volume = volume
+        this.howl?.volume(volume * HOWL_VOLUME_RATIO)
+        this._volume = volume
+    }
+
+    /** Toggle whether the player is muted */
+    toggleMute() {
+        this.muted = !this.muted
+        this.howl?.mute(this.muted)
     }
 
     private createHowlAndPlay(trackData: Uint8Array): Howl {
@@ -99,7 +118,8 @@ export class AudioPlayer {
         const howl = new Howl({
             src: url,
             format: "flac",
-            volume: this.volume,
+            volume: this._volume * HOWL_VOLUME_RATIO,
+            mute: this.muted,
             autoplay: true,
             onloaderror: (id, e) => console.error(e),
             onplayerror: (id, e) => console.error(e),

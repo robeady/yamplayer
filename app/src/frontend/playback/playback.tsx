@@ -12,7 +12,8 @@ export type PlaybackStatus =
 function usePlayerState(props: { player: AudioPlayer }) {
     const [state, setState] = useState({
         status: { state: "stopped" } as PlaybackStatus,
-        volume: props.player.volume,
+        volume: props.player.volume(),
+        muted: false,
         queue: [] as { id: string; title: string; buffer: TrackBuffer }[],
     })
     const update = useMemo(() => immerise(setState), [])
@@ -72,6 +73,10 @@ function usePlayerState(props: { player: AudioPlayer }) {
             setVolume: (volume: number) => {
                 props.player.setVolume(volume)
                 update(s => (s.volume = volume))
+            },
+            toggleMute: () => {
+                props.player.toggleMute()
+                update(s => (s.muted = !s.muted))
             },
         }),
         [update, props.player],
