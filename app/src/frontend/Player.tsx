@@ -80,7 +80,7 @@ function PlayPauseSkipControls() {
                 `}
                 width={36}
                 height={36}
-                fill="#666"
+                fill="slategray"
             />
             <div
                 className={css`
@@ -93,7 +93,7 @@ function PlayPauseSkipControls() {
                 className={css`
                     cursor: pointer;
                 `}
-                fill="#666"
+                fill="slategray"
                 width={32}
                 height={32}
                 onClick={() => skipNext()}

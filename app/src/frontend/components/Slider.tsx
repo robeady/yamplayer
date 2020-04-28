@@ -33,9 +33,9 @@ export function Slider(props: { value: number | null; onChange: (value: number) 
         .${classNameIfEnabled}:active & {
             background: hsl(270, 100%, 60%);
         }
-        padding: 8px;
+        padding: 7px;
         border-radius: 50%;
-        top: -5px;
+        top: -4px;
     `
     const sliderProps: ReactSliderProps = {
         trackClassName,

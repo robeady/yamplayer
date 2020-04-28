@@ -20,7 +20,7 @@ export function VolumeControl() {
                 display: flex;
                 align-items: center;
             `}>
-            <VolumeIcon onClick={toggleMute} />
+            <VolumeIcon fill="slategray" onClick={toggleMute} />
             <div
                 className={css`
                     width: 100px;
