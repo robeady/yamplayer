@@ -1,39 +1,10 @@
-import React, { PropsWithChildren, SetStateAction, Dispatch, createContext, useContext, useMemo } from "react"
+import React, { PropsWithChildren, SetStateAction, Dispatch, createContext, useContext } from "react"
 import produce, { Draft } from "immer"
 import { createContext as createSelectableContext, useContextSelector } from "use-context-selector"
 
 const identity = <T extends unknown>(t: T) => t
 
 type ImmerUpdater<State> = (recipe: (draft: Draft<State>) => void) => void
-
-interface ActionArgs<State> {
-    setState: Dispatch<SetStateAction<State>>
-    update: ImmerUpdater<State>
-}
-
-/** Create a state container, where mutations are wrapped in actions specified at creation time. */
-export function createStateWithActions<State, Props, Actions>(
-    defaultInitialState: State,
-    actionsCreator: (props: Props) => (args: ActionArgs<State>) => Actions,
-) {
-    const { Provider, useState, useDispatch } = createState((props: { initialState?: State } & Props) => {
-        const [state, setState] = React.useState(props.initialState ?? defaultInitialState)
-        const actions = useMemo(
-            () => actionsCreator(props)({ setState, update: immerise(setState) }),
-            [props], // setState is unnecessary because it's stable
-        )
-        return [state, actions]
-    })
-    return { Provider, useState, useActions: useDispatch }
-}
-
-/** Create a bare state container, which exposes operations to set or update the state directly */
-export function defineBareState<State>(defaultInitialState: State) {
-    const { Provider, useState, useDispatch: useSetState } = createState((props: { initialState?: State }) => {
-        return React.useState(props.initialState ?? defaultInitialState)
-    })
-    return { Provider, useState, useSetState, useUpdate: () => immerise(useSetState()) }
-}
 
 /** Create a state container, given a custom state hook */
 export function createState<State, Props, Dispatch>(useCustomState: (props: Props) => readonly [State, Dispatch]) {
@@ -59,10 +30,5 @@ export function createState<State, Props, Dispatch>(useCustomState: (props: Prop
 }
 
 export function immerise<State>(setState: Dispatch<SetStateAction<State>>): ImmerUpdater<State> {
-    return (recipe: (draft: Draft<State>) => void) =>
-        setState(
-            produce(draft => {
-                recipe(draft)
-            }),
-        )
+    return (recipe: (draft: Draft<State>) => void) => setState(produce(draft => void recipe(draft)))
 }
