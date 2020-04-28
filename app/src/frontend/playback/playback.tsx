@@ -18,24 +18,21 @@ function usePlayerState(props: { player: AudioPlayer }) {
     })
     const update = useMemo(() => immerise(setState), [])
     useEffect(() => {
-        const subId = props.player.subscribe(() =>
+        const subId = props.player.subscribe(() => {
+            const timestamp = performance.now()
             update(s => {
                 s.queue.shift()
                 if (s.queue.length === 0) {
                     s.status = { state: "stopped" }
+                } else {
+                    s.status = { state: "playing", sinceTimestampMillis: timestamp, positionAtTimestamp: 0 }
                 }
-            }),
-        )
+            })
+        })
         return () => props.player.unsubscribe(subId)
     }, [props.player, update])
     const actions = useMemo(
         () => ({
-            // playTrack: (trackTitle: string, trackData: TrackBuffer) => {
-            //     props.player.play(trackData)
-            //     update(s => {
-            //         s.paused = false
-            //     })
-            // },
             enqueueTrack: (id: string, title: string, trackData: TrackBuffer) => {
                 props.player.enqueue(trackData)
                 const timestamp = performance.now()
@@ -68,7 +65,15 @@ function usePlayerState(props: { player: AudioPlayer }) {
             },
             skipNext: () => {
                 props.player.skipNext()
-                update(s => s.queue.shift())
+                const timestamp = performance.now()
+                update(s => {
+                    s.queue.shift()
+                    if (s.queue.length === 0) {
+                        s.status = { state: "stopped" }
+                    } else {
+                        s.status = { state: "playing", sinceTimestampMillis: timestamp, positionAtTimestamp: 0 }
+                    }
+                })
             },
             setVolume: (volume: number) => {
                 props.player.setVolume(volume)
