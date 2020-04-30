@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from "react"
+import React, { useState } from "react"
 import { remote } from "../backend/rpc/client"
 import { DeezerApiClient } from "../backend/deezer/gateway"
 import { DeezerCodec } from "../backend/deezer/DeezerCodec"
 import { Playback } from "./playback/playback"
-import { Library } from "./library/library"
+import { useLibrarySearch } from "./library/library"
 import { css } from "linaria"
 import { styled } from "linaria/react"
 import PlayArrow from "./icons/play_arrow.svg"
-import { Slider } from "./components/Slider"
 
 function SearchBox(props: { onSubmit: (text: string) => void }) {
     const [text, setText] = useState("")
@@ -153,30 +152,14 @@ async function downloadAndDecryptTrack(id: string) {
 
 export function TrackSearch() {
     const [searchQuery, setSearchQuery] = useState(null as string | null)
-
     const { enqueueTrack } = Playback.useDispatch()
-    const { update } = Library.useDispatch()
-
-    // let's implement the search query here
-    const searchResults = Library.useState(s => searchQuery && s.searchResultsByQuery[searchQuery])
-
-    useEffect(() => {
-        async function fetchSearchResults() {
-            if (searchResults === undefined && searchQuery !== null) {
-                console.log(`searching for ${searchQuery}`)
-                const results = await client.searchTracks(searchQuery)
-                console.log(`results: ${JSON.stringify(results)}`)
-                update(s => void (s.searchResultsByQuery[searchQuery] = results))
-            }
-        }
-        fetchSearchResults()
-    }, [searchQuery, searchResults, update])
+    const searchResults = useLibrarySearch(searchQuery)
 
     return (
         <div>
             <SearchBox onSubmit={setSearchQuery} />
             <SearchResults
-                tracks={(searchResults || []).map(r => ({
+                tracks={searchResults.map(r => ({
                     id: r.track.externalId,
                     title: r.track.title,
                     albumTitle: r.album.title,
@@ -184,9 +167,8 @@ export function TrackSearch() {
                     coverImageUrl: r.album.coverImageUrl,
                 }))}
                 playTrack={async id => {
-                    const result = (searchResults || []).find(t => t.track.externalId === id)
                     const buffer = await downloadAndDecryptTrack(id)
-                    enqueueTrack(id, result!.track.title, buffer)
+                    enqueueTrack(id, buffer)
                 }}
             />
         </div>

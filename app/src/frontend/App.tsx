@@ -4,9 +4,9 @@ import Counter from "./Counter"
 import Player, { NowPlaying } from "./Player"
 import { TrackSearch } from "./TrackSearch"
 import { Playback } from "./playback/playback"
-import { Library } from "./library/library"
 import { css } from "linaria"
 import { AudioPlayer } from "./playback/AudioPlayer"
+import { LibraryProvider } from "./library/library"
 
 const App = () => (
     <Providers>
@@ -69,7 +69,7 @@ function Providers(props: PropsWithChildren<{}>) {
     const playerRef = useRef(new AudioPlayer(0.1))
     return (
         <Playback.Provider player={playerRef.current}>
-            <Library.Provider backendUrl="http://127.0.0.1:8280">{props.children}</Library.Provider>
+            <LibraryProvider backendUrl="http://127.0.0.1:8280">{props.children}</LibraryProvider>
         </Playback.Provider>
     )
 }

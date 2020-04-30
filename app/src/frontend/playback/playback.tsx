@@ -9,12 +9,17 @@ export type PlaybackStatus =
     | { state: "paused"; atPosition: number }
     | { state: "playing"; sinceTimestampMillis: number; positionAtTimestamp: number }
 
+export interface QueueEntry {
+    trackId: string
+    buffer: TrackBuffer
+}
+
 function usePlayerState(props: { player: AudioPlayer }) {
     const [state, setState] = useState({
         status: { state: "stopped" } as PlaybackStatus,
         volume: props.player.volume(),
         muted: false,
-        queue: [] as { id: string; title: string; buffer: TrackBuffer }[],
+        queue: [] as QueueEntry[],
     })
     const update = useMemo(() => immerise(setState), [])
     useEffect(() => {
@@ -33,11 +38,11 @@ function usePlayerState(props: { player: AudioPlayer }) {
     }, [props.player, update])
     const actions = useMemo(
         () => ({
-            enqueueTrack: (id: string, title: string, trackData: TrackBuffer) => {
+            enqueueTrack: (trackId: string, trackData: TrackBuffer) => {
                 props.player.enqueue(trackData)
                 const timestamp = performance.now()
                 update(s => {
-                    s.queue.push({ id, title, buffer: trackData })
+                    s.queue.push({ trackId, buffer: trackData })
                     if (s.status.state === "stopped") {
                         s.status = { state: "playing", sinceTimestampMillis: timestamp, positionAtTimestamp: 0 }
                     }

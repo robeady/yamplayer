@@ -8,6 +8,7 @@ import { PlayPauseButton } from "./components/PlayPause"
 import { useState, useEffect } from "react"
 import { Slider } from "./components/Slider"
 import { VolumeControl } from "./components/Volume"
+import { useLibraryState } from "./library/library"
 
 const Player = () => {
     return (
@@ -26,8 +27,15 @@ const Player = () => {
 
 function PlayingTrack() {
     const status = Playback.useState(s => s.status)
-    const nowPlaying = Playback.useState(s => s.queue[0])
-    if (nowPlaying === undefined) {
+    const nowPlayingTrackId = Playback.useState(s => s.queue[0]?.trackId as string | undefined)
+    const playingTrack = useLibraryState(s =>
+        nowPlayingTrackId === undefined ? undefined : s.tracks[nowPlayingTrackId]!,
+    )
+    const playingAlbum = useLibraryState(s => playingTrack && s.albums[playingTrack.albumId])
+    const playingArtist = useLibraryState(s => playingTrack && s.artists[playingTrack.artistId])
+    // console.log(JSON.stringify({ allTheTracks, nowPlayingTrackId, playingTrack, playingAlbum, playingArtist }))
+
+    if (nowPlayingTrackId === undefined) {
         return <span>We are {status.state}</span>
     } else {
         return (
@@ -39,10 +47,12 @@ function PlayingTrack() {
                     className={css`
                         display: flex;
                     `}>
-                    <img />
+                    <img src={playingAlbum?.coverImageUrl} height={40} />
                     <div>
-                        <div>{nowPlaying.title}</div>
-                        <div>Artist here</div>
+                        <div>{playingTrack?.title}</div>
+                        <div>
+                            {playingArtist?.name} -- {playingAlbum?.title}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -203,7 +213,7 @@ export function NowPlaying() {
             <span>Now playing:</span>
             <ol>
                 {queue.map(item => (
-                    <li>{item.title}</li>
+                    <li key={item.trackId}>{item.trackId}</li>
                 ))}
             </ol>
         </div>
