@@ -31,7 +31,7 @@ const library = createState((props: { backendUrl: string }) => {
     })
     const update = immerise(setState)
 
-    return [state, { update, client }] as const
+    return [state, { update, client }]
 })
 
 export const useLibraryState = library.useState
