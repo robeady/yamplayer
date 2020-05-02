@@ -154,7 +154,6 @@ export function TrackSearch() {
     const [searchQuery, setSearchQuery] = useState(null as string | null)
     const { enqueueTrack } = Playback.useDispatch()
     const searchResults = useLibrarySearch(searchQuery)
-
     return (
         <div>
             <SearchBox onSubmit={setSearchQuery} />

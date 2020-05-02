@@ -7,6 +7,7 @@ import { Playback } from "./playback/playback"
 import { css } from "linaria"
 import { AudioPlayer } from "./playback/AudioPlayer"
 import { LibraryProvider } from "./library/library"
+import { Link, Switch, Route, HashRouter } from "react-router-dom"
 
 const App = () => (
     <Providers>
@@ -28,39 +29,49 @@ const App = () => (
 )
 
 function Main() {
-    const showNowPlaying = true
     return (
         <div
             className={css`
                 display: flex;
             `}>
-            <nav
-                className={css`
-                    width: 200px;
-                    border-right: 1px solid gainsboro;
-                `}>
-                No nav yet, links will go here
-                <br />
-                <Counter />
-            </nav>
+            <LeftNav />
             <main
                 className={css`
                     flex: 1;
                     overflow-y: auto;
                     padding: 16px;
                 `}>
-                <TrackSearch />
+                <Switch>
+                    <Route path="/now-playing">
+                        <NowPlaying />
+                    </Route>
+                    <Route path="/search">
+                        <TrackSearch />
+                    </Route>
+                    <Route path="/">Welcome!</Route>
+                </Switch>
             </main>
-            {showNowPlaying && (
-                <aside
-                    className={css`
-                        border-left: 1px solid gainsboro;
-                        width: 300px;
-                    `}>
-                    <NowPlaying />
-                </aside>
-            )}
         </div>
+    )
+}
+
+function LeftNav() {
+    return (
+        <nav
+            className={css`
+                width: 200px;
+                padding: 16px;
+                border-right: 1px solid gainsboro;
+            `}>
+            <div>
+                <Link to="/now-playing">Now Playing</Link>
+            </div>
+            <div>
+                <Link to="/search">Search</Link>
+            </div>
+            <br />
+            <Counter />
+        </nav>
     )
 }
 
@@ -68,9 +79,11 @@ function Providers(props: PropsWithChildren<{}>) {
     // a ref has consistent identity across hot reloads
     const playerRef = useRef(new AudioPlayer(0.1))
     return (
-        <Playback.Provider player={playerRef.current}>
-            <LibraryProvider backendUrl="http://127.0.0.1:8280">{props.children}</LibraryProvider>
-        </Playback.Provider>
+        <HashRouter>
+            <Playback.Provider player={playerRef.current}>
+                <LibraryProvider backendUrl="http://127.0.0.1:8280">{props.children}</LibraryProvider>
+            </Playback.Provider>
+        </HashRouter>
     )
 }
 
