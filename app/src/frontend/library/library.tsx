@@ -1,8 +1,9 @@
-import { Dict } from "../util/types"
+import { Dict } from "../../util/types"
 import { TrackSearchResult, DeezerApiClient } from "../../backend/deezer/gateway"
 import { remote } from "../../backend/rpc/client"
 import { useState, useMemo, useEffect } from "react"
 import { createState, immerise } from "../state"
+import { Library } from "../../backend/library"
 
 interface Track {
     title: string
@@ -20,18 +21,20 @@ interface Artist {
 }
 
 const library = createState((props: { backendUrl: string }) => {
-    const client = useMemo(() => remote<DeezerApiClient>(`${props.backendUrl}/deezer`), [props.backendUrl])
+    const deezerClient = useMemo(() => remote<DeezerApiClient>(`${props.backendUrl}/deezer`), [props.backendUrl])
+    const libraryClient = useMemo(() => remote<Library>(`${props.backendUrl}/library`), [props.backendUrl])
 
     const [state, setState] = useState({
         searchResultsByQuery: {} as Dict<TrackSearchResult[]>,
         tracks: {} as Dict<Track>,
+        externalTracks: {} as Dict<Track>,
         albums: {} as Dict<Album>,
         artists: {} as Dict<Artist>,
         libraryTrackIds: null as string[] | null,
     })
     const update = immerise(setState)
 
-    return [state, { update, client }]
+    return [state, { update, deezerClient, libraryClient }]
 })
 
 export const useLibraryState = library.useState
@@ -39,13 +42,13 @@ export const useLibraryDispatch = library.useDispatch
 export const LibraryProvider = library.Provider
 
 export const useLibrarySearch = (query: string | null): TrackSearchResult[] => {
-    const { client, update } = useLibraryDispatch()
+    const { deezerClient, update } = useLibraryDispatch()
     const searchResults = useLibraryState(s => query && s.searchResultsByQuery[query])
     useEffect(() => {
         async function fetchSearchResults() {
             if (searchResults === undefined && query !== null) {
                 console.log(`searching for ${query}`)
-                const results = await client.searchTracks(query)
+                const results = await deezerClient.searchTracks(query)
                 console.log(`${results.length} results`)
                 update(s => {
                     // TODO turn list of search results by query into a list of track/artist/album IDs
@@ -70,7 +73,7 @@ export const useLibrarySearch = (query: string | null): TrackSearchResult[] => {
             }
         }
         fetchSearchResults()
-    }, [client, query, searchResults, update])
+    }, [deezerClient, query, searchResults, update])
 
     return searchResults || []
 }

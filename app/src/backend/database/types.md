@@ -24,6 +24,8 @@ In other cases we can use a single data type compatibly across mysql and sqlite:
 
 ## text
 
+- varchar(15) for service ids
+- varchar(50) for external entity ids
 - varchar(255), for titles and names
 - varchar(2000), for URLs
 - char(N), for fixed strings

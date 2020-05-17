@@ -1,5 +1,5 @@
 type Promised<T> = T extends (...args: infer U) => infer V
-    ? (...args: U) => V extends Promise<infer P> ? V : Promise<V>
+    ? (...args: U) => V extends Promise<unknown> ? V : Promise<V>
     : never
 
 type AllPromised<T> = {

@@ -1,6 +1,6 @@
 import { Howl } from "howler"
-import { Dict } from "../util/types"
-import { idSequence } from "../util/ids"
+import { Dict } from "../../util/types"
+import { idSequence } from "../../util/ids"
 import { forEach } from "lodash"
 
 type AudioPlayerEvent = { type: "trackEnded" }
