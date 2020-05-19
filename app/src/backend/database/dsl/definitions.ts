@@ -1,5 +1,5 @@
 import { mapValues } from "lodash"
-import { TABLE_NAME, TABLE_ALIAS } from "./symbols"
+import { TABLE_NAME, TABLE_ALIAS, Entity, TYPE } from "./symbols"
 
 export const t = {
     number: dbType<number>(),
@@ -18,8 +18,9 @@ function dbType<T>(): ColumnType<T> {
 export type TableDefinition<
     TableName,
     TableAlias,
-    Columns extends Record<string, ColumnType<unknown>>
-> = TableColumnDefinitions<TableName, Columns> & TableMeta<TableName, TableAlias>
+    Columns extends Record<string, ColumnType<unknown>>,
+    References
+> = TableColumnDefinitions<TableName, Columns> & TableMeta<TableName, TableAlias> & Entity<"table">
 
 interface TableMeta<TableName, TableAlias> {
     [TABLE_NAME]: TableName
@@ -30,31 +31,40 @@ type TableColumnDefinitions<TableName, Columns> = {
     [ColumnName in keyof Columns]: ColumnDefinition<TableName, Columns[ColumnName]>
 }
 
-interface ColumnDefinition<TableName, Type> {
+interface ColumnProps<TableName, Type> {
     tableName: TableName
     tableAlias: string
     columnName: string
     columnType: ColumnType<Type>
 }
 
+export type ColumnDefinition<TableName, Type> = ColumnProps<TableName, Type> & Entity<"column">
+
+export type AliasedColumn<TableName, Type> = ColumnProps<TableName, Type> & Entity<"aliased column">
+
 export function table<TableName extends string, Columns extends Record<string, ColumnType<unknown>>>(
     name: TableName,
     columns: Columns,
-): TableDefinition<TableName, TableName, Columns> {
-    const columnDefinitions = mapValues(columns, (columnType, columnName) => ({
-        tableName: name,
-        tableAlias: name,
-        columnName,
-        columnType,
-    }))
-    return { [TABLE_NAME]: name, [TABLE_ALIAS]: name, ...columnDefinitions }
+): TableDefinition<TableName, TableName, Columns, {}> {
+    const columnDefinitions = mapValues(
+        columns,
+        (columnType, columnName) =>
+            ({
+                [TYPE]: "column",
+                tableName: name,
+                tableAlias: name,
+                columnName,
+                columnType,
+            } as const),
+    )
+    return { [TYPE]: "table", [TABLE_NAME]: name, [TABLE_ALIAS]: name, ...columnDefinitions }
 }
 
-type SignatureOf<Table> = Table extends TableDefinition<infer TableName, infer TableAlias, infer Columns>
+type SignatureOf<Table> = Table extends TableDefinition<infer TableName, infer TableAlias, infer Columns, unknown>
     ? ProjectedTypesOf<Columns> & TableMeta<TableName, TableAlias>
     : never
 
-type RowTypeOf<Table> = Table extends TableDefinition<unknown, unknown, infer Columns>
+type RowTypeOf<Table> = Table extends TableDefinition<unknown, unknown, infer Columns, unknown>
     ? ProjectedTypesOf<Columns>
     : never
 

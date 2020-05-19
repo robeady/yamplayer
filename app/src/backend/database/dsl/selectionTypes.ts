@@ -29,7 +29,8 @@ type TableIn<Tables> = Tables extends Record<infer TableAlias, { [TABLE_NAME]: s
     ? TableDefinition<
           Tables[TableAlias][typeof TABLE_NAME],
           TableAlias,
-          Record<ColumnNamesIn<Tables[TableAlias]>, ColumnType<unknown>>
+          Record<ColumnNamesIn<Tables[TableAlias]>, ColumnType<unknown>>,
+          unknown
       >
     : never
 

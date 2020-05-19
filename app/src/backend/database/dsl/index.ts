@@ -1,6 +1,17 @@
 import { Dict } from "../../../util/types"
-import { TABLE_NAME } from "./symbols"
-import { Match } from "./stages"
+import { TABLE_NAME, TABLE_ALIAS } from "./symbols"
+import {
+    TableFilteredStage,
+    OrderedStage,
+    TableStage,
+    JoinedStage,
+    OrderStage,
+    FetchStage,
+    OffsetStage,
+    SelectStage,
+} from "./stages"
+import { SelectionFrom, ColumnIn } from "./selectionTypes"
+import { TableDefinition, table, ColumnDefinition, AliasedColumn } from "./definitions"
 
 type KeysExtending<Row, T> = {
     [K in keyof Row]: Row[K] extends T ? K : never
@@ -20,8 +31,73 @@ interface QueryData<Row> {
     }[]
 }
 
-class SingleTableQuery<TableName extends string, Row, References = unknown>
-    implements FilteredTable<TableName, Row>, Ordered<Row>, Tablee<TableName, Row, References> {
+type Condition = { isCondition: true } // TODO
+
+type Selection =
+    | { type: "table"; alias: string; columnNames: string[] }
+    | { type: "tableColumn"; tableAlias: string; columnName: string }
+    | { type: "aliasedColumn"; tableAlias: string; columnName: string; alias: string }
+    | { type: "expression"; rawSql: string } // TODO do the sql properly
+
+class SelectedQuery<Tables, SelectedTables, SelectedAliases>
+    implements OrderStage<Tables, SelectedTables, SelectedAliases> {
+    constructor(
+        protected startingTable: TableDefinition<any, any, any, any>,
+        protected joinedTables: [TableDefinition<any, any, any, any>, Condition][],
+        private selections: Selection[],
+    ) {}
+}
+
+class JoinedQuery<Tables, References> extends SelectedQuery<Tables, Tables, {}>
+    implements JoinedStage<Tables, References> {
+    constructor(
+        startingTable: TableDefinition<any, any, any, any>,
+        joinedTables: [TableDefinition<any, any, any, any>, Condition][],
+    ) {
+        super(startingTable, joinedTables)
+    }
+
+    select<SelectionArray extends SelectionFrom<Tables>[]>(
+        ...selection: SelectionArray
+    ): ReturnType<SelectStage<Tables>["select"]> {
+        // each selection can be one of:
+        // 1. a table definition in Tables
+        // 2. a column definition from a table in Tables
+        // 3. an aliased column definition from a table in Tables
+        // 4. an aliased sql expression
+        const selections: Selection[] = selection.map(
+            (s: TableDefinition<any, any, any, any> | ColumnDefinition<any, any> | AliasedColumn<any, any>, i) => {
+                if (TABLE_ALIAS in s && TABLE_NAME in s) {
+                    const t = s as TableDefinition<any, any, any, any>
+                    return {
+                        type: "table",
+                        alias: t[TABLE_ALIAS],
+                        columnNames: Object.keys(t).filter(k => typeof k === "string"),
+                    }
+                } else if ("columnName" in s) {
+                    const c = s as ColumnDefinition<any, any> & { alias?: string }
+                    if (c.alias !== undefined) {
+                        return {
+                            type: "aliasedColumn",
+                            tableAlias: c.tableAlias,
+                            columnName: c.columnName,
+                            alias: c.alias,
+                        }
+                    } else {
+                        return { type: "tableColumn", tableAlias: c.tableAlias, columnName: c.columnName }
+                    }
+                } else {
+                    // TODO: arbitary expressions
+                    throw Error(`DSL misues: could not interpret selection at index ${i} => ${JSON.stringify(s)}`)
+                }
+            },
+        )
+        return new SelectedQuery(this.startingTable, this.joinedTables, selections) as OrderStage<any, any, any>
+    }
+}
+
+class SingleTableQuery<TableName extends string, Table, References = unknown>
+    implements TableStage<TableName, Row, References>, TableFilteredStage<TableName, Row>, OrderedStage<Table> {
     constructor(
         private databaseHandle: DatabaseHandle,
         private table: TableDefinition<TableName, Dict<ColumnType<unknown>>>,
@@ -127,62 +203,7 @@ class SingleTableQuery<TableName extends string, Row, References = unknown>
     }
 }
 
-type SqlValueExpr<Row> = { type: "column"; col: Column<Row, unknown> } | { type: "literal"; value: unknown }
-
-type BinaryOp = "==" | ">"
-
-type FilterClause<Row> = { introducedBy: "" | "and" | "or"; expression: FilterClause<Row>[] | FilterExpr<Row> }
-
-type FilterExpr<Row> = { left: SqlValueExpr<Row>; op: BinaryOp; right: SqlValueExpr<Row> }
-
 function literal(value: unknown) {
     // TODO: handle strings
     return value
-}
-
-function filterSingleTable<Row>(
-    matchOrExpression: Column<Row, unknown> | Match<Row>,
-    operator?: BinaryOp,
-    // TODO refine this type, watch out for undefined
-    expression?: unknown,
-): FilterClause<Row>[] | FilterExpr<Row> {
-    if (operator === undefined && expression === undefined) {
-        return filterSingleTableMatch<Row>(matchOrExpression as Match<Row>)
-    } else {
-        return filterABC(matchOrExpression as Column<Row, unknown>, operator!, expression)
-    }
-}
-
-function filterSingleTableMatch<Row>(match: Predicate<Row>): FilterClause<Row>[] {
-    // TODO: check for no unexpected properties so this type assertion is actually valid
-    const entries = Object.entries(match) as [keyof Row, unknown][]
-    if (entries.length === 0) {
-        return []
-    }
-    const [firstColName, firstValue] = entries.shift()!
-    const result: FilterClause<Row>[] = [
-        {
-            introducedBy: "",
-            expression: {
-                left: { type: "column", col: firstColName as KeysExtending<Row, unknown> },
-                op: "==",
-                right: { type: "literal", value: firstValue },
-            },
-        },
-    ]
-    for (const [column, value] of entries) {
-        result.push({
-            introducedBy: "and",
-            expression: {
-                left: { type: "column", col: column as KeysExtending<Row, unknown> },
-                op: "==",
-                right: { type: "literal", value },
-            },
-        })
-    }
-    return result
-}
-
-function filterABC<Row>(left: Column<Row, unknown>, op: BinaryOp, right: unknown): FilterExpr<Row> {
-    return { left: { type: "column", col: left }, op, right: { type: "literal", value: right } }
 }
