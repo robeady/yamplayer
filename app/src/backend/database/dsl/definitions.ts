@@ -1,5 +1,5 @@
 import { mapValues } from "lodash"
-import { TABLE_NAME, TABLE_ALIAS, Entity, TYPE } from "./symbols"
+import { TABLE_NAME, TABLE_ALIAS, Entity, TYPE, EntityTypes } from "./symbols"
 
 export const t = {
     number: dbType<number>(),
@@ -16,31 +16,45 @@ function dbType<T>(): ColumnType<T> {
 }
 
 export type TableDefinition<
-    TableName,
-    TableAlias,
-    Columns extends Record<string, ColumnType<unknown>>,
-    References
-> = TableColumnDefinitions<TableName, Columns> & TableMeta<TableName, TableAlias> & Entity<"table">
+    TableName = string,
+    TableAlias extends string = string,
+    Columns = object, // extends Record<string, ColumnType<unknown>> = Record<string, ColumnType<unknown>>,
+    References = object
+> = TableColumnDefinitions<TableName, TableAlias, Columns> &
+    TableMeta<TableName, TableAlias> &
+    Entity<EntityTypes.TABLE>
 
-interface TableMeta<TableName, TableAlias> {
+export interface TableMeta<TableName, TableAlias extends string> {
     [TABLE_NAME]: TableName
     [TABLE_ALIAS]: TableAlias
 }
 
-type TableColumnDefinitions<TableName, Columns> = {
-    [ColumnName in keyof Columns]: ColumnDefinition<TableName, Columns[ColumnName]>
+type TableColumnDefinitions<TableName, TableAlias, Columns> = {
+    [ColumnName in keyof Columns]: ColumnDefinition<TableName, Columns[ColumnName], TableAlias, ColumnName>
 }
 
-interface ColumnProps<TableName, Type> {
+interface ColumnProps<TableName, Type, TableAlias, ColumnName> {
     tableName: TableName
-    tableAlias: string
-    columnName: string
+    tableAlias: TableAlias
+    columnName: ColumnName
     columnType: ColumnType<Type>
 }
 
-export type ColumnDefinition<TableName, Type> = ColumnProps<TableName, Type> & Entity<"column">
+export type ColumnDefinition<TableName, Type, TableAlias = string, ColumnName = string> = ColumnProps<
+    TableName,
+    Type,
+    TableAlias,
+    ColumnName
+> &
+    Entity<EntityTypes.COLUMN>
 
-export type AliasedColumn<TableName, Type> = ColumnProps<TableName, Type> & Entity<"aliased column">
+export type AliasedColumn<
+    ColumnAlias = string,
+    TableName = string,
+    Type = unknown,
+    TableAlias = string,
+    ColumnName = string
+> = ColumnProps<TableName, Type, TableAlias, ColumnName> & { alias: ColumnAlias } & Entity<EntityTypes.ALIASED_COLUMN>
 
 export function table<TableName extends string, Columns extends Record<string, ColumnType<unknown>>>(
     name: TableName,
@@ -50,21 +64,21 @@ export function table<TableName extends string, Columns extends Record<string, C
         columns,
         (columnType, columnName) =>
             ({
-                [TYPE]: "column",
+                [TYPE]: EntityTypes.COLUMN,
                 tableName: name,
                 tableAlias: name,
                 columnName,
                 columnType,
             } as const),
     )
-    return { [TYPE]: "table", [TABLE_NAME]: name, [TABLE_ALIAS]: name, ...columnDefinitions }
+    return { [TYPE]: EntityTypes.TABLE, [TABLE_NAME]: name, [TABLE_ALIAS]: name, ...columnDefinitions }
 }
 
 type SignatureOf<Table> = Table extends TableDefinition<infer TableName, infer TableAlias, infer Columns, unknown>
     ? ProjectedTypesOf<Columns> & TableMeta<TableName, TableAlias>
     : never
 
-type RowTypeOf<Table> = Table extends TableDefinition<unknown, unknown, infer Columns, unknown>
+type RowTypeOf<Table> = Table extends TableDefinition<unknown, string, infer Columns, unknown>
     ? ProjectedTypesOf<Columns>
     : never
 

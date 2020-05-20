@@ -1,5 +1,5 @@
 import { Dict } from "../../../util/types"
-import { TABLE_NAME, TABLE_ALIAS } from "./symbols"
+import { TABLE_NAME, TABLE_ALIAS, TYPE, EntityTypes } from "./symbols"
 import {
     TableFilteredStage,
     OrderedStage,
@@ -34,10 +34,21 @@ interface QueryData<Row> {
 type Condition = { isCondition: true } // TODO
 
 type Selection =
-    | { type: "table"; alias: string; columnNames: string[] }
-    | { type: "tableColumn"; tableAlias: string; columnName: string }
-    | { type: "aliasedColumn"; tableAlias: string; columnName: string; alias: string }
-    | { type: "expression"; rawSql: string } // TODO do the sql properly
+    | { [TYPE]: TableDefinition[typeof TYPE]; alias: string; columnNames: string[] }
+    | ColumnDefinition<string, unknown>
+    | AliasedColumn
+    | { [TYPE]: "expression"; rawSql: string } // TODO do the sql properly
+
+/**
+ * Entertaining hack around the fact that typescript discrimated unions don't work on non-literal-string index lookups
+ * https://github.com/microsoft/TypeScript/issues/10530
+ */
+function selectionHasType<TypeKey extends EntityTypes.TABLE | EntityTypes.COLUMN | EntityTypes.ALIASED_COLUMN>(
+    value: { [TYPE]: EntityTypes.TABLE | EntityTypes.COLUMN | EntityTypes.ALIASED_COLUMN },
+    typeKey: TypeKey,
+): value is { [TYPE]: TypeKey } {
+    return value[TYPE] === typeKey
+}
 
 class SelectedQuery<Tables, SelectedTables, SelectedAliases>
     implements OrderStage<Tables, SelectedTables, SelectedAliases> {
@@ -65,33 +76,21 @@ class JoinedQuery<Tables, References> extends SelectedQuery<Tables, Tables, {}>
         // 2. a column definition from a table in Tables
         // 3. an aliased column definition from a table in Tables
         // 4. an aliased sql expression
-        const selections: Selection[] = selection.map(
-            (s: TableDefinition<any, any, any, any> | ColumnDefinition<any, any> | AliasedColumn<any, any>, i) => {
-                if (TABLE_ALIAS in s && TABLE_NAME in s) {
-                    const t = s as TableDefinition<any, any, any, any>
-                    return {
-                        type: "table",
-                        alias: t[TABLE_ALIAS],
-                        columnNames: Object.keys(t).filter(k => typeof k === "string"),
-                    }
-                } else if ("columnName" in s) {
-                    const c = s as ColumnDefinition<any, any> & { alias?: string }
-                    if (c.alias !== undefined) {
-                        return {
-                            type: "aliasedColumn",
-                            tableAlias: c.tableAlias,
-                            columnName: c.columnName,
-                            alias: c.alias,
-                        }
-                    } else {
-                        return { type: "tableColumn", tableAlias: c.tableAlias, columnName: c.columnName }
-                    }
-                } else {
-                    // TODO: arbitary expressions
-                    throw Error(`DSL misues: could not interpret selection at index ${i} => ${JSON.stringify(s)}`)
+        const selections: Selection[] = selection.map((s, i) => {
+            if (selectionHasType(s, EntityTypes.TABLE)) {
+                return {
+                    [TYPE]: EntityTypes.TABLE,
+                    alias: s[TABLE_ALIAS],
+                    columnNames: Object.keys(s).filter(k => typeof k === "string"),
                 }
-            },
-        )
+            } else if (selectionHasType(s, EntityTypes.COLUMN)) {
+                return s
+            } else if (selectionHasType(s, EntityTypes.ALIASED_COLUMN)) {
+                return s
+            } else {
+                throw Error(`DSL misues: could not interpret selection at index ${i} => ${JSON.stringify(s)}`)
+            }
+        })
         return new SelectedQuery(this.startingTable, this.joinedTables, selections) as OrderStage<any, any, any>
     }
 }

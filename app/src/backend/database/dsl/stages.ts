@@ -14,14 +14,15 @@ interface ExecResult {
     numRows: number
 }
 
-type PickStringProperties<T> = Pick<T, keyof T & string>
+export type PickStringProperties<T> = Pick<T, keyof T & string>
 
-type RowTypeFrom<SelectedTables, SelectedAliases> = SelectedAliases & SelectedTables extends { [MULTIPLE_TABLES]: true }
-    ? {
-          // if multiple tables, filter out all the non-string keys of the top level object and of each table
-          [TableAlias in keyof SelectedTables & string]: PickStringProperties<SelectedTables[TableAlias]>
-      } // otherwise project out the single table and filter out all its non-string keys
-    : PickStringProperties<SelectedTables[keyof SelectedTables]>
+type RowTypeFrom<SelectedTables, SelectedAliases> = SelectedAliases &
+    (SelectedTables extends { [MULTIPLE_TABLES]: true }
+        ? {
+              // if multiple tables, filter out all the non-string keys of the top level object and of each table
+              [TableAlias in keyof SelectedTables & string]: PickStringProperties<SelectedTables[TableAlias]>
+          } // otherwise project out the single table and filter out all its non-string keys
+        : PickStringProperties<SelectedTables[keyof SelectedTables]>)
 
 export interface FetchStage<SelectedTables, SelectedAliases> {
     fetch(): RowTypeFrom<SelectedTables, SelectedAliases>[]
@@ -68,8 +69,15 @@ export interface TableStage<TableAlias extends string, Table, References> extend
         OtherTable extends References[OtherTableName],
         OtherReferences
     >(
-        otherTable: TableDefinition<OtherTableName, OtherTableAlias, OtherTable, OtherReferences>,
+        otherTable: TableDefinition<OtherTableName, OtherTableAlias, {}, OtherReferences>,
     ): JoinedStage<
+        Record<TableAlias, Table> & Record<OtherTableAlias, OtherTable> & { [MULTIPLE_TABLES]: true },
+        References & OtherReferences
+    >
+
+    innerJoin<OtherTableName extends string, OtherTableAlias extends string, OtherTable, OtherReferences>(
+        otherTable: TableDefinition<OtherTableName, OtherTableAlias, OtherTable, OtherReferences>,
+    ): JoinedBeforeOnStage<
         Record<TableAlias, Table> & Record<OtherTableAlias, OtherTable> & { [MULTIPLE_TABLES]: true },
         References & OtherReferences
     >

@@ -4,6 +4,12 @@ export const COLUMNS = Symbol()
 export const MULTIPLE_TABLES = Symbol()
 export const TYPE = Symbol()
 
-export interface Entity<Type> {
+export enum EntityTypes {
+    TABLE,
+    COLUMN,
+    ALIASED_COLUMN,
+}
+
+export interface Entity<Type extends EntityTypes> {
     [TYPE]: Type
 }

@@ -1,5 +1,6 @@
-import { TABLE_ALIAS, TABLE_NAME } from "./symbols"
-import { TableDefinition, ColumnType } from "./definitions"
+import { TABLE_NAME } from "./symbols"
+import { TableDefinition, ColumnType, ColumnDefinition, AliasedColumn } from "./definitions"
+import { PickStringProperties } from "./stages"
 
 // in this file, Tables refers to a table signatures object
 // - keyed by table alias
@@ -7,65 +8,74 @@ import { TableDefinition, ColumnType } from "./definitions"
 
 /** Describes the type of an item in a select() */
 export type SelectionFrom<Tables> =
-    | ColumnIn<Tables> // could be a column in a table from Tables, maybe aliased maybe not
-    | TableIn<Tables> // or could be the definition of a table that appears in Tables
+    | TableIn<PickStringProperties<Tables>> // or could be the definition of a table that appears in Tables
+    | ColumnIn<PickStringProperties<Tables>> // could be a column in a table from Tables
+    | AliasedColumnIn<PickStringProperties<Tables>>
+
 // TODO: or could also be a fresh scalar
 
 /** Describes the type of a reference to a column, which might occur in a select, orderBy or where */
-export type ColumnIn<Tables, Type = unknown> = Tables extends Record<infer TableAlias, { [TABLE_NAME]: string }>
+export type ColumnIn<Tables, Type = unknown> = Tables extends Record<infer TableAlias, TableDefinition>
     ? TableAlias extends keyof Tables & string
-        ? ColumnInTable<
-              Tables,
-              TableAlias,
+        ? ColumnDefinition<Tables[TableAlias][typeof TABLE_NAME], Type, TableAlias, ColumnNamesIn<Tables[TableAlias]>>
+        : never
+    : never
+
+export type AliasedColumnIn<Tables> = Tables extends Record<infer TableAlias, TableDefinition>
+    ? TableAlias extends keyof Tables & string
+        ? AliasedColumn<
+              string,
               Tables[TableAlias][typeof TABLE_NAME],
-              ColumnNamesIn<Tables[TableAlias]>,
-              Type
+              unknown,
+              TableAlias,
+              ColumnNamesIn<Tables[TableAlias]>
           >
         : never
     : never
 
 /** Describes the type of a reference to a table in a select() */
-type TableIn<Tables> = Tables extends Record<infer TableAlias, { [TABLE_NAME]: string }>
-    ? TableDefinition<
-          Tables[TableAlias][typeof TABLE_NAME],
-          TableAlias,
-          Record<ColumnNamesIn<Tables[TableAlias]>, ColumnType<unknown>>,
-          unknown
-      >
+type TableIn<Tables> = Tables extends Record<infer TableAlias, TableDefinition>
+    ? TableAlias extends string // TODO: can this be pushed into the Record constraint?
+        ? TableDefinition<
+              Tables[TableAlias][typeof TABLE_NAME],
+              TableAlias,
+              Record<ColumnNamesIn<Tables[TableAlias]>, ColumnType<unknown>>,
+              unknown
+          >
+        : never
     : never
-
 type ColumnNamesIn<Table> = keyof Table & string
 
-interface ColumnInTable<
-    Tables,
-    TableAlias extends keyof Tables & string,
-    TableName,
-    ColumnName extends keyof Tables[TableAlias] & string,
-    ProjectedType = unknown
-> {
-    tableAlias: TableAlias
-    tableName: TableName
-    columnName: ColumnName
-    columnType: ColumnType<ProjectedType>
-}
+// interface ColumnInTable<
+//     Tables,
+//     TableAlias extends keyof Tables & string,
+//     TableName,
+//     ColumnName extends keyof Tables[TableAlias] & string,
+//     ProjectedType = unknown
+// > {
+//     tableAlias: TableAlias
+//     tableName: TableName
+//     columnName: ColumnName
+//     columnType: ColumnType<ProjectedType>
+// }
 
 export type ColumnAliasesIn<Tables, SelectionArray extends SelectionFrom<Tables>[]> = {
-    [Index in keyof SelectionArray]: SelectionArray[Index] extends {
-        alias: infer Alias
-    }
-        ? Alias extends string
+    [Index in keyof SelectionArray]: SelectionArray[Index] extends AliasedColumn<infer Alias>
+        ? Alias extends string // TODO can we push this constraint into AliasedColumn
             ? Alias
             : never
         : never
 }[number]
 
 export type ColumnAliasTypeIn<Tables, SelectionArray extends SelectionFrom<Tables>[], Alias> = {
-    [Index in keyof SelectionArray]: SelectionArray[Index] extends {
-        tableAlias: infer TableAlias
-        columnName: infer ColumnName
-        alias: Alias
-    }
-        ? TableAlias extends keyof Tables
+    [Index in keyof SelectionArray]: SelectionArray[Index] extends AliasedColumn<
+        Alias,
+        string,
+        unknown,
+        infer TableAlias,
+        infer ColumnName
+    >
+        ? TableAlias extends keyof Tables & string
             ? ColumnName extends keyof Tables[TableAlias]
                 ? Tables[TableAlias][ColumnName]
                 : never
@@ -75,9 +85,9 @@ export type ColumnAliasTypeIn<Tables, SelectionArray extends SelectionFrom<Table
 
 export type TableAliasesSelectedIn<Tables, SelectionArray extends SelectionFrom<Tables>[]> = {
     [Index in keyof SelectionArray]: SelectionArray[Index] extends
-        | { [TABLE_ALIAS]: infer TableAlias }
-        | { tableAlias: infer TableAlias; alias: never }
-        ? TableAlias extends keyof Tables
+        | TableDefinition<string, infer TableAlias>
+        | ColumnDefinition<string, unknown, infer TableAlias>
+        ? TableAlias extends keyof Tables & string
             ? TableAlias
             : never
         : never
@@ -86,11 +96,11 @@ export type TableAliasesSelectedIn<Tables, SelectionArray extends SelectionFrom<
 export type ColumnsInTableSelectedIn<
     Tables,
     SelectionArray extends SelectionFrom<Tables>[],
-    TableAlias extends keyof Tables
+    TableAlias extends keyof Tables & string
 > = {
-    [Index in keyof SelectionArray]: SelectionArray[Index] extends { [TABLE_ALIAS]: TableAlias }
+    [Index in keyof SelectionArray]: SelectionArray[Index] extends TableDefinition<string, TableAlias>
         ? keyof Tables[TableAlias]
-        : SelectionArray[Index] extends { tableAlias: TableAlias; columnName: infer ColumnName; alias: never }
+        : SelectionArray[Index] extends ColumnDefinition<string, unknown, TableAlias, infer ColumnName>
         ? ColumnName extends keyof Tables[TableAlias]
             ? ColumnName
             : never

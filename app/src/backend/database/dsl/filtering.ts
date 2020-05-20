@@ -1,12 +1,13 @@
 import { ColumnIn } from "./selectionTypes"
 import { MULTIPLE_TABLES } from "./symbols"
 
-export type Match<Tables> = Tables extends { [MULTIPLE_TABLES]: true }
-    ? {
-          // multiple tables: object must have a key for each table to match on
-          [TableAlias in keyof Tables & string]?: Partial<Tables[TableAlias]>
-      } // single table: object must not be nested inside the table name
-    : Partial<Tables[keyof Tables & string]>
+export type Match<Tables> = {}
+// export type Match<Tables> = Tables extends { [MULTIPLE_TABLES]: true }
+//     ? {
+//           // multiple tables: object must have a key for each table to match on
+//           [TableAlias in keyof Tables & string]?: Partial<Tables[TableAlias]>
+//       } // single table: object must not be nested inside the table name
+//     : Partial<Tables[keyof Tables & string]>
 
 type SqlValueExpr<Row> = { type: "column"; col: Column<Row, unknown> } | { type: "literal"; value: unknown }
 
