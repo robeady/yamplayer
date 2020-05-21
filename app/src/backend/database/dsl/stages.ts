@@ -16,7 +16,7 @@ interface ExecResult {
 
 export type PickStringProperties<T> = Pick<T, keyof T & string>
 
-type RowTypeFrom<SelectedTables, SelectedAliases> = SelectedAliases &
+type RowTypeFrom<SelectedTables, SelectedAliases, Rank> = SelectedAliases &
     (SelectedTables extends { [MULTIPLE_TABLES]: true }
         ? {
               // if multiple tables, filter out all the non-string keys of the top level object and of each table

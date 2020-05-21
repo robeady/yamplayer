@@ -1,5 +1,5 @@
 import { TABLE_NAME } from "./symbols"
-import { TableDefinition, ColumnType, ColumnDefinition, AliasedColumn } from "./definitions"
+import { TableDefinition, ColumnType, ColumnDefinition, AliasedColumn, table } from "./definitions"
 import { PickStringProperties } from "./stages"
 
 // in this file, Tables refers to a table signatures object
@@ -15,6 +15,15 @@ export type SelectionFrom<Tables> =
 // TODO: or could also be a fresh scalar
 
 /** Describes the type of a reference to a column, which might occur in a select, orderBy or where */
+
+export type ColIn2<Tables> = PropOf<SomethingMappy<Tables>>
+
+type PropOf<T> = T[keyof T & string]
+
+type SomethingMappy<Tables> = {
+    [TableAlias in keyof Tables & string]: PropOf<Tables[TableAlias]>
+}
+
 export type ColumnIn<Tables, Type = unknown> = Tables extends Record<infer TableAlias, TableDefinition>
     ? TableAlias extends keyof Tables & string
         ? ColumnDefinition<Tables[TableAlias][typeof TABLE_NAME], Type, TableAlias, ColumnNamesIn<Tables[TableAlias]>>
