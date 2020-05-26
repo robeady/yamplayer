@@ -1,7 +1,5 @@
-import { table, t } from "./definitions"
-import { TABLE_NAME, TABLE_ALIAS, MULTIPLE_TABLES, TYPE, EntityTypes } from "./symbols"
-import { SelectStage, TableStage, JoinedStage, JoinedAfterOnStage } from "./stages"
-import { ColumnIn, ColIn2 } from "./selectionTypes"
+import { table, t, TableDefinition, ColumnDefinition, SqlType } from "./definitions"
+import { TableStage } from "./stages"
 
 const cars = table("cars", {
     make: t.string,
@@ -15,47 +13,44 @@ const makers = table("makers", {
     yearsOld: t.number,
 })
 
-function foo(x: ColumnIn<{ cars: typeof cars; makers: typeof makers }>) {
-    //
+function foo<Name extends string, Columns extends Record<string, ColumnDefinition<Name, SqlType, Name, string>>>(
+    table: TableDefinition<Name, Name, Columns>,
+) {
+    return (undefined as any) as TableStage<Name, TableDefinition<Name, Name, Columns>, {}>
 }
 
-function bar(x: ColIn2<{ cars: typeof cars; makers: typeof makers }>) {
-    //
+function foo2<
+    Name extends string,
+    T extends TableDefinition<Name, Name, Record<string, ColumnDefinition<Name, SqlType, Name, string>>>
+>(table: T) {
+    return (undefined as any) as TableStage<Name, T, {}>
 }
 
-const something = foo({
-    [TYPE]: EntityTypes.COLUMN,
-    tableName: "cars",
-    tableAlias: "cars",
-    columnName: "make",
-    columnType: t.string,
-})
-const something2 = bar()
+const unjoined = foo2(makers)
+const joined = unjoined
+    .innerJoin(cars)
+    .on(cars.model, "==", "a")
+    //.and(cars.yearsOld, "==", "b")
+    .where(cars.numberManufactured, "==", 42)
+    .fetch()[0]
 
-const y = makers.yearsOld
+const rows = foo(makers)
+    .where(makers.name, "==", "abc")
+    .or(makers.yearsOld, "==", 3)
+    .orderBy(makers.name)
+    .thenBy(makers.yearsOld)
+    .limit(2)
+    .offset(2)
+    .fetch()
+const first: string = rows[0].name
 
-const x: SelectStage<{ makers: typeof makers; cars: typeof cars }> = ((5 as any) as TableStage<"cars", typeof cars, {}>)
-    .innerJoin(makers)
-    .on({})
-
-const readyToSelect = (5 as any) as SelectStage<{ makers: typeof makers; cars: typeof cars; [MULTIPLE_TABLES]: true }>
-
-const selected = readyToSelect.select(cars, makers).fetch()[0].cars
-
-// .select(
-//     {
-//         tableAlias: "table1",
-//         tableName: "table1",
-//         columnName: "foo",
-//         alias: "fooo",
-//     } as const,
-//     {
-//         tableAlias: "table2",
-//         tableName: "table2",
-//         columnName: "baz",
-//         alias: "abc",
-//     } as const,
-//     { [TABLE_NAME]: "table1", [TABLE_ALIAS]: "table1", foo: "", bar: "" } as const,
-// )
-// .fetch()[0]
-const yyy = x.table1.bar
+const rowsWithSelect = foo(makers)
+    .where(makers.name, "==", "abc")
+    .or(makers.yearsOld, "==", 3)
+    .select(makers)
+    .orderBy(makers.name)
+    .thenBy(makers.yearsOld)
+    .limit(2)
+    .offset(2)
+    .fetch()
+const firstWithSelect: string = rowsWithSelect[0].name

@@ -1,14 +1,5 @@
-import {
-    ColumnIn,
-    SelectionFrom,
-    TableAliasesSelectedIn,
-    ColumnsInTableSelectedIn,
-    ColumnAliasesIn,
-    ColumnAliasTypeIn,
-} from "./selectionTypes"
-import { Match } from "./filtering"
-import { TableDefinition } from "./definitions"
-import { MULTIPLE_TABLES } from "./symbols"
+// import { Match } from "./filtering"
+import { TableDefinition, ColumnDefinition, SqlType } from "./definitions"
 
 interface ExecResult {
     numRows: number
@@ -16,126 +7,228 @@ interface ExecResult {
 
 export type PickStringProperties<T> = Pick<T, keyof T & string>
 
-type RowTypeFrom<SelectedTables, SelectedAliases, Rank> = SelectedAliases &
-    (SelectedTables extends { [MULTIPLE_TABLES]: true }
-        ? {
-              // if multiple tables, filter out all the non-string keys of the top level object and of each table
-              [TableAlias in keyof SelectedTables & string]: PickStringProperties<SelectedTables[TableAlias]>
-          } // otherwise project out the single table and filter out all its non-string keys
-        : PickStringProperties<SelectedTables[keyof SelectedTables]>)
+type Field<T = unknown> = { sqlType: SqlType<T> }
 
-export interface FetchStage<SelectedTables, SelectedAliases> {
-    fetch(): RowTypeFrom<SelectedTables, SelectedAliases>[]
+type RowTypeFrom<
+    SelectedTables extends Record<string, TableDefinition>,
+    SelectedAliases extends Record<string, Field<unknown>>
+> = {
+    [TableAlias in keyof SelectedTables]: {
+        [ColumnName in keyof SelectedTables[TableAlias]]: ProjectedTypeOf<SelectedTables[TableAlias][ColumnName]>
+    }
+} &
+    { [A in keyof SelectedAliases]: ProjectedTypeOf<SelectedAliases[A]> }
+
+type ProjectedTypeOf<F extends Field> = F extends Field<infer T> ? T : never
+
+export interface FetchStage<SelectedColumns extends Record<string, SqlType>, OutputRow> {
+    fetch(): OutputRow[]
+
+    asTable<Alias extends string>(alias: Alias): TableDefinition<undefined, Alias, ColumnsFrom<Alias, SelectedColumns>>
 }
 
-export interface LimitStage<SelectedTables, SelectedAliases> extends OffsetStage<SelectedTables, SelectedAliases> {
-    limit(count: number): OffsetStage<SelectedTables, SelectedAliases>
+type ColumnsFrom<TableAlias, SelectedColumns extends Record<string, SqlType>> = {
+    [ColumnAlias in keyof SelectedColumns & string]: ColumnDefinition<
+        undefined,
+        SelectedColumns[ColumnAlias],
+        TableAlias,
+        ColumnAlias
+    >
 }
 
-export interface OffsetStage<SelectedTables, SelectedAliases> extends FetchStage<SelectedTables, SelectedAliases> {
-    offset(offset: number): FetchStage<SelectedTables, SelectedAliases>
+export interface LimitStage<SelectedColumns extends Record<string, SqlType>, OutputRow>
+    extends OffsetStage<SelectedColumns, OutputRow> {
+    limit(count: number): OffsetStage<SelectedColumns, OutputRow>
 }
 
-export interface OrderStage<Tables, SelectedTables, SelectedAliases>
-    extends LimitStage<SelectedTables, SelectedAliases> {
+export interface OffsetStage<SelectedColumns extends Record<string, SqlType>, OutputRow>
+    extends FetchStage<SelectedColumns, OutputRow> {
+    offset(offset: number): FetchStage<SelectedColumns, OutputRow>
+}
+
+export interface OrderStage<
+    QueriedTables extends TableDefinitions,
+    SelectedColumns extends Record<string, SqlType>,
+    OutputRow
+> extends LimitStage<SelectedColumns, OutputRow> {
     orderBy(
-        column: ColumnIn<Tables> | keyof SelectedAliases,
+        column: ColumnIn2<QueriedTables> | keyof SelectedColumns,
         direction?: "asc" | "desc",
-    ): OrderedStage<Tables, SelectedTables, SelectedAliases>
+    ): OrderedStage<QueriedTables, SelectedColumns, OutputRow>
 }
 
-export interface OrderedStage<Tables, SelectedTables, SelectedAliases>
-    extends LimitStage<SelectedTables, SelectedAliases> {
+export interface OrderedStage<
+    QueriedTables extends TableDefinitions,
+    SelectedColumns extends Record<string, SqlType>,
+    OutputRow
+> extends LimitStage<SelectedColumns, OutputRow> {
     thenBy(
-        column: ColumnIn<Tables> | keyof SelectedAliases,
+        column: ColumnIn2<QueriedTables> | keyof SelectedColumns,
         direction?: "asc" | "desc",
-    ): OrderedStage<Tables, SelectedTables, SelectedAliases>
+    ): OrderedStage<QueriedTables, SelectedColumns, OutputRow>
 }
 
-export interface FilterFunction<Tables, ReturnType> {
-    (matches: Match<Tables>): ReturnType
-    // <T>(column: ColumnIn<Tables, T>, operator: BinaryOp, value: T): ReturnType
+export interface TableFilterFunction<QueriedTable extends TableDefinition, ReturnType> {
+    (matching: Partial<QueriedTable>): ReturnType
+    <T>(column: PropOf<QueriedTable>, operator: "==", value: T): ReturnType
 }
 
-export interface TableFilterStage<TableAlias extends string, Table> extends SelectStage<Record<TableAlias, Table>> {
-    where: FilterFunction<Table, TableFilteredStage<TableAlias, Table>>
-}
-
-export interface TableStage<TableAlias extends string, Table, References> extends TableFilterStage<TableAlias, Table> {
-    insert(row: Table): Promise<ExecResult>
-    join<
-        OtherTableName extends keyof References,
-        OtherTableAlias extends string,
-        OtherTable extends References[OtherTableName],
-        OtherReferences
-    >(
-        otherTable: TableDefinition<OtherTableName, OtherTableAlias, {}, OtherReferences>,
-    ): JoinedStage<
-        Record<TableAlias, Table> & Record<OtherTableAlias, OtherTable> & { [MULTIPLE_TABLES]: true },
-        References & OtherReferences
-    >
-
-    innerJoin<OtherTableName extends string, OtherTableAlias extends string, OtherTable, OtherReferences>(
-        otherTable: TableDefinition<OtherTableName, OtherTableAlias, OtherTable, OtherReferences>,
-    ): JoinedBeforeOnStage<
-        Record<TableAlias, Table> & Record<OtherTableAlias, OtherTable> & { [MULTIPLE_TABLES]: true },
-        References & OtherReferences
-    >
-}
-
-export interface TableFilteredStage<TableAlias extends string, Table> extends TableFilterStage<TableAlias, Table> {
-    update(row: Partial<Table>): Promise<ExecResult>
-    delete(): Promise<ExecResult>
-    or: FilterFunction<Table, TableFilteredStage<TableAlias, Table>>
-}
-
-export interface JoinedStage<Tables, References> extends SelectStage<Tables> {
-    join<
-        OtherTableName extends keyof References,
-        OtherTableAlias extends string,
-        OtherTable extends References[OtherTableName],
-        OtherReferences
-    >(
-        otherTable: TableDefinition<OtherTableName, OtherTableAlias, OtherTable, OtherReferences>,
-    ): JoinedStage<Tables & Record<OtherTableAlias, OtherTable>, References & OtherReferences>
-
-    innerJoin<OtherTableName extends string, OtherTableAlias extends string, OtherTable, OtherReferences>(
-        otherTable: TableDefinition<OtherTableName, OtherTableAlias, OtherTable, OtherReferences>,
-    ): JoinedBeforeOnStage<Tables & Record<OtherTableAlias, OtherTable>, References & OtherReferences>
-
-    where: FilterFunction<Tables, FilteredStage<Tables>>
-}
-
-export interface JoinedAfterOnStage<Tables, References> extends JoinedStage<Tables, References> {
-    and: FilterFunction<Tables, JoinedAfterOnStage<Tables, References>>
-    or: FilterFunction<Tables, JoinedAfterOnStage<Tables, References>>
-}
-
-export interface JoinedBeforeOnStage<Tables, References> {
-    on: FilterFunction<Tables, JoinedAfterOnStage<Tables, References>>
-}
-
-export interface SelectStage<Tables> extends OrderStage<Tables, Tables, {}> {
-    select<SelectionArray extends SelectionFrom<Tables>[]>(
-        ...selection: SelectionArray
-    ): OrderStage<
-        Tables,
-        {
-            [TableAlias in TableAliasesSelectedIn<Tables, SelectionArray>]: {
-                [Column in ColumnsInTableSelectedIn<Tables, SelectionArray, TableAlias>]: Tables[TableAlias][Column]
-            }
+export interface JoinFilterFunction<QueriedTables extends TableDefinitions, ReturnType> {
+    (
+        matching: {
+            [TableAlias in keyof QueriedTables]?: Partial<QueriedTables[TableAlias]>
         },
-        {
-            [ColumnAlias in ColumnAliasesIn<Tables, SelectionArray>]: ColumnAliasTypeIn<
-                Tables,
-                SelectionArray,
-                ColumnAlias
-            >
-        }
+    ): ReturnType
+    <T>(column: ColumnIn2<QueriedTables>, operator: "==", value: T): ReturnType
+}
+
+export interface TableFilterStage<
+    TableAlias extends string,
+    QueriedTable extends TableDefinition<string | undefined, TableAlias>
+> extends TableSelectStage<TableAlias, QueriedTable> {
+    where: TableFilterFunction<QueriedTable, TableFilteredStage<TableAlias, QueriedTable>>
+}
+
+export interface TableFilteredStage<
+    TableAlias extends string,
+    QueriedTable extends TableDefinition<string | undefined, TableAlias>
+> extends TableFilterStage<TableAlias, QueriedTable> {
+    update(row: Partial<QueriedTable>): Promise<ExecResult>
+    delete(): Promise<ExecResult>
+    or: TableFilterFunction<QueriedTable, TableFilteredStage<TableAlias, QueriedTable>>
+}
+
+export interface TableStage<
+    TableAlias extends string,
+    QueriedTable extends TableDefinition<string | undefined, TableAlias>,
+    References
+> extends TableFilterStage<TableAlias, QueriedTable> {
+    insert(row: QueriedTable): Promise<ExecResult>
+    join<
+        OtherTableName extends keyof References & string,
+        OtherTableAlias extends string,
+        OtherTableColumns extends {
+            [ColumnName in string]: ColumnDefinition<OtherTableName, SqlType, OtherTableAlias, ColumnName>
+        } &
+            References[OtherTableName],
+        OtherReferences
+    >(
+        otherTable: TableDefinition<OtherTableName, OtherTableAlias, OtherTableColumns, OtherReferences>,
+    ): JoinedStage<
+        Record<TableAlias, QueriedTable> & Record<OtherTableAlias, OtherTableColumns>,
+        References & OtherReferences
+    >
+
+    innerJoin<
+        OtherTableName extends string,
+        OtherTableAlias extends string,
+        OtherTableColumns extends {
+            [ColumnName in string]: ColumnDefinition<OtherTableName, SqlType, OtherTableAlias, ColumnName>
+        },
+        OtherReferences
+    >(
+        otherTable: TableDefinition<OtherTableName, OtherTableAlias, OtherTableColumns, OtherReferences>,
+    ): JoinedBeforeOnStage<
+        Record<TableAlias, QueriedTable> & Record<OtherTableAlias, OtherTableColumns>,
+        References & OtherReferences
     >
 }
 
-export interface FilteredStage<Tables> extends SelectStage<Tables> {
-    and: FilterFunction<Tables, FilteredStage<Tables>>
-    or: FilterFunction<Tables, FilteredStage<Tables>>
+export interface JoinedStage<QueriedTables extends TableDefinitions, References>
+    extends JoinedSelectStage<QueriedTables> {
+    join<
+        OtherTableName extends keyof References & string,
+        OtherTableAlias extends string,
+        OtherTableColumns extends {
+            [ColumnName in string]: ColumnDefinition<OtherTableName, SqlType, OtherTableAlias, ColumnName>
+        } &
+            References[OtherTableName],
+        OtherReferences
+    >(
+        otherTable: TableDefinition<OtherTableName, OtherTableAlias, OtherTableColumns, OtherReferences>,
+    ): JoinedStage<QueriedTables & Record<OtherTableAlias, OtherTableColumns>, References & OtherReferences>
+
+    innerJoin<
+        OtherTableName extends string,
+        OtherTableAlias extends string,
+        OtherTableColumns extends {
+            [ColumnName in string]: ColumnDefinition<OtherTableName, SqlType, OtherTableAlias, ColumnName>
+        },
+        OtherReferences
+    >(
+        otherTable: TableDefinition<OtherTableName, OtherTableAlias, OtherTableColumns, OtherReferences>,
+    ): JoinedBeforeOnStage<QueriedTables & Record<OtherTableAlias, OtherTableColumns>, References & OtherReferences>
+
+    where: JoinFilterFunction<QueriedTables, FilteredStage<QueriedTables>>
+}
+
+export interface JoinedAfterOnStage<QueriedTables extends TableDefinitions, References>
+    extends JoinedStage<QueriedTables, References> {
+    and: JoinFilterFunction<QueriedTables, JoinedAfterOnStage<QueriedTables, References>>
+    or: JoinFilterFunction<QueriedTables, JoinedAfterOnStage<QueriedTables, References>>
+}
+
+export interface JoinedBeforeOnStage<QueriedTables extends TableDefinitions, References> {
+    on: JoinFilterFunction<QueriedTables, JoinedAfterOnStage<QueriedTables, References>>
+}
+
+type ColumnIn2<QueriedTables> = PropOf<PropOf<QueriedTables>>
+type PropOf<T> = T[keyof T]
+// type SomethingMappy<QueriedTables> = {
+//     [TableAlias in keyof QueriedTables]: PropOf<QueriedTables[TableAlias]>
+// }
+type TableIn<QueriedTables> = PropOf<QueriedTables>
+
+type TableDefinitions = {
+    [TableAlias in string]: TableDefinition<string | undefined, TableAlias>
+}
+
+export interface TableSelectStage<
+    TableAlias extends string,
+    QueriedTable extends TableDefinition<string | undefined, TableAlias>
+>
+    extends GeneralSelectStage<Record<TableAlias, QueriedTable>>,
+        OrderStage<
+            Record<TableAlias, QueriedTable>,
+            { [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["sqlType"] },
+            RowTypeFrom<{}, QueriedTable>
+        > {}
+
+export interface JoinedSelectStage<QueriedTables extends TableDefinitions>
+    extends GeneralSelectStage<QueriedTables>,
+        OrderStage<QueriedTables, {}, RowTypeFrom<QueriedTables, {}>> {}
+
+export interface GeneralSelectStage<QueriedTables extends TableDefinitions> {
+    select<Column extends ColumnIn2<QueriedTables>>(
+        column: Column,
+    ): OrderStage<QueriedTables, Record<Column["columnName"], Column["sqlType"]>, ProjectedTypeOf<Column>>
+
+    select<Selection extends Record<string, ColumnIn2<QueriedTables> | TableIn<QueriedTables>>>(
+        selection: Selection,
+    ): OrderStage<
+        QueriedTables,
+        SelectedColumnsIn<Selection>,
+        RowTypeFrom<SelectedTablesIn<Selection>, SelectedColumnsIn<Selection>>
+    >
+}
+
+type SelectedTablesIn<Selection> = {
+    [TableName in SelectedTableNamesIn<Selection>]: Selection[TableName]
+}
+
+type SelectedColumnsIn<Selection> = {
+    [ColumnName in SelectedColumnNamesIn<Selection>]: Selection[ColumnName]
+}
+
+type SelectedTableNamesIn<Selection> = {
+    [K in keyof Selection]: Selection[K] extends ColumnDefinition<string, SqlType> ? never : K
+}[keyof Selection]
+
+type SelectedColumnNamesIn<Selection> = {
+    [K in keyof Selection]: Selection[K] extends ColumnDefinition<string, SqlType> ? K : never
+}[keyof Selection]
+
+export interface FilteredStage<QueriedTables extends TableDefinitions> extends JoinedSelectStage<QueriedTables> {
+    and: JoinFilterFunction<QueriedTables, FilteredStage<QueriedTables>>
+    or: JoinFilterFunction<QueriedTables, FilteredStage<QueriedTables>>
 }
