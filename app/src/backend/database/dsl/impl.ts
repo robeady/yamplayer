@@ -15,7 +15,7 @@ import {
     TableDefinitions,
     OrderStage,
 } from "./stages"
-import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin } from "./definitions"
+import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, SqlType } from "./definitions"
 import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
 
 interface DatabaseHandle {
@@ -110,7 +110,7 @@ class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
             tableOrigin.type === "table"
                 ? tableOrigin.name.map(renderIdentifier).join(".")
                 : `(${tableOrigin.query.renderSql()})`
-        const fromSql = `${renderIdentifier(tableName)} AS ${renderIdentifier(tableAlias)}`
+        const fromSql = `${tableOriginSql} AS ${renderIdentifier(tableAlias)}`
 
         const rows = await this.databaseHandle.fetch(
             `SELECT ${selectionsSql} FROM ${fromSql}${whereSql(this.filter)}${orderLimitOffsetSql(this.query)}`,
@@ -136,7 +136,22 @@ class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
             unknown
         >
     } {
-        throw new Error("Method not implemented.")
+        const cols = Object.entries(this.selection)
+        const newCols: [string, ColumnDefinition<SubqueryOrigin, SqlType, Alias, string, undefined>][] = cols
+            .filter(([_, def]) => COLUMN_DEFINITION in def)
+            .map(([name, def]) => {
+                const oldDef = def as ColumnDefinition<Origin, SqlType>
+                const newDef = {
+                    [COLUMN_DEFINITION]: true,
+                    tableOrigin: { type: "subquery", query: { renderSql: () => "hello world" } },
+                    tableAlias: alias,
+                    columnName: name,
+                    sqlType: oldDef.sqlType,
+                    references: undefined,
+                } as const
+                return [name, newDef]
+            })
+        return Object.fromEntries(newCols) as any
     }
 }
 
