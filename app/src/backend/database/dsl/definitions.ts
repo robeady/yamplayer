@@ -11,7 +11,7 @@ export type SqlType<T = {}> = {
     [PHANTOM_INSTANCE]: T
 }
 
-interface ColumnDetails<T = unknown, C = unknown> {
+interface ColumnDetails<T = {}, C = unknown> {
     sqlType: SqlType<T>
     references: C
 }
@@ -29,19 +29,38 @@ function dbType<T>(): ColumnDetails<T, undefined> & {
     }
 }
 
+export interface Renderable {
+    renderSql: () => string
+}
+
+export type Origin =
+    | {
+          type: "table"
+          name: string[]
+      }
+    | SubqueryOrigin
+
+export type SubqueryOrigin = { type: "subquery"; query: Renderable }
+
 export type TableDefinition<
-    TableName extends string | undefined = string | undefined,
+    TableOrigin extends Origin = Origin,
     TableAlias extends string = string,
     Columns extends {
-        [ColumnName in string]: ColumnDefinition<TableName, SqlType, TableAlias, ColumnName, unknown>
+        [ColumnName in string]: ColumnDefinition<TableOrigin, SqlType, TableAlias, ColumnName, unknown>
     } = {
-        [ColumnName in string]: ColumnDefinition<TableName, SqlType, TableAlias, ColumnName, unknown>
+        [ColumnName in string]: ColumnDefinition<TableOrigin, SqlType, TableAlias, ColumnName, unknown>
     }
 > = Columns
 
-export interface ColumnDefinition<TableName, SqlType, TableAlias = string, ColumnName = string, References = unknown> {
+export interface ColumnDefinition<
+    TableOrigin,
+    SqlType,
+    TableAlias = string,
+    ColumnName = string,
+    References = unknown
+> {
     [COLUMN_DEFINITION]: true
-    tableName: TableName
+    tableOrigin: TableOrigin
     tableAlias: TableAlias
     columnName: ColumnName
     sqlType: SqlType
@@ -52,11 +71,11 @@ export function table<TableName extends string, Columns extends Record<string, C
     name: TableName,
     columns: Columns,
 ): TableDefinition<
-    TableName,
+    { type: "table"; name: [TableName] },
     TableName,
     {
         [ColumnName in keyof Columns & string]: ColumnDefinition<
-            TableName,
+            { type: "table"; name: [TableName] },
             Columns[ColumnName]["sqlType"],
             TableName,
             ColumnName,

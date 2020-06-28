@@ -1,5 +1,5 @@
 // import { Match } from "./filtering"
-import { TableDefinition, ColumnDefinition, SqlType } from "./definitions"
+import { TableDefinition, ColumnDefinition, SqlType, Origin, SubqueryOrigin } from "./definitions"
 import { PHANTOM_INSTANCE } from "./symbols"
 
 export interface ExecResult {
@@ -15,12 +15,14 @@ type ProjectedTypeOf<F extends Field> = F["sqlType"][typeof PHANTOM_INSTANCE]
 export interface FetchStage<AliasedColumns extends Record<string, SqlType>, OutputRow> {
     fetch(): Promise<OutputRow[]>
 
-    asTable<Alias extends string>(alias: Alias): TableDefinition<undefined, Alias, ColumnsFrom<Alias, AliasedColumns>>
+    asTable<Alias extends string>(
+        alias: Alias,
+    ): TableDefinition<SubqueryOrigin, Alias, ColumnsFrom<Alias, AliasedColumns>>
 }
 
 type ColumnsFrom<TableAlias, SelectedColumns extends Record<string, SqlType>> = {
     [ColumnAlias in keyof SelectedColumns & string]: ColumnDefinition<
-        undefined,
+        SubqueryOrigin,
         SelectedColumns[ColumnAlias],
         TableAlias,
         ColumnAlias
@@ -73,19 +75,17 @@ export interface JoinFilterFunction<QueriedTables extends TableDefinitions, Retu
     <T>(column: ColumnIn<QueriedTables>, operator: "==", value: T): ReturnType
 }
 
-export interface TableFilterStage<QueriedTable extends TableDefinition<string | undefined, string>>
-    extends TableSelectStage<QueriedTable> {
+export interface TableFilterStage<QueriedTable extends TableDefinition> extends TableSelectStage<QueriedTable> {
     where: TableFilterFunction<QueriedTable, TableFilteredStage<QueriedTable>>
 }
 
-export interface TableFilteredStage<QueriedTable extends TableDefinition<string | undefined, string>>
-    extends TableFilterStage<QueriedTable> {
+export interface TableFilteredStage<QueriedTable extends TableDefinition> extends TableFilterStage<QueriedTable> {
     update(row: Partial<RowTypeFrom<QueriedTable>>): Promise<ExecResult>
     delete(): Promise<ExecResult>
     or: TableFilterFunction<QueriedTable, TableFilteredStage<QueriedTable>>
 }
 
-export interface TableStage<QueriedTable extends TableDefinition<string | undefined, string>>
+export interface TableStage<QueriedTable extends TableDefinition<Origin, string>>
     extends TableFilterStage<QueriedTable>,
         GeneralJoinStage<Record<PropOf<QueriedTable>["tableAlias"], QueriedTable>> {
     insert(row: RowTypeFrom<QueriedTable>): Promise<ExecResult>
@@ -99,11 +99,11 @@ export interface JoinedStage<QueriedTables extends TableDefinitions>
 
 interface GeneralJoinStage<QueriedTables extends TableDefinitions> {
     join<
-        OtherTableName extends string,
+        OtherTableOrigin extends Origin,
         OtherTable extends TableDefinition<
-            OtherTableName,
+            OtherTableOrigin,
             string,
-            Record<string, ColumnDefinition<OtherTableName, SqlType, string, string>>
+            Record<string, ColumnDefinition<OtherTableOrigin, SqlType, string, string>>
         >
     >(
         otherTable: OtherTable,
@@ -112,11 +112,11 @@ interface GeneralJoinStage<QueriedTables extends TableDefinitions> {
         : JoinedStage<QueriedTables & Record<PropOf<OtherTable>["tableAlias"], OtherTable>>
 
     innerJoin<
-        OtherTableName extends string,
+        OtherTableOrigin extends Origin,
         OtherTable extends TableDefinition<
-            OtherTableName,
+            OtherTableOrigin,
             string,
-            Record<string, ColumnDefinition<OtherTableName, SqlType, string, string>>
+            Record<string, ColumnDefinition<OtherTableOrigin, SqlType, string, string>>
         >
     >(
         otherTable: OtherTable,
@@ -141,19 +141,19 @@ type LiftPropsOf<QueriedTables> = {
 }
 
 export type TableDefinitions = {
-    [TableAlias in string]: TableDefinition<string | undefined, TableAlias>
+    [TableAlias in string]: TableDefinition<Origin, TableAlias>
 }
 
-export type QueriedTablesFromSingle<QueriedTable extends TableDefinition<string | undefined, string>> = Record<
+export type QueriedTablesFromSingle<QueriedTable extends TableDefinition> = Record<
     PropOf<QueriedTable>["tableAlias"],
     QueriedTable
 >
 
-export type DefaultSelectionFromSingle<QueriedTable extends TableDefinition<string | undefined, string>> = {
+export type DefaultSelectionFromSingle<QueriedTable extends TableDefinition> = {
     [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["sqlType"]
 }
 
-export interface TableSelectStage<QueriedTable extends TableDefinition<string | undefined, string>>
+export interface TableSelectStage<QueriedTable extends TableDefinition>
     extends GeneralSelectStage<Record<PropOf<QueriedTable>["tableAlias"], QueriedTable>>,
         OrderStage<
             QueriedTablesFromSingle<QueriedTable>,

@@ -15,8 +15,7 @@ import {
     TableDefinitions,
     OrderStage,
 } from "./stages"
-import { TableDefinition, ColumnDefinition } from "./definitions"
-import { mapValues } from "lodash"
+import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin } from "./definitions"
 import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
 
 interface DatabaseHandle {
@@ -36,17 +35,17 @@ interface QueryData<Selection> {
     limit?: number
     offset?: number
     orderBy: {
-        column: keyof AliasedColumnsIn<Selection> | ColumnDefinition<string | undefined, unknown> // TODO are these type arguments right?
+        column: keyof AliasedColumnsIn<Selection> | ColumnDefinition<Origin, unknown> // TODO are these type arguments right?
         direction?: "ASC" | "DESC"
     }[]
 }
 
-// type QueriedTablesFrom<QueriedTable extends TableDefinition<string | undefined, string>> = Record<
+// type QueriedTablesFrom<QueriedTable extends TableDefinition<Origin | undefined, string>> = Record<
 //     PropOf<QueriedTable>["tableAlias"],
 //     QueriedTable
 // >
 
-// type SelectedColumnsFrom<QueriedTable extends TableDefinition<string | undefined, string>> = {
+// type SelectedColumnsFrom<QueriedTable extends TableDefinition<Origin | undefined, string>> = {
 //     [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["sqlType"]
 // }
 
@@ -106,8 +105,12 @@ class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
         // TODO from all the tables, implement joins
         const columnsInPrimaryTable = Object.values(this.primaryTable)
         if (columnsInPrimaryTable.length === 0) throw Error("Primary table has no columns")
-        const { tableName, tableAlias } = Object.values(this.primaryTable)[0]
-        const fromSql = `${renderIdentifier(this.primaryTableName)} AS ${renderIdentifier(this.primaryTable)}`
+        const { tableOrigin, tableAlias } = Object.values(this.primaryTable)[0]
+        const tableOriginSql =
+            tableOrigin.type === "table"
+                ? tableOrigin.name.map(renderIdentifier).join(".")
+                : `(${tableOrigin.query.renderSql()})`
+        const fromSql = `${renderIdentifier(tableName)} AS ${renderIdentifier(tableAlias)}`
 
         const rows = await this.databaseHandle.fetch(
             `SELECT ${selectionsSql} FROM ${fromSql}${whereSql(this.filter)}${orderLimitOffsetSql(this.query)}`,
@@ -126,7 +129,7 @@ class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
         alias: Alias,
     ): {
         [ColumnAlias in keyof AliasedColumnsIn<Selection> & string]: ColumnDefinition<
-            undefined,
+            SubqueryOrigin,
             AliasedColumnsIn<Selection>[ColumnAlias],
             Alias,
             ColumnAlias,
@@ -137,7 +140,7 @@ class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
     }
 }
 
-class SingleTableImpl<QueriedTable extends TableDefinition<string | undefined, string>, Selection = QueriedTable>
+class SingleTableImpl<QueriedTable extends TableDefinition<Origin, string>, Selection = QueriedTable>
     implements
         TableStage<QueriedTable>,
         TableFilteredStage<QueriedTable>,
@@ -154,7 +157,7 @@ class SingleTableImpl<QueriedTable extends TableDefinition<string | undefined, s
         private filter?: any,
         private query?: QueryData<Selection>,
     ) {
-        const tableName = Object.values(table).shift()?.tableName
+        const tableName = Object.values(table).shift()?.tableOrigin
         if (tableName === undefined) throw Error("table must have at least one column")
         this.tableName = tableName
     }
@@ -268,11 +271,11 @@ function populateAtPath(object: any, path: string[], value: unknown) {
 
 function traverseSelection<T>(
     selection: any,
-    func: (keyPath: string[], columnDefinition: ColumnDefinition<string, unknown>) => T,
+    func: (keyPath: string[], columnDefinition: ColumnDefinition<Origin, unknown>) => T,
     keyPathPrefix: string[] = [],
 ): T[] {
     if (COLUMN_DEFINITION in selection) {
-        return [func(keyPathPrefix, selection as ColumnDefinition<string, unknown>)]
+        return [func(keyPathPrefix, selection as ColumnDefinition<Origin, unknown>)]
     } else if (RAW_SQL in selection) {
         // TODO handle raw sql
         throw Error("raw sql not supported yet")
@@ -281,7 +284,7 @@ function traverseSelection<T>(
     }
 }
 
-function columnDefinitionSql(columnDef: ColumnDefinition<string, unknown>, alias: string | null) {
+function columnDefinitionSql(columnDef: ColumnDefinition<Origin, unknown>, alias: string | null) {
     //  is render identifier correct for aliases?
     const aliasSql = alias === null ? "" : ` AS ${renderIdentifier(alias)}`
     return `${renderIdentifier(columnDef.tableAlias)}.${renderIdentifier(columnDef.columnName)}${aliasSql}`
@@ -291,10 +294,9 @@ function orderLimitOffsetSql(query?: QueryData<unknown>) {
     if (query === undefined) return ""
     let sql = ""
     if (query.orderBy.length > 0) {
-        // TODO: is it correct to use/assume table name here?
         const orderBySql = query.orderBy.map(
             entry =>
-                `${renderIdentifier(entry.column.tableName)}.${renderIdentifier(entry.column.columnName)}${
+                `${renderIdentifier(entry.column.tableAlias)}.${renderIdentifier(entry.column.columnName)}${
                     entry.direction === undefined ? "" : " " + entry.direction
                 }`,
         )
