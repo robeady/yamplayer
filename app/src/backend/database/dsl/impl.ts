@@ -9,6 +9,8 @@ import {
     PropOf,
     ColumnIn,
     SelectionFrom,
+    DefaultSelectionFromSingle,
+    QueriedTablesFromSingle,
 } from "./stages"
 import { TableDefinition, ColumnDefinition } from "./definitions"
 import { mapValues } from "lodash"
@@ -27,12 +29,8 @@ function renderLiteral(literalValue: unknown) {
     return literalValue
 }
 
-type Selection =
-    | { type: "column"; definition: ColumnDefinition<string | undefined, unknown> } // TODO: can this really be from a non-real table?
-    | { type: "literal"; literal: unknown }
-
-interface QueryData<QueriedTables> {
-    selection?: SelectionFrom<QueriedTables>
+interface QueryData<Selection> {
+    selection?: Selection
     limit?: number
     offset?: number
     orderBy: {
@@ -41,25 +39,23 @@ interface QueryData<QueriedTables> {
     }[]
 }
 
-type QueriedTablesFrom<QueriedTable extends TableDefinition<string | undefined, string>> = Record<
-    PropOf<QueriedTable>["tableAlias"],
-    QueriedTable
->
+// type QueriedTablesFrom<QueriedTable extends TableDefinition<string | undefined, string>> = Record<
+//     PropOf<QueriedTable>["tableAlias"],
+//     QueriedTable
+// >
 
-type SelectedColumnsFrom<QueriedTable extends TableDefinition<string | undefined, string>> = {
-    [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["sqlType"]
-}
+// type SelectedColumnsFrom<QueriedTable extends TableDefinition<string | undefined, string>> = {
+//     [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["sqlType"]
+// }
 
-// type OutputRowFrom<QueriedTable extends TableDefinition<string | undefined, string>> = RowTypeFrom<{}, QueriedTable>
-
-class SingleTableImpl<QueriedTable extends TableDefinition<string | undefined, string>>
+class SingleTableImpl<QueriedTable extends TableDefinition<string | undefined, string>, Selection = QueriedTable>
     implements
         TableStage<QueriedTable>,
         TableFilteredStage<QueriedTable>,
         OrderedStage<
-            QueriedTablesFrom<QueriedTable>,
-            SelectedColumnsFrom<QueriedTable>, // TODO are these right? what if the user made a selection?
-            RowTypeFrom<QueriedTable>
+            QueriedTablesFromSingle<QueriedTable>,
+            DefaultSelectionFromSingle<QueriedTable>, // TODO are these right? what if the user made a selection?
+            RowTypeFrom<Selection>
         > {
     tableName: string
 
@@ -67,7 +63,7 @@ class SingleTableImpl<QueriedTable extends TableDefinition<string | undefined, s
         private databaseHandle: DatabaseHandle,
         private table: QueriedTable,
         private filter?: any,
-        private query?: QueryData<QueriedTablesFrom<QueriedTable>>,
+        private query?: QueryData<Selection>,
     ) {
         const tableName = Object.values(table).shift()?.tableName
         if (tableName === undefined) throw Error("table must have at least one column")

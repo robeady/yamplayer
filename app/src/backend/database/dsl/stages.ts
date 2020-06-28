@@ -12,10 +12,10 @@ type Field<T = unknown> = { sqlType: SqlType<T> }
 
 type ProjectedTypeOf<F extends Field> = F["sqlType"][typeof PHANTOM_INSTANCE]
 
-export interface FetchStage<SelectedColumns extends Record<string, SqlType>, OutputRow> {
+export interface FetchStage<AliasedColumns extends Record<string, SqlType>, OutputRow> {
     fetch(): Promise<OutputRow[]>
 
-    asTable<Alias extends string>(alias: Alias): TableDefinition<undefined, Alias, ColumnsFrom<Alias, SelectedColumns>>
+    asTable<Alias extends string>(alias: Alias): TableDefinition<undefined, Alias, ColumnsFrom<Alias, AliasedColumns>>
 }
 
 type ColumnsFrom<TableAlias, SelectedColumns extends Record<string, SqlType>> = {
@@ -27,36 +27,36 @@ type ColumnsFrom<TableAlias, SelectedColumns extends Record<string, SqlType>> = 
     >
 }
 
-export interface LimitStage<SelectedColumns extends Record<string, SqlType>, OutputRow>
-    extends OffsetStage<SelectedColumns, OutputRow> {
-    limit(count: number): OffsetStage<SelectedColumns, OutputRow>
+export interface LimitStage<AliasedColumns extends Record<string, SqlType>, OutputRow>
+    extends OffsetStage<AliasedColumns, OutputRow> {
+    limit(count: number): OffsetStage<AliasedColumns, OutputRow>
 }
 
-export interface OffsetStage<SelectedColumns extends Record<string, SqlType>, OutputRow>
-    extends FetchStage<SelectedColumns, OutputRow> {
-    offset(offset: number): FetchStage<SelectedColumns, OutputRow>
+export interface OffsetStage<AliasedColumns extends Record<string, SqlType>, OutputRow>
+    extends FetchStage<AliasedColumns, OutputRow> {
+    offset(offset: number): FetchStage<AliasedColumns, OutputRow>
 }
 
 export interface OrderStage<
     QueriedTables extends TableDefinitions,
-    SelectedColumns extends Record<string, SqlType>,
+    AliasedColumns extends Record<string, SqlType>,
     OutputRow
-> extends LimitStage<SelectedColumns, OutputRow> {
+> extends LimitStage<AliasedColumns, OutputRow> {
     orderBy(
-        column: ColumnIn<QueriedTables> | keyof SelectedColumns,
+        column: ColumnIn<QueriedTables> | keyof AliasedColumns,
         direction?: "asc" | "desc",
-    ): OrderedStage<QueriedTables, SelectedColumns, OutputRow>
+    ): OrderedStage<QueriedTables, AliasedColumns, OutputRow>
 }
 
 export interface OrderedStage<
     QueriedTables extends TableDefinitions,
-    SelectedColumns extends Record<string, SqlType>,
+    AliasedColumns extends Record<string, SqlType>,
     OutputRow
-> extends LimitStage<SelectedColumns, OutputRow> {
+> extends LimitStage<AliasedColumns, OutputRow> {
     thenBy(
-        column: ColumnIn<QueriedTables> | keyof SelectedColumns,
+        column: ColumnIn<QueriedTables> | keyof AliasedColumns,
         direction?: "asc" | "desc",
-    ): OrderedStage<QueriedTables, SelectedColumns, OutputRow>
+    ): OrderedStage<QueriedTables, AliasedColumns, OutputRow>
 }
 
 export interface TableFilterFunction<QueriedTable extends TableDefinition, ReturnType> {
@@ -144,11 +144,20 @@ type TableDefinitions = {
     [TableAlias in string]: TableDefinition<string | undefined, TableAlias>
 }
 
+export type QueriedTablesFromSingle<QueriedTable extends TableDefinition<string | undefined, string>> = Record<
+    PropOf<QueriedTable>["tableAlias"],
+    QueriedTable
+>
+
+export type DefaultSelectionFromSingle<QueriedTable extends TableDefinition<string | undefined, string>> = {
+    [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["sqlType"]
+}
+
 export interface TableSelectStage<QueriedTable extends TableDefinition<string | undefined, string>>
     extends GeneralSelectStage<Record<PropOf<QueriedTable>["tableAlias"], QueriedTable>>,
         OrderStage<
-            Record<PropOf<QueriedTable>["tableAlias"], QueriedTable>,
-            { [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["sqlType"] },
+            QueriedTablesFromSingle<QueriedTable>,
+            DefaultSelectionFromSingle<QueriedTable>,
             RowTypeFrom<QueriedTable>
         > {}
 
@@ -156,14 +165,14 @@ export interface JoinedSelectStage<QueriedTables extends TableDefinitions>
     extends GeneralSelectStage<QueriedTables>,
         OrderStage<QueriedTables, {}, RowTypeFrom<QueriedTables>> {}
 
+export type AliasedColumnsIn<Selection> = Selection extends Record<string, ColumnDefinition<string, SqlType>>
+    ? SelectedColumnsIn<Selection>
+    : {}
+
 export interface GeneralSelectStage<QueriedTables extends TableDefinitions> {
     select<Selection extends SelectionFrom<QueriedTables>>(
         selection: Selection,
-    ): OrderStage<
-        QueriedTables,
-        Selection extends Record<string, ColumnDefinition<string, SqlType>> ? SelectedColumnsIn<Selection> : {},
-        RowTypeFrom<Selection>
-    >
+    ): OrderStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>>
 }
 
 export type SelectionFrom<QueriedTables> = ColumnIn<QueriedTables> | SelectionRecordFrom<QueriedTables>
