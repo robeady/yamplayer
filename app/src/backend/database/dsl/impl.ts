@@ -11,6 +11,9 @@ import {
     SelectionFrom,
     DefaultSelectionFromSingle,
     QueriedTablesFromSingle,
+    AliasedColumnsIn,
+    TableDefinitions,
+    OrderStage,
 } from "./stages"
 import { TableDefinition, ColumnDefinition } from "./definitions"
 import { mapValues } from "lodash"
@@ -30,11 +33,10 @@ function renderLiteral(literalValue: unknown) {
 }
 
 interface QueryData<Selection> {
-    selection?: Selection
     limit?: number
     offset?: number
     orderBy: {
-        column: ColumnDefinition<string, unknown> // TODO are these type arguments right?
+        column: keyof AliasedColumnsIn<Selection> | ColumnDefinition<string | undefined, unknown> // TODO are these type arguments right?
         direction?: "ASC" | "DESC"
     }[]
 }
@@ -47,6 +49,93 @@ interface QueryData<Selection> {
 // type SelectedColumnsFrom<QueriedTable extends TableDefinition<string | undefined, string>> = {
 //     [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["sqlType"]
 // }
+
+class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
+    implements
+        OrderStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>>,
+        OrderedStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
+    constructor(
+        private databaseHandle: DatabaseHandle,
+        private primaryTable: PropOf<QueriedTables>,
+        private allTables: QueriedTables,
+        private selection: Selection,
+        private filter?: any,
+        private query?: QueryData<Selection>,
+    ) {}
+
+    private withQuery(
+        f: (oldQuery: QueryData<Selection>) => QueryData<Selection>,
+    ): SelectedImpl<QueriedTables, Selection> {
+        return new SelectedImpl(
+            this.databaseHandle,
+            this.primaryTable,
+            this.allTables,
+            this.filter,
+            f(this.query ?? { orderBy: [] }),
+        )
+    }
+
+    thenBy(
+        column: ColumnIn<QueriedTables> | keyof AliasedColumnsIn<Selection>,
+        direction?: "ASC" | "DESC",
+    ): OrderedStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
+        return this.withQuery(q => ({ ...q, orderBy: [...q.orderBy, { column, direction }] }))
+    }
+
+    orderBy(
+        column: ColumnIn<QueriedTables> | keyof AliasedColumnsIn<Selection>,
+        direction?: "ASC" | "DESC",
+    ): OrderedStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
+        return this.thenBy(column, direction)
+    }
+
+    limit(limit: number): OffsetStage<AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
+        return this.withQuery(q => ({ ...q, limit }))
+    }
+    offset(offset: number): FetchStage<AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
+        return this.withQuery(q => ({ ...q, offset }))
+    }
+
+    async fetch(): Promise<RowTypeFrom<Selection>[]> {
+        const selectionsSql = traverseSelection(this.selection, (keyPath, col) =>
+            columnDefinitionSql(col, keyPath.length === 1 ? keyPath[0] : null),
+        ).join(",")
+
+        const selectionDestinations = traverseSelection(this.selection, keyPath => keyPath)
+
+        // TODO from all the tables, implement joins
+        const columnsInPrimaryTable = Object.values(this.primaryTable)
+        if (columnsInPrimaryTable.length === 0) throw Error("Primary table has no columns")
+        const { tableName, tableAlias } = Object.values(this.primaryTable)[0]
+        const fromSql = `${renderIdentifier(this.primaryTableName)} AS ${renderIdentifier(this.primaryTable)}`
+
+        const rows = await this.databaseHandle.fetch(
+            `SELECT ${selectionsSql} FROM ${fromSql}${whereSql(this.filter)}${orderLimitOffsetSql(this.query)}`,
+        )
+
+        return rows.map(row => {
+            let rowObject: any = {}
+            for (let i = 0; i < row.length; i++) {
+                rowObject = populateAtPath(rowObject, selectionDestinations[i], row[i])
+            }
+            return rowObject
+        })
+    }
+
+    asTable<Alias extends string>(
+        alias: Alias,
+    ): {
+        [ColumnAlias in keyof AliasedColumnsIn<Selection> & string]: ColumnDefinition<
+            undefined,
+            AliasedColumnsIn<Selection>[ColumnAlias],
+            Alias,
+            ColumnAlias,
+            unknown
+        >
+    } {
+        throw new Error("Method not implemented.")
+    }
+}
 
 class SingleTableImpl<QueriedTable extends TableDefinition<string | undefined, string>, Selection = QueriedTable>
     implements
@@ -119,16 +208,16 @@ class SingleTableImpl<QueriedTable extends TableDefinition<string | undefined, s
     }
 
     orderBy(
-        column: ColumnIn<QueriedTablesFrom<QueriedTable>> | keyof SelectedColumnsFrom<QueriedTable>,
-        direction?: "asc" | "desc",
-    ): OrderedStage<QueriedTablesFrom<QueriedTable>, SelectedColumnsFrom<QueriedTable>, RowTypeFrom<QueriedTable>> {
+        column: ColumnIn<QueriedTablesFromSingle<QueriedTable>> | keyof AliasedColumnsIn<Selection>,
+        direction?: "ASC" | "DESC",
+    ): OrderedStage<QueriedTablesFromSingle<QueriedTable>, AliasedColumnsIn<Selection>, RowTypeFrom<QueriedTable>> {
         return this.thenBy(column, direction)
     }
 
     thenBy(
-        column: ColumnIn<QueriedTablesFrom<QueriedTable>> | keyof SelectedColumnsFrom<QueriedTable>,
-        direction?: "asc" | "desc",
-    ): OrderedStage<QueriedTablesFrom<QueriedTable>, SelectedColumnsFrom<QueriedTable>, RowTypeFrom<QueriedTable>> {
+        column: ColumnIn<QueriedTablesFromSingle<QueriedTable>> | keyof AliasedColumnsIn<Selection>,
+        direction?: "ASC" | "DESC",
+    ): OrderedStage<QueriedTablesFromSingle<QueriedTable>, AliasedColumnsIn<Selection>, RowTypeFrom<QueriedTable>> {
         return this.withQuery(q => ({ ...q, orderBy: [...q.orderBy, { column, direction }] }))
     }
 
@@ -154,31 +243,6 @@ class SingleTableImpl<QueriedTable extends TableDefinition<string | undefined, s
         f: (oldQuery: QueryData<QueriedTables>) => QueryData<QueriedTables>,
     ): SingleTableImpl<QueriedTable> {
         return new SingleTableImpl(this.databaseHandle, this.table, this.filter, f(this.query ?? { orderBy: [] }))
-    }
-
-    async fetch(): Promise<RowTypeFrom<QueriedTable>[]> {
-        const selection =
-            this.query?.selection ?? mapValues(this.table, definition => ({ type: "column", definition } as const))
-
-        const selectionsSql = traverseSelection(selection, (keyPath, col) =>
-            columnDefinitionSql(col, keyPath.length === 1 ? keyPath[0] : null),
-        ).join(",")
-
-        const selectionDestinations = traverseSelection(selection, keyPath => keyPath)
-
-        const fromSql = renderIdentifier(this.tableName)
-
-        const rows = await this.databaseHandle.fetch(
-            `SELECT ${selectionsSql} FROM ${fromSql}${whereSql(this.filter)}${orderLimitOffsetSql(this.query)}`,
-        )
-
-        return rows.map(row => {
-            let rowObject: any = {}
-            for (let i = 0; i < row.length; i++) {
-                rowObject = populateAtPath(rowObject, selectionDestinations[i], row[i])
-            }
-            return rowObject
-        })
     }
 }
 

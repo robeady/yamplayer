@@ -29,7 +29,7 @@ type ColumnsFrom<TableAlias, SelectedColumns extends Record<string, SqlType>> = 
 
 export interface LimitStage<AliasedColumns extends Record<string, SqlType>, OutputRow>
     extends OffsetStage<AliasedColumns, OutputRow> {
-    limit(count: number): OffsetStage<AliasedColumns, OutputRow>
+    limit(limit: number): OffsetStage<AliasedColumns, OutputRow>
 }
 
 export interface OffsetStage<AliasedColumns extends Record<string, SqlType>, OutputRow>
@@ -44,7 +44,7 @@ export interface OrderStage<
 > extends LimitStage<AliasedColumns, OutputRow> {
     orderBy(
         column: ColumnIn<QueriedTables> | keyof AliasedColumns,
-        direction?: "asc" | "desc",
+        direction?: "ASC" | "DESC",
     ): OrderedStage<QueriedTables, AliasedColumns, OutputRow>
 }
 
@@ -55,7 +55,7 @@ export interface OrderedStage<
 > extends LimitStage<AliasedColumns, OutputRow> {
     thenBy(
         column: ColumnIn<QueriedTables> | keyof AliasedColumns,
-        direction?: "asc" | "desc",
+        direction?: "ASC" | "DESC",
     ): OrderedStage<QueriedTables, AliasedColumns, OutputRow>
 }
 
@@ -140,7 +140,7 @@ type LiftPropsOf<QueriedTables> = {
     [TableAlias in keyof QueriedTables]: PropOf<QueriedTables[TableAlias]>
 }
 
-type TableDefinitions = {
+export type TableDefinitions = {
     [TableAlias in string]: TableDefinition<string | undefined, TableAlias>
 }
 
@@ -166,7 +166,9 @@ export interface JoinedSelectStage<QueriedTables extends TableDefinitions>
         OrderStage<QueriedTables, {}, RowTypeFrom<QueriedTables>> {}
 
 export type AliasedColumnsIn<Selection> = Selection extends Record<string, ColumnDefinition<string, SqlType>>
-    ? SelectedColumnsIn<Selection>
+    ? {
+          [ColumnName in keyof Selection]: Selection[ColumnName]["sqlType"]
+      }
     : {}
 
 export interface GeneralSelectStage<QueriedTables extends TableDefinitions> {
@@ -184,10 +186,6 @@ export type RowTypeFrom<Selection> = Selection extends ColumnDefinition<string, 
     : {
           [K in keyof Selection]: RowTypeFrom<Selection[K]>
       }
-
-type SelectedColumnsIn<Selection extends Record<string, ColumnDefinition<string, SqlType>>> = {
-    [ColumnName in keyof Selection]: Selection[ColumnName]["sqlType"]
-}
 
 export interface FilteredStage<QueriedTables extends TableDefinitions> extends JoinedSelectStage<QueriedTables> {
     and: JoinFilterFunction<QueriedTables, FilteredStage<QueriedTables>>
