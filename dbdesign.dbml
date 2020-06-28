@@ -1,0 +1,70 @@
+Table tracks {
+  trackId int [pk, not null]
+  albumId int [not null, ref: > albums.albumId]
+  trackTitle text [not null]
+  trackNumber int [not null]
+  isrc text
+  durationSecs real [not null]
+  listenCount int [not null]
+}
+
+Table trackArtists {
+  trackId int [not null, ref: > tracks.trackId]
+  artistId int [not null, ref: > artists.artistId]
+  order int [not null]
+}
+
+Table externalTracks {
+  trackId int [not null, ref: > tracks.trackId]
+  service text [not null]
+  externalId text [not null]
+}
+
+Table trackLyrics {
+  trackId int [pk, not null, ref: > tracks.trackId]
+  lyrics text [not null]
+}
+
+Table listenHistory {
+  trackId int [ref: > tracks.trackId]
+  externalTrackService text
+  externalTrackId text
+  listenSecs real [not null]
+  listenEndedTimestamp int [not null]
+}
+
+Table albums {
+  albumId int [pk, not null]
+  albumTitle text [not null]
+  coverImageUri text
+  releaseDate text
+}
+
+Table externalAlbums {
+  artistId int [ref: > albums.albumId]
+  externalAlbumService text [not null]
+  externalAlbumId text [not null]
+}
+
+Table artists {
+  artistId int [pk, not null]
+  artistName text [not null]
+  imageUri text
+}
+
+Table externalArtists {
+  artistId int [not null, ref: > artists.artistId]
+  externalArtistService text [not null]
+  externalArtistId text [not null]
+}
+
+Table playlists {
+  playlistId int [pk, not null]
+  playlistName text [not null]
+}
+
+Table playlistTracks {
+  playlistEntryId int [pk, not null]
+  playlistId int [not null, ref: > playlists.playlistId]
+  trackId int [not null, ref: > tracks.trackId]
+}
