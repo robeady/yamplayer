@@ -1,4 +1,3 @@
-// import { Match } from "./filtering"
 import { TableDefinition, ColumnDefinition, SqlType, Origin, SubqueryOrigin } from "./definitions"
 import { PHANTOM_INSTANCE } from "./symbols"
 
@@ -75,21 +74,28 @@ export interface JoinFilterFunction<QueriedTables extends TableDefinitions, Retu
     <T>(column: ColumnIn<QueriedTables>, operator: "==", value: T): ReturnType
 }
 
-export interface TableFilterStage<QueriedTable extends TableDefinition> extends TableSelectStage<QueriedTable> {
-    where: TableFilterFunction<QueriedTable, TableFilteredStage<QueriedTable>>
+export interface TableFilterableStage<QueriedTable extends TableDefinition, ExtraReturnType = {}> {
+    where: TableFilterFunction<QueriedTable, TableFilteredStage<QueriedTable, ExtraReturnType> & ExtraReturnType>
 }
-
-export interface TableFilteredStage<QueriedTable extends TableDefinition> extends TableFilterStage<QueriedTable> {
-    update(row: Partial<RowTypeFrom<QueriedTable>>): Promise<ExecResult>
-    delete(): Promise<ExecResult>
-    or: TableFilterFunction<QueriedTable, TableFilteredStage<QueriedTable>>
+export interface TableFilteredStage<QueriedTable extends TableDefinition, ExtraReturnType = {}> {
+    and: TableFilterFunction<QueriedTable, TableFilteredStage<QueriedTable, ExtraReturnType> & ExtraReturnType>
+    or: TableFilterFunction<QueriedTable, TableFilteredStage<QueriedTable, ExtraReturnType> & ExtraReturnType>
 }
-
-export interface TableStage<QueriedTable extends TableDefinition<Origin, string>>
-    extends TableFilterStage<QueriedTable>,
-        GeneralJoinStage<Record<PropOf<QueriedTable>["tableAlias"], QueriedTable>> {
+export interface TableInsertStage<QueriedTable extends TableDefinition> extends TableUpdateStage<QueriedTable> {
     insert(row: RowTypeFrom<QueriedTable>): Promise<ExecResult>
 }
+export interface TableUpdateStage<QueriedTable extends TableDefinition> {
+    update(row: Partial<RowTypeFrom<QueriedTable>>): Promise<ExecResult>
+    delete(): Promise<ExecResult>
+}
+
+export interface SubqueryStage<QueriedTable extends TableDefinition> extends TableFilterableStage<QueriedTable> {
+    // TODO: is there anything specific to a subquery?
+}
+
+export interface TableStage<QueriedTable extends TableDefinition>
+    extends TableInsertStage<QueriedTable>,
+        TableFilterableStage<QueriedTable, TableUpdateStage<QueriedTable>> {}
 
 export interface JoinedStage<QueriedTables extends TableDefinitions>
     extends JoinedSelectStage<QueriedTables>,
@@ -97,7 +103,7 @@ export interface JoinedStage<QueriedTables extends TableDefinitions>
     where: JoinFilterFunction<QueriedTables, FilteredStage<QueriedTables>>
 }
 
-interface GeneralJoinStage<QueriedTables extends TableDefinitions> {
+export interface GeneralJoinStage<QueriedTables extends TableDefinitions> {
     join<
         OtherTableOrigin extends Origin,
         OtherTable extends TableDefinition<

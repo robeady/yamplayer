@@ -33,12 +33,12 @@ export interface Renderable {
     renderSql: () => string
 }
 
-export type Origin =
-    | {
-          type: "table"
-          name: string[]
-      }
-    | SubqueryOrigin
+export type Origin = RealTableOrigin | SubqueryOrigin
+
+export type RealTableOrigin = {
+    type: "table"
+    name: string[]
+}
 
 export type SubqueryOrigin = { type: "subquery"; query: Renderable }
 
