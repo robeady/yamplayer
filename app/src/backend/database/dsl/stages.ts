@@ -62,7 +62,7 @@ export interface OrderedStage<
 
 export interface TableFilterFunction<QueriedTable extends TableDefinition, ReturnType> {
     (matching: Partial<RowTypeFrom<QueriedTable>>): ReturnType
-    <T>(column: PropOf<QueriedTable>, operator: "==", value: T): ReturnType
+    <T>(column: PropOf<QueriedTable>, operator: "==" | "<>", value: T): ReturnType
 }
 
 export interface JoinFilterFunction<QueriedTables extends TableDefinitions, ReturnType> {
@@ -74,10 +74,12 @@ export interface JoinFilterFunction<QueriedTables extends TableDefinitions, Retu
     <T>(column: ColumnIn<QueriedTables>, operator: "==", value: T): ReturnType
 }
 
-export interface TableFilterableStage<QueriedTable extends TableDefinition, ExtraReturnType = {}> {
+export interface TableFilterableStage<QueriedTable extends TableDefinition, ExtraReturnType = {}>
+    extends GeneralJoinStage<QueriedTablesFromSingle<QueriedTable>> {
     where: TableFilterFunction<QueriedTable, TableFilteredStage<QueriedTable, ExtraReturnType> & ExtraReturnType>
 }
-export interface TableFilteredStage<QueriedTable extends TableDefinition, ExtraReturnType = {}> {
+export interface TableFilteredStage<QueriedTable extends TableDefinition, ExtraReturnType = {}>
+    extends GeneralJoinStage<QueriedTablesFromSingle<QueriedTable>> {
     and: TableFilterFunction<QueriedTable, TableFilteredStage<QueriedTable, ExtraReturnType> & ExtraReturnType>
     or: TableFilterFunction<QueriedTable, TableFilteredStage<QueriedTable, ExtraReturnType> & ExtraReturnType>
 }
@@ -161,11 +163,7 @@ export type DefaultSelectionFromSingle<QueriedTable extends TableDefinition> = {
 
 export interface TableSelectStage<QueriedTable extends TableDefinition>
     extends GeneralSelectStage<Record<PropOf<QueriedTable>["tableAlias"], QueriedTable>>,
-        OrderStage<
-            QueriedTablesFromSingle<QueriedTable>,
-            DefaultSelectionFromSingle<QueriedTable>,
-            RowTypeFrom<QueriedTable>
-        > {}
+        OrderStage<QueriedTablesFromSingle<QueriedTable>, AliasedColumnsIn<QueriedTable>, RowTypeFrom<QueriedTable>> {}
 
 export interface JoinedSelectStage<QueriedTables extends TableDefinitions>
     extends GeneralSelectStage<QueriedTables>,

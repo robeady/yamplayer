@@ -14,9 +14,14 @@ import {
     AliasedColumnsIn,
     TableDefinitions,
     OrderStage,
+    TableFilterableStage,
+    JoinedBeforeOnStage,
+    JoinedAfterOnStage,
+    TableSelectStage,
 } from "./stages"
 import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, SqlType } from "./definitions"
 import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
+import { size, orderBy } from "lodash"
 
 interface DatabaseHandle {
     execute(sql: string): Promise<ExecResult>
@@ -24,14 +29,16 @@ interface DatabaseHandle {
 }
 
 function renderIdentifier(identifier: string) {
+    // TODO
     return identifier
 }
 
 function renderLiteral(literalValue: unknown) {
+    // TODO
     return literalValue
 }
 
-interface QueryData<Selection> {
+interface OrderLimitOffset<Selection> {
     limit?: number
     offset?: number
     orderBy: {
@@ -40,67 +47,208 @@ interface QueryData<Selection> {
     }[]
 }
 
-// type QueriedTablesFrom<QueriedTable extends TableDefinition<Origin | undefined, string>> = Record<
-//     PropOf<QueriedTable>["tableAlias"],
-//     QueriedTable
-// >
+// class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
+//     implements
+//         OrderStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>>,
+//         OrderedStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
+//     constructor(
+//         private databaseHandle: DatabaseHandle,
+//         private primaryTable: PropOf<QueriedTables>,
+//         private allTables: QueriedTables,
+//         private selection: Selection,
+//         private filter?: any,
+//         private query?: QueryData<Selection>,
+//     ) {}
 
-// type SelectedColumnsFrom<QueriedTable extends TableDefinition<Origin | undefined, string>> = {
-//     [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["sqlType"]
+//     private withQuery(
+//         f: (oldQuery: QueryData<Selection>) => QueryData<Selection>,
+//     ): SelectedImpl<QueriedTables, Selection> {
+//         return new SelectedImpl(
+//             this.databaseHandle,
+//             this.primaryTable,
+//             this.allTables,
+//             this.filter,
+//             f(this.query ?? { orderBy: [] }),
+//         )
+//     }
+
 // }
 
-class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
-    implements
-        OrderStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>>,
-        OrderedStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
-    constructor(
-        private databaseHandle: DatabaseHandle,
-        private primaryTable: PropOf<QueriedTables>,
-        private allTables: QueriedTables,
-        private selection: Selection,
-        private filter?: any,
-        private query?: QueryData<Selection>,
-    ) {}
+interface Filter {
+    type: "filter"
+    first: Filter | FilterElement | true
+    rest: ["and" | "or", Filter | FilterElement | true][]
+}
 
-    private withQuery(
-        f: (oldQuery: QueryData<Selection>) => QueryData<Selection>,
-    ): SelectedImpl<QueriedTables, Selection> {
-        return new SelectedImpl(
-            this.databaseHandle,
-            this.primaryTable,
-            this.allTables,
-            this.filter,
-            f(this.query ?? { orderBy: [] }),
+interface FilterElement {
+    type: "element"
+    left: Expression
+    op: SqlOperator
+    right: Expression
+}
+
+const sqlOperators = ["==", "<>"] as const
+type SqlOperator = typeof sqlOperators[number]
+
+type Expression =
+    | { type: "literal"; literal: unknown }
+    | { type: "column"; definition: ColumnDefinition<Origin, SqlType> }
+
+interface StageState<Selection> {
+    databaseHandle: DatabaseHandle
+    primaryTable: TableDefinition
+    joinedTablesByAlias: Record<string, TableDefinition>
+    joinFiltersByAlias: Record<string, Filter>
+    currentlyJoiningAgainstAlias?: string
+    filter?: Filter
+    orderLimitOffset: OrderLimitOffset<Selection>
+}
+
+class StageBackend<QueriedTables extends TableDefinitions, Selection = QueriedTables> {
+    selection: Selection
+    primaryTableAlias: string
+    primaryTableName: string[]
+    constructor(private state: StageState<Selection>, selection: Selection | null) {
+        // TODO: create "unsafe" constructor for use when copying this class to make the builder cheaper
+        const primaryTableColumns = Object.values(state.primaryTable)
+        if (primaryTableColumns.length === 0) {
+            throw Error("table has zero columns")
+        }
+        if (primaryTableColumns[0].tableOrigin.type !== "table") {
+            throw Error("not a real table")
+        }
+        this.primaryTableAlias = primaryTableColumns[0].tableAlias
+        this.primaryTableName = primaryTableColumns[0].tableOrigin.name
+        this.selection =
+            selection ??
+            (((size(state.joinedTablesByAlias) === 0
+                ? state.primaryTable
+                : {
+                      ...state.joinedTablesByAlias,
+                      [this.primaryTableAlias]: state.primaryTable,
+                  }) as unknown) as Selection)
+    }
+
+    where = (...args: {}[]): any => {
+        return this.withWhereFilter(f => {
+            if (f === undefined) {
+                return parseFilterArgs(this.selection, args)
+            } else {
+                throw Error("DSL misuse: where called multiple times")
+            }
+        })
+    }
+
+    on = (...args: {}[]): any => {
+        return this.withJoinFilter(f => {
+            if (f === undefined) {
+                return parseFilterArgs(this.selection, args)
+            } else {
+                throw Error("DSL misuse: on called multiple times")
+            }
+        })
+    }
+
+    and = (...args: {}[]): any => {
+        return this.andOr("and", args)
+    }
+
+    or = (...args: {}[]): any => {
+        return this.andOr("or", args)
+    }
+
+    private andOr = (connective: "and" | "or", ...args: {}[]): any => {
+        return this.withFilter(f => {
+            if (f === undefined) {
+                throw Error(`DSL misuse: ${connective} called before where/join`)
+            } else {
+                return { ...f, rest: [...f.rest, [connective, parseFilterArgs(this.selection, args)]] }
+            }
+        })
+    }
+
+    private withFilter = (f: (oldFilter?: Filter) => Filter) => {
+        return this.state.currentlyJoiningAgainstAlias === undefined ? this.withWhereFilter(f) : this.withJoinFilter(f)
+    }
+
+    private withWhereFilter = (f: (oldFilter?: Filter) => Filter) => {
+        return new StageBackend({ ...this.state, filter: f(this.state.filter) }, this.selection)
+    }
+
+    private withJoinFilter = (f: (oldFilter?: Filter) => Filter) => {
+        if (this.state.currentlyJoiningAgainstAlias === undefined) {
+            throw new Error("on/and/or clause used prior to join")
+        }
+        return new StageBackend(
+            {
+                ...this.state,
+                joinFiltersByAlias: {
+                    ...this.state.joinFiltersByAlias,
+                    [this.state.currentlyJoiningAgainstAlias]: f(
+                        this.state.joinFiltersByAlias[this.state.currentlyJoiningAgainstAlias],
+                    ),
+                },
+            },
+            this.selection,
         )
     }
 
-    thenBy(
-        column: ColumnIn<QueriedTables> | keyof AliasedColumnsIn<Selection>,
-        direction?: "ASC" | "DESC",
-    ): OrderedStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
-        return this.withQuery(q => ({ ...q, orderBy: [...q.orderBy, { column, direction }] }))
+    join = (_otherTable: TableDefinition): never => {
+        throw new Error("TODO: support auto joins")
     }
 
-    orderBy(
-        column: ColumnIn<QueriedTables> | keyof AliasedColumnsIn<Selection>,
-        direction?: "ASC" | "DESC",
-    ): OrderedStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
+    innerJoin = (otherTable: TableDefinition) => {
+        const columns = Object.values(otherTable)
+        if (columns.length === 0) {
+            throw new Error("joined table has zero columns")
+        }
+        const tableAlias = columns[0].tableAlias
+        if (tableAlias === this.primaryTableAlias) {
+            throw new Error("joined table has same alias as initial table")
+        }
+        if (tableAlias in this.state.joinedTablesByAlias) {
+            throw new Error("joined table has same alias as another joined table")
+        }
+        return new StageBackend(
+            {
+                ...this.state,
+                joinedTablesByAlias: { ...this.state.joinedTablesByAlias, [tableAlias]: otherTable },
+                currentlyJoiningAgainstAlias: tableAlias,
+            },
+            this.selection,
+        )
+    }
+
+    select = <Selection extends SelectionFrom<QueriedTables>>(selection: Selection) => {
+        // cast of this.state is fine because state cannot contain order-limit-offset prior to selection
+        return new StageBackend<QueriedTables, Selection>(this.state as StageState<Selection>, selection)
+    }
+
+    orderBy = (column: ColumnIn<QueriedTables> | keyof AliasedColumnsIn<Selection>, direction?: "ASC" | "DESC") => {
         return this.thenBy(column, direction)
     }
 
-    limit(limit: number): OffsetStage<AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
-        return this.withQuery(q => ({ ...q, limit }))
-    }
-    offset(offset: number): FetchStage<AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
-        return this.withQuery(q => ({ ...q, offset }))
+    thenBy = (column: ColumnIn<QueriedTables> | keyof AliasedColumnsIn<Selection>, direction?: "ASC" | "DESC") => {
+        return this.withOrderLimitOffset(olo => ({ ...olo, orderBy: [...olo.orderBy, { column, direction }] }))
     }
 
-    async fetch(): Promise<RowTypeFrom<Selection>[]> {
+    limit = (limit: number) => {
+        return this.withOrderLimitOffset(olo => ({ ...olo, limit }))
+    }
+    offset = (offset: number) => {
+        return this.withOrderLimitOffset(olo => ({ ...olo, offset }))
+    }
+
+    private withOrderLimitOffset = (
+        f: (oldOrderLimitOffset: OrderLimitOffset<Selection>) => OrderLimitOffset<Selection>,
+    ) => {
+        return new StageBackend({ ...this.state, orderLimitOffset: f(this.state.orderLimitOffset) }, this.selection)
+    }
+
+    private renderSql = () => {
         const selectionsSql = traverseSelection(this.selection, (keyPath, col) =>
             columnDefinitionSql(col, keyPath.length === 1 ? keyPath[0] : null),
         ).join(",")
-
-        const selectionDestinations = traverseSelection(this.selection, keyPath => keyPath)
 
         // TODO from all the tables, implement joins
         const columnsInPrimaryTable = Object.values(this.primaryTable)
@@ -112,10 +260,13 @@ class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
                 : `(${tableOrigin.query.renderSql()})`
         const fromSql = `${tableOriginSql} AS ${renderIdentifier(tableAlias)}`
 
-        const rows = await this.databaseHandle.fetch(
-            `SELECT ${selectionsSql} FROM ${fromSql}${whereSql(this.filter)}${orderLimitOffsetSql(this.query)}`,
-        )
+        return `SELECT ${selectionsSql} FROM ${fromSql}${whereSql(this.filter)}${orderLimitOffsetSql(this.query)}`
+    }
 
+    fetch = async (): Promise<RowTypeFrom<Selection>[]> => {
+        const sql = this.renderSql()
+        const selectionDestinations = traverseSelection(this.selection, keyPath => keyPath)
+        const rows = await this.state.databaseHandle.fetch(sql)
         return rows.map(row => {
             let rowObject: any = {}
             for (let i = 0; i < row.length; i++) {
@@ -125,7 +276,7 @@ class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
         })
     }
 
-    asTable<Alias extends string>(
+    asTable = <Alias extends string>(
         alias: Alias,
     ): {
         [ColumnAlias in keyof AliasedColumnsIn<Selection> & string]: ColumnDefinition<
@@ -135,7 +286,7 @@ class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
             ColumnAlias,
             unknown
         >
-    } {
+    } => {
         const cols = Object.entries(this.selection)
         const newCols: [string, ColumnDefinition<SubqueryOrigin, SqlType, Alias, string, undefined>][] = cols
             .filter(([_, def]) => COLUMN_DEFINITION in def)
@@ -143,7 +294,7 @@ class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
                 const oldDef = def as ColumnDefinition<Origin, SqlType>
                 const newDef = {
                     [COLUMN_DEFINITION]: true,
-                    tableOrigin: { type: "subquery", query: { renderSql: () => "hello world" } },
+                    tableOrigin: { type: "subquery", query: { renderSql: () => this.renderSql() } },
                     tableAlias: alias,
                     columnName: name,
                     sqlType: oldDef.sqlType,
@@ -152,6 +303,138 @@ class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
                 return [name, newDef]
             })
         return Object.fromEntries(newCols) as any
+    }
+}
+
+class SelectedStageImpl<QueriedTables extends TableDefinitions, Selection>
+    implements OrderStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
+    constructor(private backend: StageBackend<QueriedTables, Selection>) {}
+
+    private attach = <Q extends TableDefinitions, S, T extends unknown[]>(f: (...args: T) => StageBackend<Q, S>) => (
+        ...args: T
+    ) => new SelectedStageImpl(f(...args))
+
+    orderBy = this.attach(this.backend.orderBy)
+    thenBy = this.attach(this.backend.thenBy)
+    limit = this.attach(this.backend.limit)
+    offset = this.attach(this.backend.offset)
+    fetch = this.backend.fetch
+    asTable = this.backend.asTable
+}
+
+class SingleTableStageImpl<QueriedTable extends TableDefinition> implements TableSelectStage<QueriedTable> {
+    constructor(private backend: StageBackend<QueriedTablesFromSingle<QueriedTable>, QueriedTable>) {}
+
+    private attach = <T extends unknown[]>(
+        f: (...args: T) => StageBackend<QueriedTablesFromSingle<QueriedTable>, QueriedTable>,
+    ) => (...args: T) => new SingleTableStageImpl<QueriedTable>(f(...args))
+
+    where = this.attach(this.backend.where)
+    and = this.attach(this.backend.and)
+    or = this.attach(this.backend.or)
+    join = this.attach(this.backend.join)
+    innerJoin = this.attach(this.backend.innerJoin)
+    orderBy = this.attach(this.backend.orderBy)
+    thenBy = this.attach(this.backend.thenBy)
+    limit = this.attach(this.backend.limit)
+    offset = this.attach(this.backend.offset)
+    select = <Selection extends SelectionFrom<QueriedTablesFromSingle<QueriedTable>>>(selection: Selection) => {
+        return new SelectedStageImpl(this.backend.select(selection))
+    }
+    fetch = this.backend.fetch
+    asTable = this.backend.asTable
+
+    insert = (row: RowTypeFrom<QueriedTable>): Promise<ExecResult> => {
+        const columnNames = Object.keys(row)
+        for (const columnName of columnNames) {
+            if (!(columnName in this.state.primaryTable)) {
+                throw Error(`column ${columnName} not found in table with alias ${this.primaryTableAlias}`)
+            }
+        }
+        if (columnNames.length === 0) {
+            return this.state.databaseHandle.execute(`INSERT INTO ${this.primaryTableName} DEFAULT VALUES`)
+        } else {
+            const tableNameSql = this.primaryTableName.map(renderIdentifier).join(",")
+            const columnsSql = columnNames.map(renderIdentifier).join(",")
+            const valuesSql = Object.values(row).map(renderLiteral).join(",")
+            return this.state.databaseHandle.execute(
+                `INSERT INTO ${tableNameSql} (${columnsSql}) VALUES (${valuesSql})`,
+            )
+        }
+    }
+
+    update = (row: Partial<RowTypeFrom<QueriedTable>>): Promise<ExecResult> => {
+        const tableNameSql = this.primaryTableName.map(renderIdentifier).join(",")
+        const updateSql = Object.entries(row)
+            .map(([key, value]) => `${renderIdentifier(key)} = ${renderLiteral(value)}`)
+            .join(",")
+        return this.state.databaseHandle.execute(
+            `UPDATE ${tableNameSql} SET ${updateSql}${whereSql(this.state.filter)}`,
+        )
+    }
+
+    delete = (): Promise<ExecResult> => {
+        const tableNameSql = this.primaryTableName.map(renderIdentifier).join(",")
+        return this.state.databaseHandle.execute(`DELETE FROM ${tableNameSql}${whereSql(this.state.filter)}`)
+    }
+}
+
+function parseFilterArgs(defaultSelection: any, args: {}[]): Filter {
+    if (args.length === 1) {
+        if (typeof args[0] === "function") {
+            throw Error("TODO: where builder function")
+        } else if (typeof args[0] === "object") {
+            return parseMatcher(defaultSelection, args[0])
+        } else {
+            throw Error("unexpected single argument of type " + typeof args[0])
+        }
+    } else if (args.length === 3) {
+        return { type: "filter", first: parseWhereClause(args[0], args[1], args[2]), rest: [] }
+    } else {
+        throw Error("DSL misuse: invalid where clause")
+    }
+}
+
+function parseWhereClause(left: {}, operator: {}, right: {}): FilterElement {
+    if (!sqlOperators.includes(operator as any)) throw Error("unsupported operator " + operator)
+    return {
+        type: "element",
+        left:
+            COLUMN_DEFINITION in left
+                ? { type: "column", definition: left as ColumnDefinition<Origin, SqlType> }
+                : { type: "literal", literal: left },
+        op: operator as SqlOperator,
+        right:
+            COLUMN_DEFINITION in right
+                ? { type: "column", definition: right as ColumnDefinition<Origin, SqlType> }
+                : { type: "literal", literal: right },
+    }
+}
+
+function parseMatcher(defaultSelection: any, matcher: {}): Filter {
+    const elements = parseMatcherIntoFilterElements(defaultSelection, matcher)
+    const first = elements.shift() || true
+    return { type: "filter", first, rest: elements.map(e => ["and", e]) }
+}
+
+function parseMatcherIntoFilterElements(defaultSelection: any, matcher: {}): FilterElement[] {
+    if (COLUMN_DEFINITION in defaultSelection) {
+        return [
+            {
+                type: "element",
+                left: { type: "column", definition: defaultSelection },
+                op: "==",
+                right: { type: "literal", literal: matcher },
+            },
+        ]
+    } else {
+        return Object.entries(matcher).flatMap(([key, subMatcher]) => {
+            if (key in defaultSelection) {
+                return parseMatcherIntoFilterElements(defaultSelection[key], subMatcher as {})
+            } else {
+                throw Error(`Key ${key} in matcher not found in selected tables`)
+            }
+        })
     }
 }
 
@@ -164,17 +447,14 @@ class SingleTableImpl<QueriedTable extends TableDefinition<Origin, string>, Sele
             DefaultSelectionFromSingle<QueriedTable>, // TODO are these right? what if the user made a selection?
             RowTypeFrom<Selection>
         > {
-    tableName: string
+    tableOrigin: Origin
+    tableAlias: string
 
-    constructor(
-        private databaseHandle: DatabaseHandle,
-        private table: QueriedTable,
-        private filter?: any,
-        private query?: QueryData<Selection>,
-    ) {
-        const tableName = Object.values(table).shift()?.tableOrigin
-        if (tableName === undefined) throw Error("table must have at least one column")
-        this.tableName = tableName
+    constructor(private databaseHandle: DatabaseHandle, private table: QueriedTable, private filter?: any) {
+        const firstColumn = Object.values(table).shift()
+        if (firstColumn === undefined) throw Error("table must have at least one column")
+        this.tableOrigin = firstColumn.tableOrigin
+        this.tableAlias = firstColumn.tableAlias
     }
 
     insert(row: RowTypeFrom<QueriedTable>): Promise<ExecResult> {
@@ -208,21 +488,14 @@ class SingleTableImpl<QueriedTable extends TableDefinition<Origin, string>, Sele
         return this.databaseHandle.execute(`DELETE FROM ${tableNameSql}${whereSql(this.filter)}`)
     }
 
-    or(match: Predicate<Row>): FilteredTable<TableName, Row> {
-        if (this.filter === undefined) {
-            throw Error("DSL misuse: called or before where")
-        }
-        throw new Error("Method not implemented.")
-    }
-
-    where(column: any, operator?: any, value?: any): FilteredTable<TableName, Row> {
-        throw new Error("Method not implemented.")
-    }
-
-    select<Selection extends SelectionFrom<Record<PropOf<QueriedTable>["tableAlias"], QueriedTable>>>(
-        selection: Selection,
-    ) {
-        return this.withQuery(q => ({ ...q, selection }))
+    select<Selection extends SelectionFrom<QueriedTablesFromSingle<QueriedTable>>>(selection: Selection) {
+        return new SelectedImpl(
+            this.databaseHandle,
+            this.table,
+            { [this.tableAlias]: this.table },
+            selection,
+            this.filter,
+        )
     }
 
     orderBy(
@@ -259,7 +532,7 @@ class SingleTableImpl<QueriedTable extends TableDefinition<Origin, string>, Sele
 
     private withQuery<QueriedTables>(
         f: (oldQuery: QueryData<QueriedTables>) => QueryData<QueriedTables>,
-    ): SingleTableImpl<QueriedTable> {
+    ): SingleStageImpl<QueriedTable> {
         return new SingleTableImpl(this.databaseHandle, this.table, this.filter, f(this.query ?? { orderBy: [] }))
     }
 }
