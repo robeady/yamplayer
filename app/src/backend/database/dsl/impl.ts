@@ -108,7 +108,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection = QueriedTa
     selection: Selection
     primaryTableAlias: string
     primaryTableName: string[]
-    constructor(private state: StageState<Selection>, selection: Selection | null) {
+    constructor(public state: StageState<Selection>, selection: Selection | null) {
         // TODO: create "unsafe" constructor for use when copying this class to make the builder cheaper
         const primaryTableColumns = Object.values(state.primaryTable)
         if (primaryTableColumns.length === 0) {
@@ -193,8 +193,9 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection = QueriedTa
         )
     }
 
-    join = (_otherTable: TableDefinition): never => {
+    join = (_otherTable: TableDefinition) => {
         throw new Error("TODO: support auto joins")
+        return new StageBackend(this.state, this.selection)
     }
 
     innerJoin = (otherTable: TableDefinition) => {
@@ -322,17 +323,23 @@ class SelectedStageImpl<QueriedTables extends TableDefinitions, Selection>
     asTable = this.backend.asTable
 }
 
-class SingleTableStageImpl<QueriedTable extends TableDefinition> implements TableSelectStage<QueriedTable> {
+class SingleTableStageImpl<QueriedTable extends TableDefinition>
+    implements TableSelectStage<QueriedTable>, TableStage<QueriedTable> {
     constructor(private backend: StageBackend<QueriedTablesFromSingle<QueriedTable>, QueriedTable>) {}
 
     private attach = <T extends unknown[]>(
         f: (...args: T) => StageBackend<QueriedTablesFromSingle<QueriedTable>, QueriedTable>,
     ) => (...args: T) => new SingleTableStageImpl<QueriedTable>(f(...args))
 
+    private attachTo = <R, T extends unknown[]>(
+        ctor: new (newBackend: StageBackend<QueriedTablesFromSingle<QueriedTable>, QueriedTable>) => R,
+        f: (...args: T) => StageBackend<QueriedTablesFromSingle<QueriedTable>, QueriedTable>,
+    ) => (...args: T) => new ctor(f(...args))
+
     where = this.attach(this.backend.where)
     and = this.attach(this.backend.and)
     or = this.attach(this.backend.or)
-    join = this.attach(this.backend.join)
+    join = this.attachTo(this.backend.join)
     innerJoin = this.attach(this.backend.innerJoin)
     orderBy = this.attach(this.backend.orderBy)
     thenBy = this.attach(this.backend.thenBy)
@@ -345,37 +352,47 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Tabl
     asTable = this.backend.asTable
 
     insert = (row: RowTypeFrom<QueriedTable>): Promise<ExecResult> => {
+        const {
+            state: { primaryTable, databaseHandle },
+            primaryTableAlias,
+            primaryTableName,
+        } = this.backend
         const columnNames = Object.keys(row)
         for (const columnName of columnNames) {
-            if (!(columnName in this.state.primaryTable)) {
-                throw Error(`column ${columnName} not found in table with alias ${this.primaryTableAlias}`)
+            if (!(columnName in primaryTable)) {
+                throw Error(`column ${columnName} not found in table with alias ${primaryTableAlias}`)
             }
         }
+        const tableNameSql = primaryTableName.map(renderIdentifier).join(",")
         if (columnNames.length === 0) {
-            return this.state.databaseHandle.execute(`INSERT INTO ${this.primaryTableName} DEFAULT VALUES`)
+            return databaseHandle.execute(`INSERT INTO ${tableNameSql} DEFAULT VALUES`)
         } else {
-            const tableNameSql = this.primaryTableName.map(renderIdentifier).join(",")
             const columnsSql = columnNames.map(renderIdentifier).join(",")
             const valuesSql = Object.values(row).map(renderLiteral).join(",")
-            return this.state.databaseHandle.execute(
-                `INSERT INTO ${tableNameSql} (${columnsSql}) VALUES (${valuesSql})`,
-            )
+            return databaseHandle.execute(`INSERT INTO ${tableNameSql} (${columnsSql}) VALUES (${valuesSql})`)
         }
     }
 
     update = (row: Partial<RowTypeFrom<QueriedTable>>): Promise<ExecResult> => {
-        const tableNameSql = this.primaryTableName.map(renderIdentifier).join(",")
+        const {
+            state: { filter, databaseHandle },
+            primaryTableName,
+        } = this.backend
+
+        const tableNameSql = primaryTableName.map(renderIdentifier).join(",")
         const updateSql = Object.entries(row)
             .map(([key, value]) => `${renderIdentifier(key)} = ${renderLiteral(value)}`)
             .join(",")
-        return this.state.databaseHandle.execute(
-            `UPDATE ${tableNameSql} SET ${updateSql}${whereSql(this.state.filter)}`,
-        )
+        return databaseHandle.execute(`UPDATE ${tableNameSql} SET ${updateSql}${whereSql(filter)}`)
     }
 
     delete = (): Promise<ExecResult> => {
-        const tableNameSql = this.primaryTableName.map(renderIdentifier).join(",")
-        return this.state.databaseHandle.execute(`DELETE FROM ${tableNameSql}${whereSql(this.state.filter)}`)
+        const {
+            state: { filter, databaseHandle },
+            primaryTableName,
+        } = this.backend
+        const tableNameSql = primaryTableName.map(renderIdentifier).join(",")
+        return databaseHandle.execute(`DELETE FROM ${tableNameSql}${whereSql(filter)}`)
     }
 }
 
