@@ -17,7 +17,7 @@ interface ColumnDetails<T = {}, C = unknown> {
 }
 
 function dbType<T>(): ColumnDetails<T, undefined> & {
-    whichReferences: <C extends ColumnDefinition<string, SqlType<T>>>(otherColumn: C) => ColumnDetails<T, C>
+    whichReferences: <C extends ColumnDefinition<RealTableOrigin, SqlType<T>>>(otherColumn: C) => ColumnDetails<T, C>
 } {
     return {
         sqlType: { [PHANTOM_INSTANCE]: undefined as any },
@@ -53,7 +53,7 @@ export type TableDefinition<
 > = Columns
 
 export interface ColumnDefinition<
-    TableOrigin,
+    TableOrigin extends Origin,
     SqlType,
     TableAlias = string,
     ColumnName = string,
@@ -84,9 +84,10 @@ export function table<TableName extends string, Columns extends Record<string, C
     }
 > {
     return mapValues(columns, (columnDetails, columnName) => ({
-        tableName: name,
+        [COLUMN_DEFINITION]: true,
+        tableOrigin: { type: "table", name: [name] },
         tableAlias: name,
-        columnName: columnName,
+        columnName: columnName as any,
         sqlType: columnDetails.sqlType,
         references: columnDetails.references,
     }))

@@ -1,27 +1,20 @@
 import {
-    TableStage,
-    TableFilteredStage,
     ExecResult,
-    OrderedStage,
     RowTypeFrom,
-    OffsetStage,
-    FetchStage,
-    PropOf,
     ColumnIn,
     SelectionFrom,
-    DefaultSelectionFromSingle,
     QueriedTablesFromSingle,
-    AliasedColumnsIn,
+    AliasIn,
     TableDefinitions,
     OrderStage,
-    TableFilterableStage,
-    JoinedBeforeOnStage,
-    JoinedAfterOnStage,
-    TableSelectStage,
+    InsertStage,
+    OnStage,
+    KeyByAlias,
+    ColumnsFrom,
 } from "./stages"
-import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, SqlType } from "./definitions"
+import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, SqlType, RealTableOrigin } from "./definitions"
 import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
-import { size, orderBy } from "lodash"
+import { size } from "lodash"
 
 interface DatabaseHandle {
     execute(sql: string): Promise<ExecResult>
@@ -35,48 +28,21 @@ function renderIdentifier(identifier: string) {
 
 function renderLiteral(literalValue: unknown) {
     // TODO
-    return literalValue
+    return literalValue as string
 }
 
-interface OrderLimitOffset<Selection> {
+interface OrderLimitOffset {
     limit?: number
     offset?: number
     orderBy: {
-        column: keyof AliasedColumnsIn<Selection> | ColumnDefinition<Origin, unknown> // TODO are these type arguments right?
+        column: string | ColumnDefinition<Origin, SqlType> // TODO are these type arguments right?
         direction?: "ASC" | "DESC"
     }[]
 }
 
-// class SelectedImpl<QueriedTables extends TableDefinitions, Selection>
-//     implements
-//         OrderStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>>,
-//         OrderedStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
-//     constructor(
-//         private databaseHandle: DatabaseHandle,
-//         private primaryTable: PropOf<QueriedTables>,
-//         private allTables: QueriedTables,
-//         private selection: Selection,
-//         private filter?: any,
-//         private query?: QueryData<Selection>,
-//     ) {}
-
-//     private withQuery(
-//         f: (oldQuery: QueryData<Selection>) => QueryData<Selection>,
-//     ): SelectedImpl<QueriedTables, Selection> {
-//         return new SelectedImpl(
-//             this.databaseHandle,
-//             this.primaryTable,
-//             this.allTables,
-//             this.filter,
-//             f(this.query ?? { orderBy: [] }),
-//         )
-//     }
-
-// }
-
 interface Filter {
     type: "filter"
-    first: Filter | FilterElement | true
+    first: Filter | FilterElement | true | false
     rest: ["and" | "or", Filter | FilterElement | true][]
 }
 
@@ -94,31 +60,33 @@ type Expression =
     | { type: "literal"; literal: unknown }
     | { type: "column"; definition: ColumnDefinition<Origin, SqlType> }
 
-interface StageState<Selection> {
-    databaseHandle: DatabaseHandle
-    primaryTable: TableDefinition
-    joinedTablesByAlias: Record<string, TableDefinition>
+type JoinType = "inner"
+
+interface JoinInfo {
+    joinedTablesByAlias: Record<string, [JoinType, TableDefinition]>
     joinFiltersByAlias: Record<string, Filter>
-    currentlyJoiningAgainstAlias?: string
-    filter?: Filter
-    orderLimitOffset: OrderLimitOffset<Selection>
 }
 
-class StageBackend<QueriedTables extends TableDefinitions, Selection = QueriedTables> {
+interface StageState extends JoinInfo {
+    databaseHandle: DatabaseHandle
+    primaryTable: TableDefinition
+    currentlyJoiningAgainstAlias?: string
+    filter?: Filter
+    orderLimitOffset: OrderLimitOffset
+}
+
+class StageBackend<QueriedTables extends TableDefinitions, Selection> {
     selection: Selection
     primaryTableAlias: string
     primaryTableName: string[]
-    constructor(public state: StageState<Selection>, selection: Selection | null) {
+    constructor(public state: StageState, selection: Selection | null) {
         // TODO: create "unsafe" constructor for use when copying this class to make the builder cheaper
-        const primaryTableColumns = Object.values(state.primaryTable)
-        if (primaryTableColumns.length === 0) {
-            throw Error("table has zero columns")
-        }
-        if (primaryTableColumns[0].tableOrigin.type !== "table") {
+        const primaryTableDetails = tableDetails(state.primaryTable)
+        if (primaryTableDetails.tableOrigin.type !== "table") {
             throw Error("not a real table")
         }
-        this.primaryTableAlias = primaryTableColumns[0].tableAlias
-        this.primaryTableName = primaryTableColumns[0].tableOrigin.name
+        this.primaryTableAlias = primaryTableDetails.tableAlias
+        this.primaryTableName = primaryTableDetails.tableOrigin.name
         this.selection =
             selection ??
             (((size(state.joinedTablesByAlias) === 0
@@ -129,7 +97,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection = QueriedTa
                   }) as unknown) as Selection)
     }
 
-    where = (...args: {}[]): any => {
+    where = (...args: {}[]) => {
         return this.withWhereFilter(f => {
             if (f === undefined) {
                 return parseFilterArgs(this.selection, args)
@@ -139,7 +107,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection = QueriedTa
         })
     }
 
-    on = (...args: {}[]): any => {
+    on = (...args: {}[]) => {
         return this.withJoinFilter(f => {
             if (f === undefined) {
                 return parseFilterArgs(this.selection, args)
@@ -149,15 +117,15 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection = QueriedTa
         })
     }
 
-    and = (...args: {}[]): any => {
+    and = (...args: {}[]) => {
         return this.andOr("and", args)
     }
 
-    or = (...args: {}[]): any => {
+    or = (...args: {}[]) => {
         return this.andOr("or", args)
     }
 
-    private andOr = (connective: "and" | "or", ...args: {}[]): any => {
+    private andOr = (connective: "and" | "or", ...args: {}[]) => {
         return this.withFilter(f => {
             if (f === undefined) {
                 throw Error(`DSL misuse: ${connective} called before where/join`)
@@ -172,14 +140,17 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection = QueriedTa
     }
 
     private withWhereFilter = (f: (oldFilter?: Filter) => Filter) => {
-        return new StageBackend({ ...this.state, filter: f(this.state.filter) }, this.selection)
+        return new StageBackend<QueriedTables, Selection>(
+            { ...this.state, filter: f(this.state.filter) },
+            this.selection,
+        )
     }
 
     private withJoinFilter = (f: (oldFilter?: Filter) => Filter) => {
         if (this.state.currentlyJoiningAgainstAlias === undefined) {
             throw new Error("on/and/or clause used prior to join")
         }
-        return new StageBackend(
+        return new StageBackend<QueriedTables, Selection>(
             {
                 ...this.state,
                 joinFiltersByAlias: {
@@ -198,7 +169,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection = QueriedTa
         return new StageBackend(this.state, this.selection)
     }
 
-    innerJoin = (otherTable: TableDefinition) => {
+    innerJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) => {
         const columns = Object.values(otherTable)
         if (columns.length === 0) {
             throw new Error("joined table has zero columns")
@@ -210,26 +181,30 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection = QueriedTa
         if (tableAlias in this.state.joinedTablesByAlias) {
             throw new Error("joined table has same alias as another joined table")
         }
-        return new StageBackend(
+        return new StageBackend<QueriedTables & KeyByAlias<OtherTable>, QueriedTables & KeyByAlias<OtherTable>>(
             {
                 ...this.state,
-                joinedTablesByAlias: { ...this.state.joinedTablesByAlias, [tableAlias]: otherTable },
+                joinedTablesByAlias: { ...this.state.joinedTablesByAlias, [tableAlias]: ["inner", otherTable] },
                 currentlyJoiningAgainstAlias: tableAlias,
+                // clear some params explicitly (although they shouldn't be set) so the types work out
+                orderLimitOffset: { orderBy: [] },
             },
-            this.selection,
+            null,
         )
     }
 
     select = <Selection extends SelectionFrom<QueriedTables>>(selection: Selection) => {
-        // cast of this.state is fine because state cannot contain order-limit-offset prior to selection
-        return new StageBackend<QueriedTables, Selection>(this.state as StageState<Selection>, selection)
+        return new StageBackend<QueriedTables, Selection>(
+            { ...this.state, orderLimitOffset: { orderBy: [] } },
+            selection,
+        )
     }
 
-    orderBy = (column: ColumnIn<QueriedTables> | keyof AliasedColumnsIn<Selection>, direction?: "ASC" | "DESC") => {
+    orderBy = (column: ColumnIn<QueriedTables> | AliasIn<Selection>, direction?: "ASC" | "DESC") => {
         return this.thenBy(column, direction)
     }
 
-    thenBy = (column: ColumnIn<QueriedTables> | keyof AliasedColumnsIn<Selection>, direction?: "ASC" | "DESC") => {
+    thenBy = (column: ColumnIn<QueriedTables> | AliasIn<Selection>, direction?: "ASC" | "DESC") => {
         return this.withOrderLimitOffset(olo => ({ ...olo, orderBy: [...olo.orderBy, { column, direction }] }))
     }
 
@@ -240,28 +215,29 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection = QueriedTa
         return this.withOrderLimitOffset(olo => ({ ...olo, offset }))
     }
 
-    private withOrderLimitOffset = (
-        f: (oldOrderLimitOffset: OrderLimitOffset<Selection>) => OrderLimitOffset<Selection>,
-    ) => {
-        return new StageBackend({ ...this.state, orderLimitOffset: f(this.state.orderLimitOffset) }, this.selection)
+    private withOrderLimitOffset = (f: (oldOrderLimitOffset: OrderLimitOffset) => OrderLimitOffset) => {
+        return new StageBackend<QueriedTables, Selection>(
+            { ...this.state, orderLimitOffset: f(this.state.orderLimitOffset) },
+            this.selection,
+        )
     }
 
     private renderSql = () => {
         const selectionsSql = traverseSelection(this.selection, (keyPath, col) =>
-            columnDefinitionSql(col, keyPath.length === 1 ? keyPath[0] : null),
+            columnDefinitionSql(col, keyPath.length === 1 ? keyPath[0] : undefined),
         ).join(",")
 
         // TODO from all the tables, implement joins
-        const columnsInPrimaryTable = Object.values(this.primaryTable)
+        const columnsInPrimaryTable = Object.values(this.state.primaryTable)
         if (columnsInPrimaryTable.length === 0) throw Error("Primary table has no columns")
-        const { tableOrigin, tableAlias } = Object.values(this.primaryTable)[0]
+        const { tableOrigin, tableAlias } = Object.values(this.state.primaryTable)[0]
         const tableOriginSql =
-            tableOrigin.type === "table"
-                ? tableOrigin.name.map(renderIdentifier).join(".")
-                : `(${tableOrigin.query.renderSql()})`
+            tableOrigin.type === "table" ? realTableSql(tableOrigin) : `(${tableOrigin.query.renderSql()})`
         const fromSql = `${tableOriginSql} AS ${renderIdentifier(tableAlias)}`
 
-        return `SELECT ${selectionsSql} FROM ${fromSql}${whereSql(this.filter)}${orderLimitOffsetSql(this.query)}`
+        return `SELECT ${selectionsSql} FROM ${fromSql}${joinSql(this.state)}${whereSql(
+            this.state.filter,
+        )}${orderLimitOffsetSql(this.state.orderLimitOffset)}`
     }
 
     fetch = async (): Promise<RowTypeFrom<Selection>[]> => {
@@ -279,19 +255,24 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection = QueriedTa
 
     asTable = <Alias extends string>(
         alias: Alias,
-    ): {
-        [ColumnAlias in keyof AliasedColumnsIn<Selection> & string]: ColumnDefinition<
-            SubqueryOrigin,
-            AliasedColumnsIn<Selection>[ColumnAlias],
-            Alias,
-            ColumnAlias,
-            unknown
-        >
-    } => {
+    ): Selection extends Record<string, ColumnDefinition<Origin, SqlType>>
+        ? TableDefinition<
+              SubqueryOrigin,
+              Alias,
+              ColumnsFrom<
+                  Alias,
+                  {
+                      [ColumnName in keyof Selection]: Selection[ColumnName]["sqlType"]
+                  }
+              >
+          >
+        : never => {
         const cols = Object.entries(this.selection)
-        const newCols: [string, ColumnDefinition<SubqueryOrigin, SqlType, Alias, string, undefined>][] = cols
-            .filter(([_, def]) => COLUMN_DEFINITION in def)
-            .map(([name, def]) => {
+        if (cols.some(c => !(COLUMN_DEFINITION in c))) {
+            throw Error("Can only convert flat selection of columns to a table")
+        }
+        const newCols: [string, ColumnDefinition<SubqueryOrigin, SqlType, Alias, string, undefined>][] = cols.map(
+            ([name, def]) => {
                 const oldDef = def as ColumnDefinition<Origin, SqlType>
                 const newDef = {
                     [COLUMN_DEFINITION]: true,
@@ -302,14 +283,17 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection = QueriedTa
                     references: undefined,
                 } as const
                 return [name, newDef]
-            })
+            },
+        )
         return Object.fromEntries(newCols) as any
     }
 }
 
 class SelectedStageImpl<QueriedTables extends TableDefinitions, Selection>
-    implements OrderStage<QueriedTables, AliasedColumnsIn<Selection>, RowTypeFrom<Selection>> {
+    implements OrderStage<QueriedTables, Selection> {
     constructor(private backend: StageBackend<QueriedTables, Selection>) {}
+
+    map = <R>(f: undefined | null | false | ((stage: this) => R)) => (typeof f === "function" ? f(this) : this)
 
     private attach = <Q extends TableDefinitions, S, T extends unknown[]>(f: (...args: T) => StageBackend<Q, S>) => (
         ...args: T
@@ -323,33 +307,62 @@ class SelectedStageImpl<QueriedTables extends TableDefinitions, Selection>
     asTable = this.backend.asTable
 }
 
-class SingleTableStageImpl<QueriedTable extends TableDefinition>
-    implements TableSelectStage<QueriedTable>, TableStage<QueriedTable> {
+class MultiTableStageImpl<QueriedTables extends TableDefinitions> implements OnStage<QueriedTables> {
+    constructor(private backend: StageBackend<QueriedTables, QueriedTables>) {}
+
+    map = <R>(f: undefined | null | false | ((stage: this) => R)) => (typeof f === "function" ? f(this) : this)
+
+    private attach = <T extends unknown[]>(f: (...args: T) => StageBackend<QueriedTables, QueriedTables>) => (
+        ...args: T
+    ) => new MultiTableStageImpl<QueriedTables>(f(...args))
+
+    innerJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) => {
+        return new MultiTableStageImpl(this.backend.innerJoin<OtherTable>(otherTable))
+    }
+    on = this.attach(this.backend.on)
+    where = this.attach(this.backend.where)
+    and = this.attach(this.backend.and)
+    or = this.attach(this.backend.or)
+
+    select = <Selection extends SelectionFrom<QueriedTables>>(selection: Selection) => {
+        return new SelectedStageImpl(this.backend.select(selection))
+    }
+
+    orderBy = this.attach(this.backend.orderBy)
+    thenBy = this.attach(this.backend.thenBy)
+    limit = this.attach(this.backend.limit)
+    offset = this.attach(this.backend.offset)
+
+    fetch = this.backend.fetch
+    asTable = this.backend.asTable
+}
+
+class SingleTableStageImpl<QueriedTable extends TableDefinition> implements InsertStage<QueriedTable> {
     constructor(private backend: StageBackend<QueriedTablesFromSingle<QueriedTable>, QueriedTable>) {}
+
+    map = <R>(f: undefined | null | false | ((stage: this) => R)) => (typeof f === "function" ? f(this) : this)
 
     private attach = <T extends unknown[]>(
         f: (...args: T) => StageBackend<QueriedTablesFromSingle<QueriedTable>, QueriedTable>,
     ) => (...args: T) => new SingleTableStageImpl<QueriedTable>(f(...args))
 
-    private attachTo = <R, T extends unknown[]>(
-        ctor: new (newBackend: StageBackend<QueriedTablesFromSingle<QueriedTable>, QueriedTable>) => R,
-        f: (...args: T) => StageBackend<QueriedTablesFromSingle<QueriedTable>, QueriedTable>,
-    ) => (...args: T) => new ctor(f(...args))
-
     where = this.attach(this.backend.where)
     and = this.attach(this.backend.and)
     or = this.attach(this.backend.or)
-    join = this.attachTo(this.backend.join)
-    innerJoin = this.attach(this.backend.innerJoin)
+
+    innerJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) => {
+        return new MultiTableStageImpl(this.backend.innerJoin<OtherTable>(otherTable))
+    }
     orderBy = this.attach(this.backend.orderBy)
     thenBy = this.attach(this.backend.thenBy)
-    limit = this.attach(this.backend.limit)
-    offset = this.attach(this.backend.offset)
+    limit: any = this.attach(this.backend.limit)
+    offset: any = this.attach(this.backend.offset)
+
     select = <Selection extends SelectionFrom<QueriedTablesFromSingle<QueriedTable>>>(selection: Selection) => {
         return new SelectedStageImpl(this.backend.select(selection))
     }
     fetch = this.backend.fetch
-    asTable = this.backend.asTable
+    asTable: any = this.backend.asTable
 
     insert = (row: RowTypeFrom<QueriedTable>): Promise<ExecResult> => {
         const {
@@ -455,105 +468,6 @@ function parseMatcherIntoFilterElements(defaultSelection: any, matcher: {}): Fil
     }
 }
 
-class SingleTableImpl<QueriedTable extends TableDefinition<Origin, string>, Selection = QueriedTable>
-    implements
-        TableStage<QueriedTable>,
-        TableFilteredStage<QueriedTable>,
-        OrderedStage<
-            QueriedTablesFromSingle<QueriedTable>,
-            DefaultSelectionFromSingle<QueriedTable>, // TODO are these right? what if the user made a selection?
-            RowTypeFrom<Selection>
-        > {
-    tableOrigin: Origin
-    tableAlias: string
-
-    constructor(private databaseHandle: DatabaseHandle, private table: QueriedTable, private filter?: any) {
-        const firstColumn = Object.values(table).shift()
-        if (firstColumn === undefined) throw Error("table must have at least one column")
-        this.tableOrigin = firstColumn.tableOrigin
-        this.tableAlias = firstColumn.tableAlias
-    }
-
-    insert(row: RowTypeFrom<QueriedTable>): Promise<ExecResult> {
-        // TODO: ensure that no other methods were called
-        const columnNames = Object.keys(row)
-        for (const columnName of columnNames) {
-            if (!(columnName in this.table)) {
-                throw Error(`column ${columnName} not found in table ${this.tableName}`)
-            }
-        }
-        if (columnNames.length === 0) {
-            return this.databaseHandle.execute(`INSERT INTO ${this.table} DEFAULT VALUES`)
-        } else {
-            const tableNameSql = renderIdentifier(this.tableName)
-            const columnsSql = columnNames.map(renderIdentifier).join(",")
-            const valuesSql = Object.values(row).map(renderLiteral).join(",")
-            return this.databaseHandle.execute(`INSERT INTO ${tableNameSql} (${columnsSql}) VALUES (${valuesSql})`)
-        }
-    }
-
-    update(row: Partial<RowTypeFrom<QueriedTable>>): Promise<ExecResult> {
-        const tableNameSql = renderIdentifier(this.tableName)
-        const updateSql = Object.entries(row)
-            .map(([key, value]) => `${renderIdentifier(key)} = ${renderLiteral(value)}`)
-            .join(",")
-        return this.databaseHandle.execute(`UPDATE ${tableNameSql} SET ${updateSql}${whereSql(this.filter)}`)
-    }
-
-    delete(): Promise<ExecResult> {
-        const tableNameSql = renderIdentifier(this.tableName)
-        return this.databaseHandle.execute(`DELETE FROM ${tableNameSql}${whereSql(this.filter)}`)
-    }
-
-    select<Selection extends SelectionFrom<QueriedTablesFromSingle<QueriedTable>>>(selection: Selection) {
-        return new SelectedImpl(
-            this.databaseHandle,
-            this.table,
-            { [this.tableAlias]: this.table },
-            selection,
-            this.filter,
-        )
-    }
-
-    orderBy(
-        column: ColumnIn<QueriedTablesFromSingle<QueriedTable>> | keyof AliasedColumnsIn<Selection>,
-        direction?: "ASC" | "DESC",
-    ): OrderedStage<QueriedTablesFromSingle<QueriedTable>, AliasedColumnsIn<Selection>, RowTypeFrom<QueriedTable>> {
-        return this.thenBy(column, direction)
-    }
-
-    thenBy(
-        column: ColumnIn<QueriedTablesFromSingle<QueriedTable>> | keyof AliasedColumnsIn<Selection>,
-        direction?: "ASC" | "DESC",
-    ): OrderedStage<QueriedTablesFromSingle<QueriedTable>, AliasedColumnsIn<Selection>, RowTypeFrom<QueriedTable>> {
-        return this.withQuery(q => ({ ...q, orderBy: [...q.orderBy, { column, direction }] }))
-    }
-
-    limit(
-        limit: number,
-    ): OffsetStage<
-        { [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["sqlType"] },
-        RowTypeFrom<QueriedTable>
-    > {
-        return this.withQuery(q => ({ ...q, limit }))
-    }
-
-    offset(
-        offset: number,
-    ): FetchStage<
-        { [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["sqlType"] },
-        RowTypeFrom<QueriedTable>
-    > {
-        return this.withQuery(q => ({ ...q, offset }))
-    }
-
-    private withQuery<QueriedTables>(
-        f: (oldQuery: QueryData<QueriedTables>) => QueryData<QueriedTables>,
-    ): SingleStageImpl<QueriedTable> {
-        return new SingleTableImpl(this.databaseHandle, this.table, this.filter, f(this.query ?? { orderBy: [] }))
-    }
-}
-
 function populateAtPath(object: any, path: string[], value: unknown) {
     if (path.length === 0) {
         return value
@@ -589,29 +503,133 @@ function traverseSelection<T>(
     }
 }
 
-function columnDefinitionSql(columnDef: ColumnDefinition<Origin, unknown>, alias: string | null) {
+function columnDefinitionSql(columnDef: ColumnDefinition<Origin, unknown>, alias?: string) {
     //  is render identifier correct for aliases?
-    const aliasSql = alias === null ? "" : ` AS ${renderIdentifier(alias)}`
+    const aliasSql = alias === undefined ? "" : ` AS ${renderIdentifier(alias)}`
     return `${renderIdentifier(columnDef.tableAlias)}.${renderIdentifier(columnDef.columnName)}${aliasSql}`
 }
 
-function orderLimitOffsetSql(query?: QueryData<unknown>) {
-    if (query === undefined) return ""
+function joinSql(joinInfo: JoinInfo): string {
+    const { joinedTablesByAlias, joinFiltersByAlias } = joinInfo
+    const tables = Object.values(joinedTablesByAlias)
+    if (tables.length === 0) {
+        return ""
+    }
     let sql = ""
-    if (query.orderBy.length > 0) {
-        const orderBySql = query.orderBy.map(
-            entry =>
-                `${renderIdentifier(entry.column.tableAlias)}.${renderIdentifier(entry.column.columnName)}${
-                    entry.direction === undefined ? "" : " " + entry.direction
-                }`,
+    for (const [joinType, tableDefinition] of tables) {
+        const { tableAlias, tableOrigin } = tableDetails(tableDefinition)
+
+        if (tableOrigin.type !== "table") {
+            throw Error(`table ${tableAlias} is not a real table`)
+        }
+
+        sql += ` ${joinTypeSql(joinType)} ${realTableSql(tableOrigin)}`
+        const filter: Filter | undefined = joinFiltersByAlias[tableAlias]
+        if (filter !== undefined) {
+            sql += ` ON (${filterSql(filter)})`
+        }
+    }
+    return sql
+}
+
+function orderLimitOffsetSql(olo?: OrderLimitOffset) {
+    if (olo === undefined) return ""
+    const { orderBy, limit, offset } = olo
+    let sql = ""
+    if (orderBy.length > 0) {
+        const orderBySql = orderBy.map(entry =>
+            typeof entry.column === "string"
+                ? renderIdentifier(entry.column)
+                : columnDefinitionSql(entry.column) + orderDirectionSql(entry.direction),
         )
         sql += ` ORDER BY ${orderBySql}`
     }
-    if (query.limit !== undefined) {
-        sql += ` LIMIT ${renderLiteral(query.limit)}`
+    if (limit !== undefined) {
+        sql += ` LIMIT ${renderLiteral(limit)}`
     }
-    if (query.offset !== undefined) {
-        sql += ` OFFSET ${renderLiteral(query.offset)}`
+    if (offset !== undefined) {
+        sql += ` OFFSET ${renderLiteral(offset)}`
     }
     return sql
+}
+
+function orderDirectionSql(direction: undefined | "ASC" | "DESC") {
+    switch (direction) {
+        case undefined:
+            return ""
+        case "ASC":
+            return " ASC"
+        case "DESC":
+            return " DESC"
+        default:
+            unreachable()
+    }
+}
+
+function whereSql(filter: Filter | undefined) {
+    if (filter === undefined) {
+        return ""
+    } else {
+        return `WHERE ${filterSql(filter)}`
+    }
+}
+
+function filterSql(filter: Filter) {
+    let sql = filterComponentSql(filter.first)
+    for (const [connective, filterComponent] of filter.rest) {
+        sql += connective === "and" ? " AND " : " OR "
+        sql += `(${filterComponentSql(filterComponent)})`
+    }
+    return sql
+}
+
+function filterComponentSql(filterComponent: boolean | Filter | FilterElement): string {
+    if (typeof filterComponent === "boolean") {
+        return renderLiteral(filterComponent)
+    } else if (filterComponent.type === "element") {
+        const opSql = filterOperatorSql(filterComponent.op)
+        const leftSql = expressionSql(filterComponent.left)
+        const rightSql = expressionSql(filterComponent.right)
+        return `${leftSql} ${opSql} ${rightSql}`
+    } else {
+        return `(${filterSql(filterComponent)})`
+    }
+}
+
+function filterOperatorSql(op: SqlOperator): string {
+    return op === "==" ? "==" : "<>"
+}
+
+function expressionSql(expr: Expression): string {
+    switch (expr.type) {
+        case "column":
+            return columnDefinitionSql(expr.definition)
+        case "literal":
+            return renderLiteral(expr.literal)
+    }
+}
+
+function joinTypeSql(joinType: JoinType): string {
+    switch (joinType) {
+        case "inner":
+            return "INNER JOIN"
+        default:
+            unreachable()
+    }
+}
+
+function realTableSql(tableOrigin: RealTableOrigin) {
+    return tableOrigin.name.map(renderIdentifier).join(".")
+}
+
+function tableDetails(definition: TableDefinition): { tableAlias: string; tableOrigin: Origin } {
+    const cols = Object.values(definition)
+    if (cols.length === 0) {
+        throw Error("table has zero columns")
+    }
+    return cols[0]
+}
+
+function unreachable(): never {
+    throw Error("unreachable")
 }
