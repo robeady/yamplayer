@@ -29,10 +29,6 @@ function dbType<T>(): ColumnDetails<T, undefined> & {
     }
 }
 
-export interface Renderable {
-    renderSql: () => string
-}
-
 export type Origin = RealTableOrigin | SubqueryOrigin
 
 export type RealTableOrigin = {
@@ -40,7 +36,7 @@ export type RealTableOrigin = {
     name: string[]
 }
 
-export type SubqueryOrigin = { type: "subquery"; query: Renderable }
+export type SubqueryOrigin = { type: "subquery"; render: () => { sql: string } }
 
 export type TableDefinition<
     TableOrigin extends Origin = Origin,

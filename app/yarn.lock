@@ -1333,16 +1333,6 @@
   resolved "https://registry.yarnpkg.com/@types/minimatch/-/minimatch-3.0.3.tgz#3dca0e3f33b200fc7d1139c0cd96c1268cadfd9d"
   integrity sha512-tHq6qdbT9U1IRSGf14CL0pUlULksvY9OZ+5eEgl1N7t+OA3tGvNpxJCzuKQlsNgCVwbAs670L1vcVQi8j9HjnA==
 
-"@types/mysql2@types/mysql2":
-  version "1.0.0"
-  resolved "https://codeload.github.com/types/mysql2/tar.gz/b549352cda0b83fe8c4f4c11a1b4beb0b0cb0f5d"
-  dependencies:
-    "@types/mysql" types/mysql
-
-"@types/mysql@types/mysql":
-  version "2.0.0"
-  resolved "https://codeload.github.com/types/mysql/tar.gz/41e381415afbb79452c0501ca3cf220c2cd390bc"
-
 "@types/node@*":
   version "13.13.4"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-13.13.4.tgz#1581d6c16e3d4803eb079c87d4ac893ee7501c2c"

@@ -16,19 +16,57 @@ import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, SqlType, Rea
 import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
 import { size } from "lodash"
 
+export function queryBuilder(databaseHandle: DatabaseHandle): <T extends TableDefinition>(table: T) => InsertStage<T> {
+    return <T extends TableDefinition>(table: T) => {
+        return new SingleTableStageImpl<T>(
+            new StageBackend(
+                {
+                    databaseHandle,
+                    primaryTable: table,
+                    joinedTablesByAlias: {},
+                    joinFiltersByAlias: {},
+                    orderLimitOffset: { orderBy: [] },
+                },
+                null as any,
+            ),
+        )
+    }
+}
+
+export const noDatabaseHandle: DatabaseHandle = {
+    execute: () => {
+        throw Error("no database")
+    },
+    fetch: () => {
+        throw Error("no database")
+    },
+}
+
 interface DatabaseHandle {
     execute(sql: string): Promise<ExecResult>
     fetch(sql: string): Promise<any[][]>
 }
 
-function renderIdentifier(identifier: string) {
-    // TODO
-    return identifier
+export function renderIdentifier(identifier: string): string {
+    if (identifier.includes("`")) {
+        throw Error("identifiers may not contain backticks")
+    }
+    return "`" + identifier + "`"
 }
 
-function renderLiteral(literalValue: unknown) {
+export function renderLiteral(literalValue: unknown): string {
     // TODO
-    return literalValue as string
+    if (literalValue === null) {
+        return "NULL"
+    } else if (typeof literalValue === "boolean") {
+        return literalValue ? "TRUE" : "FALSE"
+    } else if (typeof literalValue === "number" || typeof literalValue === "bigint") {
+        return literalValue.toString()
+    } else if (typeof literalValue === "string") {
+        return "'" + literalValue + "'"
+    } else {
+        throw Error("invalid literal " + literalValue)
+    }
 }
 
 interface OrderLimitOffset {
@@ -42,8 +80,8 @@ interface OrderLimitOffset {
 
 interface Filter {
     type: "filter"
-    first: Filter | FilterElement | true | false
-    rest: ["and" | "or", Filter | FilterElement | true][]
+    first: Filter | FilterElement | boolean
+    rest: ["and" | "or", Filter | FilterElement | boolean][]
 }
 
 interface FilterElement {
@@ -222,35 +260,40 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         )
     }
 
-    private renderSql = () => {
+    render = () => {
         const selectionsSql = traverseSelection(this.selection, (keyPath, col) =>
             columnDefinitionSql(col, keyPath.length === 1 ? keyPath[0] : undefined),
-        ).join(",")
+        ).join(", ")
+
+        const selectionDestinations = traverseSelection(this.selection, keyPath => keyPath)
 
         // TODO from all the tables, implement joins
         const columnsInPrimaryTable = Object.values(this.state.primaryTable)
         if (columnsInPrimaryTable.length === 0) throw Error("Primary table has no columns")
         const { tableOrigin, tableAlias } = Object.values(this.state.primaryTable)[0]
         const tableOriginSql =
-            tableOrigin.type === "table" ? realTableSql(tableOrigin) : `(${tableOrigin.query.renderSql()})`
+            tableOrigin.type === "table" ? realTableSql(tableOrigin) : `(${tableOrigin.render().sql})`
         const fromSql = `${tableOriginSql} AS ${renderIdentifier(tableAlias)}`
 
-        return `SELECT ${selectionsSql} FROM ${fromSql}${joinSql(this.state)}${whereSql(
+        const sql = `SELECT ${selectionsSql} FROM ${fromSql}${joinSql(this.state)}${whereSql(
             this.state.filter,
         )}${orderLimitOffsetSql(this.state.orderLimitOffset)}`
-    }
 
-    fetch = async (): Promise<RowTypeFrom<Selection>[]> => {
-        const sql = this.renderSql()
-        const selectionDestinations = traverseSelection(this.selection, keyPath => keyPath)
-        const rows = await this.state.databaseHandle.fetch(sql)
-        return rows.map(row => {
+        const mapRow = (row: unknown[]) => {
             let rowObject: any = {}
             for (let i = 0; i < row.length; i++) {
                 rowObject = populateAtPath(rowObject, selectionDestinations[i], row[i])
             }
             return rowObject
-        })
+        }
+
+        return { sql, mapRow }
+    }
+
+    fetch = async (): Promise<RowTypeFrom<Selection>[]> => {
+        const { sql, mapRow } = this.render()
+        const rows = await this.state.databaseHandle.fetch(sql)
+        return rows.map(mapRow)
     }
 
     asTable = <Alias extends string>(
@@ -276,7 +319,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
                 const oldDef = def as ColumnDefinition<Origin, SqlType>
                 const newDef = {
                     [COLUMN_DEFINITION]: true,
-                    tableOrigin: { type: "subquery", query: { renderSql: () => this.renderSql() } },
+                    tableOrigin: { type: "subquery", render: this.render },
                     tableAlias: alias,
                     columnName: name,
                     sqlType: oldDef.sqlType,
@@ -305,6 +348,7 @@ class SelectedStageImpl<QueriedTables extends TableDefinitions, Selection>
     offset = this.attach(this.backend.offset)
     fetch = this.backend.fetch
     asTable = this.backend.asTable
+    render = this.backend.render
 }
 
 class MultiTableStageImpl<QueriedTables extends TableDefinitions> implements OnStage<QueriedTables> {
@@ -335,6 +379,7 @@ class MultiTableStageImpl<QueriedTables extends TableDefinitions> implements OnS
 
     fetch = this.backend.fetch
     asTable = this.backend.asTable
+    render = this.backend.render
 }
 
 class SingleTableStageImpl<QueriedTable extends TableDefinition> implements InsertStage<QueriedTable> {
@@ -362,11 +407,12 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
         return new SelectedStageImpl(this.backend.select(selection))
     }
     fetch = this.backend.fetch
-    asTable: any = this.backend.asTable
+    asTable = this.backend.asTable
+    render = this.backend.render
 
-    insert = (row: RowTypeFrom<QueriedTable>): Promise<ExecResult> => {
+    insert = (row: RowTypeFrom<QueriedTable>) => {
         const {
-            state: { primaryTable, databaseHandle },
+            state: { primaryTable },
             primaryTableAlias,
             primaryTableName,
         } = this.backend
@@ -378,17 +424,17 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
         }
         const tableNameSql = primaryTableName.map(renderIdentifier).join(",")
         if (columnNames.length === 0) {
-            return databaseHandle.execute(`INSERT INTO ${tableNameSql} DEFAULT VALUES`)
+            return this.executeStage(`INSERT INTO ${tableNameSql} DEFAULT VALUES`)
         } else {
             const columnsSql = columnNames.map(renderIdentifier).join(",")
             const valuesSql = Object.values(row).map(renderLiteral).join(",")
-            return databaseHandle.execute(`INSERT INTO ${tableNameSql} (${columnsSql}) VALUES (${valuesSql})`)
+            return this.executeStage(`INSERT INTO ${tableNameSql} (${columnsSql}) VALUES (${valuesSql})`)
         }
     }
 
-    update = (row: Partial<RowTypeFrom<QueriedTable>>): Promise<ExecResult> => {
+    update = (row: Partial<RowTypeFrom<QueriedTable>>) => {
         const {
-            state: { filter, databaseHandle },
+            state: { filter },
             primaryTableName,
         } = this.backend
 
@@ -396,16 +442,26 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
         const updateSql = Object.entries(row)
             .map(([key, value]) => `${renderIdentifier(key)} = ${renderLiteral(value)}`)
             .join(",")
-        return databaseHandle.execute(`UPDATE ${tableNameSql} SET ${updateSql}${whereSql(filter)}`)
+        const sql = `UPDATE ${tableNameSql} SET ${updateSql}${whereSql(filter)}`
+        return this.executeStage(sql)
     }
 
-    delete = (): Promise<ExecResult> => {
+    delete = () => {
         const {
-            state: { filter, databaseHandle },
+            state: { filter },
             primaryTableName,
         } = this.backend
         const tableNameSql = primaryTableName.map(renderIdentifier).join(",")
-        return databaseHandle.execute(`DELETE FROM ${tableNameSql}${whereSql(filter)}`)
+        const sql = `DELETE FROM ${tableNameSql}${whereSql(filter)}`
+        return this.executeStage(sql)
+    }
+
+    private executeStage(sql: string) {
+        // TODO: render lazily
+        return {
+            render: () => ({ sql }),
+            execute: () => this.backend.state.databaseHandle.execute(sql),
+        }
     }
 }
 
@@ -537,11 +593,13 @@ function orderLimitOffsetSql(olo?: OrderLimitOffset) {
     const { orderBy, limit, offset } = olo
     let sql = ""
     if (orderBy.length > 0) {
-        const orderBySql = orderBy.map(entry =>
-            typeof entry.column === "string"
-                ? renderIdentifier(entry.column)
-                : columnDefinitionSql(entry.column) + orderDirectionSql(entry.direction),
-        )
+        const orderBySql = orderBy
+            .map(entry =>
+                typeof entry.column === "string"
+                    ? renderIdentifier(entry.column) + orderDirectionSql(entry.direction)
+                    : columnDefinitionSql(entry.column) + orderDirectionSql(entry.direction),
+            )
+            .join(", ")
         sql += ` ORDER BY ${orderBySql}`
     }
     if (limit !== undefined) {

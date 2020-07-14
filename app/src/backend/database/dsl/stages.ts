@@ -101,7 +101,7 @@ export type RowTypeFrom<Selection> = Selection extends ColumnDefinition<Origin, 
 export interface InsertStage<QueriedTable extends TableDefinition>
     extends FilterTableStage<QueriedTable>,
         JoinStage<QueriedTablesFromSingle<QueriedTable>> {
-    insert(row: RowTypeFrom<QueriedTable>): Promise<ExecResult>
+    insert(row: RowTypeFrom<QueriedTable>): ExecuteStage
 }
 
 export interface OnStage<QueriedTables extends TableDefinitions> {
@@ -156,8 +156,8 @@ export interface FilterTableStage<QueriedTable extends TableDefinition>
 
 export interface UpdateDeleteStage<QueriedTable extends TableDefinition>
     extends OrderStage<QueriedTablesFromSingle<QueriedTable>, QueriedTable> {
-    update(row: Partial<RowTypeFrom<QueriedTable>>): Promise<ExecResult>
-    delete(): Promise<ExecResult>
+    update(row: Partial<RowTypeFrom<QueriedTable>>): ExecuteStage
+    delete(): ExecuteStage
 }
 
 export interface SelectStage<QueriedTables extends TableDefinitions> {
@@ -189,6 +189,8 @@ export interface OffsetStage<Selection> extends FetchStage<Selection> {
 export interface FetchStage<Selection> {
     fetch(): Promise<RowTypeFrom<Selection>[]>
 
+    render(): { sql: string; mapRow: (row: unknown[]) => RowTypeFrom<Selection> }
+
     // TODO: asVector, asAlias
 
     asTable<Alias extends string>(
@@ -208,4 +210,9 @@ export interface FetchStage<Selection> {
 
     map<R>(f: (stage: this) => R): R
     map<R>(f: undefined | null | false | ((stage: this) => R)): R | this
+}
+
+export interface ExecuteStage {
+    render(): { sql: string }
+    execute(): Promise<ExecResult>
 }

@@ -104,4 +104,7 @@ const maptest = foo2(makers)
     .where(makers.name, "==", "abc")
     .orderBy(makers.name)
     .map(_y > 4 && (s => s.thenBy(makers.id)))
-    .map(stage => stage.or({}))
+
+const maptest2 = foo2(makers)
+    .where(makers.name, "==", "abc")
+    .map(_y > 4 && (s => s.orderBy(makers.name)))
