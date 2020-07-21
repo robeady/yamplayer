@@ -14,7 +14,7 @@ import {
 } from "./stages"
 import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, SqlType, RealTableOrigin } from "./definitions"
 import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
-import { size } from "lodash"
+import { size, mapValues } from "lodash"
 
 export function queryBuilder(databaseHandle: DatabaseHandle): <T extends TableDefinition>(table: T) => InsertStage<T> {
     return <T extends TableDefinition>(table: T) => {
@@ -130,8 +130,8 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
             (((size(state.joinedTablesByAlias) === 0
                 ? state.primaryTable
                 : {
-                      ...state.joinedTablesByAlias,
                       [this.primaryTableAlias]: state.primaryTable,
+                      ...mapValues(state.joinedTablesByAlias, v => v[1]),
                   }) as unknown) as Selection)
     }
 
@@ -267,7 +267,6 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
 
         const selectionDestinations = traverseSelection(this.selection, keyPath => keyPath)
 
-        // TODO from all the tables, implement joins
         const columnsInPrimaryTable = Object.values(this.state.primaryTable)
         if (columnsInPrimaryTable.length === 0) throw Error("Primary table has no columns")
         const { tableOrigin, tableAlias } = Object.values(this.state.primaryTable)[0]
@@ -579,7 +578,7 @@ function joinSql(joinInfo: JoinInfo): string {
             throw Error(`table ${tableAlias} is not a real table`)
         }
 
-        sql += ` ${joinTypeSql(joinType)} ${realTableSql(tableOrigin)}`
+        sql += ` ${joinTypeSql(joinType)} ${realTableSql(tableOrigin)} AS ${renderIdentifier(tableAlias)}`
         const filter: Filter | undefined = joinFiltersByAlias[tableAlias]
         if (filter !== undefined) {
             sql += ` ON (${filterSql(filter)})`

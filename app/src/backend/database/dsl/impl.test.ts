@@ -1,10 +1,12 @@
 import { table, t } from "./definitions"
 import { queryBuilder, noDatabaseHandle, renderIdentifier, renderLiteral } from "./impl"
-import { render } from "react-dom"
 
 const exampleTable = table("foo", {
     col1: t.string,
     col2: t.number,
+})
+const exampleTable2 = table("bar", {
+    col3: t.string,
 })
 
 const qb = queryBuilder(noDatabaseHandle)
@@ -45,6 +47,12 @@ test("throw on identifier containing backquote", () => {
 test("query table with default selection", () => {
     expect(qb(exampleTable).render().sql).toBe(
         "SELECT `foo`.`col1` AS `col1`, `foo`.`col2` AS `col2` FROM `foo` AS `foo`",
+    )
+})
+
+test("join", () => {
+    expect(qb(exampleTable).innerJoin(exampleTable2).on(exampleTable.col1, "=", exampleTable2.col3).render().sql).toBe(
+        "SELECT `foo`.`col1`, `foo`.`col2`, `bar`.`col3` FROM `foo` AS `foo` INNER JOIN `bar` AS `bar` ON (`foo`.`col1` = `bar`.`col3`)",
     )
 })
 
