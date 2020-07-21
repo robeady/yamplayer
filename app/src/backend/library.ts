@@ -7,6 +7,7 @@ interface Track {
     title: string
     albumId: number
     artistId: number
+    durationSecs: number
 }
 
 interface Album {
@@ -52,8 +53,16 @@ export class Library {
         return { tracks, artists, albums }
     }
 
-    async addTrack(track: Track, externalId: string): Promise<string> {
-        await this.database.execute(`INSERT INTO track VALUES ()`)
-        return ""
+    async addTrack(track: Track, externalId: string): Promise<number> {
+        const { lastInsertedId } = await this.qb(tables.track)
+            .insert({
+                albumId: track.albumId,
+                artistId: track.artistId,
+                title: track.title,
+                isrc: null,
+                durationSecs: track.durationSecs,
+            })
+            .execute()
+        return lastInsertedId
     }
 }

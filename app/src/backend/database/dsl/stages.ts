@@ -2,7 +2,8 @@ import { TableDefinition, ColumnDefinition, SqlType, Origin, SubqueryOrigin } fr
 import { PHANTOM_INSTANCE } from "./symbols"
 
 export interface ExecResult {
-    numRows: number
+    rowsAffected: number
+    lastInsertedId: number
 }
 
 export type PickStringProperties<T> = Pick<T, keyof T & string>
@@ -15,6 +16,7 @@ export type ColumnsFrom<TableAlias, SelectedColumns extends Record<string, SqlTy
     [ColumnAlias in keyof SelectedColumns & string]: ColumnDefinition<
         SubqueryOrigin,
         SelectedColumns[ColumnAlias],
+        false,
         TableAlias,
         ColumnAlias
     >
@@ -98,10 +100,21 @@ export type RowTypeFrom<Selection> = Selection extends ColumnDefinition<Origin, 
           [K in keyof Selection]: RowTypeFrom<Selection[K]>
       }
 
+export type InsertTypeFor<Table extends TableDefinition> = {
+    [ColumnName in keyof Table]?: ProjectedTypeOf<Table[ColumnName]>
+} &
+    {
+        [ColumnName in ColumnsWithoutDefaultsIn<Table>]: ProjectedTypeOf<Table[ColumnName]>
+    }
+
+type ColumnsWithoutDefaultsIn<Table extends TableDefinition> = {
+    [ColumnName in keyof Table]: Table[ColumnName]["hasDefault"] extends false ? ColumnName : never
+}[keyof Table]
+
 export interface InsertStage<QueriedTable extends TableDefinition>
     extends FilterTableStage<QueriedTable>,
         JoinStage<QueriedTablesFromSingle<QueriedTable>> {
-    insert(row: RowTypeFrom<QueriedTable>): ExecuteStage
+    insert(row: InsertTypeFor<QueriedTable>): ExecuteStage
 }
 
 export interface OnStage<QueriedTables extends TableDefinitions> {

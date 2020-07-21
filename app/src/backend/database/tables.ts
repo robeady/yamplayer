@@ -1,7 +1,7 @@
 import { table, t } from "./dsl/definitions"
 
 export const track = table("track", {
-    trackId: t.number,
+    trackId: t.number.withDefault(),
     albumId: t.number,
     artistId: t.number,
     title: t.string,
@@ -17,7 +17,7 @@ export const album = table("album", {
 })
 
 export const artist = table("artist", {
-    artistId: t.number,
+    artistId: t.number.withDefault(),
     name: t.string,
     imageUrl: t.string.orNull(),
 })
