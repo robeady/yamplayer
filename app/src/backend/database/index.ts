@@ -1,7 +1,9 @@
 import mariadb, { Connection, UpsertResult } from "mariadb"
 import schemaSql from "./schema"
+import { DatabaseHandle } from "./dsl/impl"
+import { ExecResult } from "./dsl/stages"
 
-export class Database {
+export class Database implements DatabaseHandle {
     private constructor(private connection: Connection) {}
 
     static async connect(): Promise<Database> {
@@ -16,12 +18,12 @@ export class Database {
         return new Database(connection)
     }
 
-    async query<R>(sql: string): Promise<R[]> {
-        const rows = await this.connection.query({ sql, nestTables: true })
-        return rows as R[]
+    async query(sql: string): Promise<unknown[][]> {
+        return await this.connection.query({ sql, rowsAsArray: true })
     }
 
-    async execute(sql: string): Promise<UpsertResult> {
-        return this.connection.query(sql)
+    async execute(sql: string): Promise<ExecResult> {
+        const result = (await this.connection.query(sql)) as UpsertResult
+        return { numRows: result.affectedRows }
     }
 }

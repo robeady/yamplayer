@@ -37,14 +37,14 @@ export const noDatabaseHandle: DatabaseHandle = {
     execute: () => {
         throw Error("no database")
     },
-    fetch: () => {
+    query: () => {
         throw Error("no database")
     },
 }
 
-interface DatabaseHandle {
+export interface DatabaseHandle {
     execute(sql: string): Promise<ExecResult>
-    fetch(sql: string): Promise<any[][]>
+    query(sql: string): Promise<unknown[][]>
 }
 
 export function renderIdentifier(identifier: string): string {
@@ -292,7 +292,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
 
     fetch = async (): Promise<RowTypeFrom<Selection>[]> => {
         const { sql, mapRow } = this.render()
-        const rows = await this.state.databaseHandle.fetch(sql)
+        const rows = await this.state.databaseHandle.query(sql)
         return rows.map(mapRow)
     }
 
