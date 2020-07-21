@@ -33,7 +33,6 @@ function PlayingTrack() {
     )
     const playingAlbum = useLibraryState(s => playingTrack && s.albums[playingTrack.albumId])
     const playingArtist = useLibraryState(s => playingTrack && s.artists[playingTrack.artistId])
-    // console.log(JSON.stringify({ allTheTracks, nowPlayingTrackId, playingTrack, playingAlbum, playingArtist }))
 
     if (nowPlayingTrackId === undefined) {
         return <span>We are {status.state}</span>
