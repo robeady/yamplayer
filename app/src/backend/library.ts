@@ -1,7 +1,7 @@
 import { Database } from "./database"
 import { Dict } from "../util/types"
 import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
-import { track, album, artist } from "./database/tables"
+import * as tables from "./database/tables"
 
 interface Track {
     title: string
@@ -25,6 +25,7 @@ export class Library {
     }
 
     async list(): Promise<{ tracks: Dict<Track>; albums: Dict<Album>; artists: Dict<Artist> }> {
+        const { track, artist, album } = tables
         const rows = await this.qb(track)
             .innerJoin(album)
             .on(album.albumId, "=", track.albumId)
