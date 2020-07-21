@@ -2,11 +2,12 @@ import { Database } from "./database"
 import { Dict } from "../util/types"
 import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
 import * as tables from "./database/tables"
+import { AlbumId, ArtistId } from "../model/ids"
 
 interface Track {
     title: string
-    albumId: number
-    artistId: number
+    albumId: AlbumId
+    artistId: ArtistId
     durationSecs: number
 }
 
@@ -40,7 +41,12 @@ export class Library {
         for (const row of rows) {
             const trackId = row.track.trackId
             delete row.track.trackId
-            tracks[trackId] = row.track
+            tracks[trackId] = {
+                albumId: row.track.albumId as AlbumId,
+                artistId: row.track.artistId as ArtistId,
+                title: row.track.title,
+                durationSecs: row.track.durationSecs,
+            }
 
             const albumId = row.album.albumId
             delete row.album.albumId
