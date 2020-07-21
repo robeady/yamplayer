@@ -24,6 +24,6 @@ export class Database implements DatabaseHandle {
 
     async execute(sql: string): Promise<ExecResult> {
         const result = (await this.connection.query(sql)) as UpsertResult
-        return { numRows: result.affectedRows }
+        return { rowsAffected: result.affectedRows, lastInsertedId: result.insertId }
     }
 }
