@@ -3,7 +3,7 @@ import { sql } from "./sqltypes"
 export default sql`
 use yamplayer;
 
-drop table if exists track, album, artist, playlist, playlistTrack;
+drop table if exists track, album, artist, playlist, playlistEntry, externalTrack, externalAlbum, externalArtist;
 
 alter database yamplayer
     character set = 'utf8mb4'
