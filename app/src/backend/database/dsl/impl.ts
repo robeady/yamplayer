@@ -11,6 +11,7 @@ import {
     OnStage,
     KeyByAlias,
     ColumnsFrom,
+    InsertTypeFor,
 } from "./stages"
 import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, SqlType, RealTableOrigin } from "./definitions"
 import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
@@ -317,20 +318,22 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         if (cols.some(c => !(COLUMN_DEFINITION in c))) {
             throw Error("Can only convert flat selection of columns to a table")
         }
-        const newCols: [string, ColumnDefinition<SubqueryOrigin, SqlType, Alias, string, undefined>][] = cols.map(
-            ([name, def]) => {
-                const oldDef = def as ColumnDefinition<Origin, SqlType>
-                const newDef = {
-                    [COLUMN_DEFINITION]: true,
-                    tableOrigin: { type: "subquery", render: this.render },
-                    tableAlias: alias,
-                    columnName: name,
-                    sqlType: oldDef.sqlType,
-                    references: undefined,
-                } as const
-                return [name, newDef]
-            },
-        )
+        const newCols: [
+            string,
+            ColumnDefinition<SubqueryOrigin, SqlType, false, Alias, string, undefined>,
+        ][] = cols.map(([name, def]) => {
+            const oldDef = def as ColumnDefinition<Origin, SqlType>
+            const newDef = {
+                [COLUMN_DEFINITION]: true,
+                tableOrigin: { type: "subquery", render: this.render },
+                tableAlias: alias,
+                columnName: name,
+                sqlType: oldDef.sqlType,
+                hasDefault: false,
+                references: undefined,
+            } as const
+            return [name, newDef]
+        })
         return Object.fromEntries(newCols) as any
     }
 }
@@ -413,7 +416,7 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
     asTable = this.backend.asTable
     render = this.backend.render
 
-    insert = (row: RowTypeFrom<QueriedTable>) => {
+    insert = (row: InsertTypeFor<QueriedTable>) => {
         const {
             state: { primaryTable },
             primaryTableAlias,
