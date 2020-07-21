@@ -5,26 +5,17 @@ import { track, album, artist } from "./database/tables"
 
 interface Track {
     title: string
-    albumId: string
-    artistId: string
-}
-interface TrackRow extends Track {
-    trackId: string
+    albumId: number
+    artistId: number
 }
 
 interface Album {
     title: string
-    coverImageUrl: string
-}
-interface AlbumRow extends Album {
-    albumId: string
+    coverImageUrl: string | null
 }
 
 interface Artist {
     name: string
-}
-interface ArtistRow extends Artist {
-    artistId: string
 }
 
 export class Library {
