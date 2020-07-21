@@ -91,7 +91,7 @@ interface FilterElement {
     right: Expression
 }
 
-const sqlOperators = ["==", "<>"] as const
+const sqlOperators = ["=", "<>"] as const
 type SqlOperator = typeof sqlOperators[number]
 
 type Expression =
@@ -509,7 +509,7 @@ function parseMatcherIntoFilterElements(defaultSelection: any, matcher: {}): Fil
             {
                 type: "element",
                 left: { type: "column", definition: defaultSelection },
-                op: "==",
+                op: "=",
                 right: { type: "literal", literal: matcher },
             },
         ]
@@ -655,7 +655,7 @@ function filterComponentSql(filterComponent: boolean | Filter | FilterElement): 
 }
 
 function filterOperatorSql(op: SqlOperator): string {
-    return op === "==" ? "==" : "<>"
+    return op === "=" ? "=" : "<>"
 }
 
 function expressionSql(expr: Expression): string {
