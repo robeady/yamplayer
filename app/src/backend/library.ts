@@ -1,5 +1,7 @@
 import { Database } from "./database"
 import { Dict } from "../util/types"
+import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
+import { track, album, artist } from "./database/tables"
 
 interface Track {
     title: string
@@ -26,13 +28,19 @@ interface ArtistRow extends Artist {
 }
 
 export class Library {
-    constructor(private database: Database) {}
+    qb: QueryBuilder
+    constructor(private database: Database) {
+        this.qb = queryBuilder(database)
+    }
 
     async list(): Promise<{ tracks: Dict<Track>; albums: Dict<Album>; artists: Dict<Artist> }> {
-        const rows = await this.database.query<{ track: TrackRow; album: AlbumRow; artist: ArtistRow }>(`
-            SELECT * from track
-            INNER JOIN albums ON album.albumId = track.albumId
-            INNER JOIN artists ON artist.artistId = track.artistId`)
+        const rows = await this.qb(track)
+            .innerJoin(album)
+            .on(album.albumId, "=", track.albumId)
+            .innerJoin(artist)
+            .on(artist.artistId, "=", track.artistId)
+            .fetch()
+
         const tracks = {} as Dict<Track>
         const artists = {} as Dict<Artist>
         const albums = {} as Dict<Album>
@@ -54,10 +62,6 @@ export class Library {
 
     async addTrack(track: Track, externalId: string): Promise<string> {
         await this.database.execute(`INSERT INTO track VALUES ()`)
+        return ""
     }
 }
-
-const artist = table<"artist", ArtistRow, {}>("artist")
-
-const wrong = table<"wrong", {}, {}>("wrong")
-const track = table<"track", TrackRow, { albumId: typeof artist }>("track", { albumId: artist })

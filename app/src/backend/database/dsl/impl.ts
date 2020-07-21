@@ -16,7 +16,11 @@ import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, SqlType, Rea
 import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
 import { size, mapValues } from "lodash"
 
-export function queryBuilder(databaseHandle: DatabaseHandle): <T extends TableDefinition>(table: T) => InsertStage<T> {
+export interface QueryBuilder {
+    <T extends TableDefinition>(table: T): InsertStage<T>
+}
+
+export function queryBuilder(databaseHandle: DatabaseHandle): QueryBuilder {
     return <T extends TableDefinition>(table: T) => {
         return new SingleTableStageImpl<T>(
             new StageBackend(
