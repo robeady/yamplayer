@@ -7,9 +7,9 @@
         "electron:serve-hot": "cross-env NODE_ENV=development webpack-dev-server --hot --port 8180",
         "electron:start": "cross-env NODE_ENV=development electron src/main.js",
         "backend:start": "ts-node-dev --type-check --no-notify src/backend/index.ts",
-        "test": "jest src",
-        "test:watch": "jest src --watch",
-        "develop": "concurrently -k \"npm:backend:start\" \"npm:electron:serve-hot\" \"npm:electron:start\""
+        "test": "jest",
+        "test:watch": "jest --watch",
+        "develop": "concurrently -k \"yarn:backend:start\" \"yarn:electron:serve-hot\" \"yarn:electron:start\""
     },
     "dependencies": {
         "axios": "^0.19.2",
