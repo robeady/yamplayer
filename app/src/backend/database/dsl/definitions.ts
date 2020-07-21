@@ -2,30 +2,37 @@ import { mapValues } from "lodash"
 import { PHANTOM_INSTANCE, COLUMN_DEFINITION } from "./symbols"
 
 export const t = {
-    number: dbType<number>(),
-    string: dbType<string>(),
-    date: dbType<string>(),
+    number: columnType(sqlType<number>(), undefined),
+    string: columnType(sqlType<string>(), undefined),
 }
 
-export type SqlType<T = {}> = {
+export type SqlType<T = unknown> = {
     [PHANTOM_INSTANCE]: T
 }
 
-interface ColumnDetails<T = {}, C = unknown> {
+interface ColumnType<T, References> extends ColumnDetails<T, References> {
+    orNull: () => ColumnType<T | null, References>
+    whichReferences: <C extends ColumnDefinition<RealTableOrigin, SqlType<T>>>(otherColumn: C) => ColumnDetails<T, C>
+}
+
+interface ColumnDetails<T = unknown, C = unknown> {
     sqlType: SqlType<T>
     references: C
 }
 
-function dbType<T>(): ColumnDetails<T, undefined> & {
-    whichReferences: <C extends ColumnDefinition<RealTableOrigin, SqlType<T>>>(otherColumn: C) => ColumnDetails<T, C>
-} {
+function sqlType<T>(): SqlType<T> {
+    return { [PHANTOM_INSTANCE]: undefined as any }
+}
+
+function columnType<T, C extends ColumnDefinition<RealTableOrigin, SqlType<T>> | undefined>(
+    sqlType: SqlType<T>,
+    referencingColumn: C,
+): ColumnType<T, C> {
     return {
-        sqlType: { [PHANTOM_INSTANCE]: undefined as any },
-        references: undefined,
-        whichReferences: otherColumn => ({
-            sqlType: { [PHANTOM_INSTANCE]: undefined as any },
-            references: otherColumn,
-        }),
+        sqlType,
+        references: referencingColumn,
+        orNull: () => columnType<T | null, C>(undefined as any, referencingColumn),
+        whichReferences: otherColumn => columnType<T, typeof otherColumn>(sqlType, otherColumn),
     }
 }
 
