@@ -7,19 +7,22 @@ export const track = table("track", {
     title: t.string,
     isrc: t.string.orNull(),
     durationSecs: t.number,
+    externalId: t.string,
 })
 
 export const album = table("album", {
-    albumId: t.number,
+    albumId: t.number.withDefault(),
     title: t.string,
     coverImageUrl: t.string.orNull(),
     releaseDate: t.string.orNull(),
+    externalId: t.string,
 })
 
 export const artist = table("artist", {
     artistId: t.number.withDefault(),
     name: t.string,
     imageUrl: t.string.orNull(),
+    externalId: t.string,
 })
 
 export const playlist = table("playlist", {
@@ -31,22 +34,4 @@ export const playlistEntry = table("playlistEntry", {
     playlistEntryId: t.number,
     playlistId: t.number,
     trackId: t.number,
-})
-
-export const externalTrack = table("externalTrack", {
-    trackId: t.number,
-    serviceId: t.string,
-    externalId: t.string,
-})
-
-export const externalAlbum = table("externalAlbum", {
-    albumId: t.number,
-    serviceId: t.string,
-    externalId: t.string,
-})
-
-export const externalArtist = table("externalArtist", {
-    artistId: t.number,
-    serviceId: t.string,
-    externalId: t.string,
 })

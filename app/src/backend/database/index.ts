@@ -15,6 +15,7 @@ export class Database implements DatabaseHandle {
             multipleStatements: true,
         })
         await connection.query(schemaSql)
+        console.log("successfully initialised db schema")
         return new Database(connection)
     }
 
