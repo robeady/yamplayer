@@ -2,7 +2,7 @@ import { Database } from "./database"
 import { Dict } from "../util/types"
 import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
 import * as tables from "./database/tables"
-import { AlbumId, ArtistId } from "../model/ids"
+import { AlbumId, ArtistId, TrackId } from "../model/ids"
 
 interface Track {
     title: string
@@ -22,7 +22,7 @@ interface Artist {
 
 export class Library {
     qb: QueryBuilder
-    constructor(private database: Database) {
+    constructor(database: Database) {
         this.qb = queryBuilder(database)
     }
 
@@ -59,7 +59,7 @@ export class Library {
         return { tracks, artists, albums }
     }
 
-    async addTrack(track: Track, externalId: string): Promise<number> {
+    async addTrack(track: Track, externalId: string): Promise<TrackId> {
         const { lastInsertedId } = await this.qb(tables.track)
             .insert({
                 albumId: track.albumId,
@@ -67,8 +67,9 @@ export class Library {
                 title: track.title,
                 isrc: null,
                 durationSecs: track.durationSecs,
+                externalId,
             })
             .execute()
-        return lastInsertedId
+        return lastInsertedId as TrackId
     }
 }
