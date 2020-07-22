@@ -2,23 +2,9 @@ import { Database } from "./database"
 import { Dict } from "../util/types"
 import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
 import * as tables from "./database/tables"
-import { AlbumId, ArtistId, TrackId } from "../model/ids"
-
-interface Track {
-    title: string
-    albumId: AlbumId
-    artistId: ArtistId
-    durationSecs: number
-}
-
-interface Album {
-    title: string
-    coverImageUrl: string | null
-}
-
-interface Artist {
-    name: string
-}
+import { AlbumId, ArtistId, TrackId, Track, Album, Artist } from "../model"
+import { TrackSearchResult } from "./deezer/gateway"
+import { pick } from "lodash"
 
 export class Library {
     qb: QueryBuilder
@@ -42,10 +28,9 @@ export class Library {
             const trackId = row.track.trackId
             delete row.track.trackId
             tracks[trackId] = {
+                ...row.track,
                 albumId: row.track.albumId as AlbumId,
                 artistId: row.track.artistId as ArtistId,
-                title: row.track.title,
-                durationSecs: row.track.durationSecs,
             }
 
             const albumId = row.album.albumId
@@ -59,17 +44,33 @@ export class Library {
         return { tracks, artists, albums }
     }
 
-    async addTrack(track: Track, externalId: string): Promise<TrackId> {
-        const { lastInsertedId } = await this.qb(tables.track)
-            .insert({
-                albumId: track.albumId,
-                artistId: track.artistId,
-                title: track.title,
-                isrc: null,
-                durationSecs: track.durationSecs,
-                externalId,
-            })
-            .execute()
-        return lastInsertedId as TrackId
+    async addSearchResult(searchResult: TrackSearchResult): Promise<TrackId> {
+        const artistId =
+            searchResult.artist.libraryId ??
+            (await this.qb(tables.artist).insert(pick(searchResult.artist, "name", "externalId", "imageUrl")).execute())
+                .lastInsertedId
+
+        const albumId =
+            searchResult.album.libraryId ??
+            (
+                await this.qb(tables.album)
+                    .insert(pick(searchResult.album, "title", "coverImageUrl", "releaseDate", "externalId"))
+                    .execute()
+            ).lastInsertedId
+
+        const trackId = (
+            await this.qb(tables.track)
+                .insert({
+                    ...pick(searchResult.track, "title", "durationSecs", "externalId"),
+                    isrc: null,
+                    albumId,
+                    artistId,
+                })
+                .execute()
+        ).lastInsertedId
+
+        console.log(`added track ${searchResult.track.externalId} to library as ${trackId}`)
+
+        return trackId as TrackId
     }
 }

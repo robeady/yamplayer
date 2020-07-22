@@ -3,10 +3,13 @@ import { remote } from "../backend/rpc/client"
 import { DeezerApiClient } from "../backend/deezer/gateway"
 import { DeezerCodec } from "../backend/deezer/DeezerCodec"
 import { Playback } from "./playback/playback"
-import { useLibrarySearch } from "./library/library"
+import { useLibrarySearch, useLibraryDispatch } from "./library/library"
 import { css } from "linaria"
 import { styled } from "linaria/react"
 import PlayArrow from "./icons/play_arrow.svg"
+import { Library } from "../backend/library"
+import { keyBy } from "lodash"
+import { TrackId } from "../model"
 
 function SearchBox(props: { onSubmit: (text: string) => void }) {
     const [text, setText] = useState("")
@@ -26,7 +29,8 @@ function SearchBox(props: { onSubmit: (text: string) => void }) {
 }
 
 interface Track {
-    id: string
+    libraryId: TrackId | null
+    externalId: string
     title: string
     albumTitle: string
     artistName: string
@@ -36,25 +40,45 @@ interface Track {
 const TrackRow = styled.div`
     padding: 4px;
     display: grid;
-    grid-template-columns: 50px 250px auto;
+    grid-template-columns: 50px 250px auto 50px;
     align-items: center;
     border-bottom: 1px solid gainsboro;
 `
 
-function SearchResults(props: { tracks: Track[]; playTrack: (trackId: string) => void }) {
+function SearchResults(props: {
+    tracks: Track[]
+    playTrack: (trackId: string) => void
+    addTrackToLibrary: (trackId: string) => void
+}) {
     return (
         <div
             className={css`
                 font-size: 14px;
             `}>
             {props.tracks.map(t => (
-                <TrackRow key={t.id}>
-                    <CoverImage url={t.coverImageUrl} size={36} play={() => props.playTrack(t.id)} />
-                    <TrackAndAlbumTitle track={t.title} play={() => props.playTrack(t.id)} album={t.albumTitle} />
+                <TrackRow key={t.externalId}>
+                    <CoverImage url={t.coverImageUrl} size={36} play={() => props.playTrack(t.externalId)} />
+                    <TrackAndAlbumTitle
+                        track={t.title}
+                        play={() => props.playTrack(t.externalId)}
+                        album={t.albumTitle}
+                    />
                     <span>{t.artistName}</span>
+                    <AddToLibraryButton
+                        onClick={() => props.addTrackToLibrary(t.externalId)}
+                        alreadyInLibrary={t.libraryId !== null}
+                    />
                 </TrackRow>
             ))}
         </div>
+    )
+}
+
+function AddToLibraryButton(props: { alreadyInLibrary: boolean; onClick: () => void }) {
+    return (
+        <button disabled={props.alreadyInLibrary} onClick={props.onClick}>
+            Add
+        </button>
     )
 }
 
@@ -153,13 +177,16 @@ async function downloadAndDecryptTrack(id: string) {
 export function TrackSearch() {
     const [searchQuery, setSearchQuery] = useState(null as string | null)
     const { enqueueTrack } = Playback.useDispatch()
+    const { libraryClient } = useLibraryDispatch()
     const searchResults = useLibrarySearch(searchQuery)
+    const searchResultsByExternalTrackId = keyBy(searchResults, s => s.track.externalId)
     return (
         <div>
             <SearchBox onSubmit={setSearchQuery} />
             <SearchResults
                 tracks={searchResults.map(r => ({
-                    id: r.track.externalId,
+                    libraryId: r.track.libraryId,
+                    externalId: r.track.externalId,
                     title: r.track.title,
                     albumTitle: r.album.title,
                     artistName: r.artist.name,
@@ -169,6 +196,9 @@ export function TrackSearch() {
                     const buffer = await downloadAndDecryptTrack(id)
                     enqueueTrack(id, buffer)
                 }}
+                addTrackToLibrary={externalId =>
+                    libraryClient.addSearchResult(searchResultsByExternalTrackId[externalId])
+                }
             />
         </div>
     )
