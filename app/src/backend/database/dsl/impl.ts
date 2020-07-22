@@ -13,7 +13,7 @@ import {
     ColumnsFrom,
     InsertTypeFor,
 } from "./stages"
-import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, SqlType, RealTableOrigin } from "./definitions"
+import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, RealTableOrigin } from "./definitions"
 import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
 import { size, mapValues } from "lodash"
 
@@ -78,7 +78,7 @@ interface OrderLimitOffset {
     limit?: number
     offset?: number
     orderBy: {
-        column: string | ColumnDefinition<Origin, SqlType> // TODO are these type arguments right?
+        column: string | ColumnDefinition<Origin> // TODO are these type arguments right?
         direction?: "ASC" | "DESC"
     }[]
 }
@@ -99,9 +99,7 @@ interface FilterElement {
 const sqlOperators = ["=", "<>"] as const
 type SqlOperator = typeof sqlOperators[number]
 
-type Expression =
-    | { type: "literal"; literal: unknown }
-    | { type: "column"; definition: ColumnDefinition<Origin, SqlType> }
+type Expression = { type: "literal"; literal: unknown } | { type: "column"; definition: ColumnDefinition }
 
 type JoinType = "inner"
 
@@ -302,14 +300,14 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
 
     asTable = <Alias extends string>(
         alias: Alias,
-    ): Selection extends Record<string, ColumnDefinition<Origin, SqlType>>
+    ): Selection extends Record<string, ColumnDefinition>
         ? TableDefinition<
               SubqueryOrigin,
               Alias,
               ColumnsFrom<
                   Alias,
                   {
-                      [ColumnName in keyof Selection]: Selection[ColumnName]["sqlType"]
+                      [ColumnName in keyof Selection]: Selection[ColumnName]["typeMapper"]
                   }
               >
           >
@@ -320,15 +318,15 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         }
         const newCols: [
             string,
-            ColumnDefinition<SubqueryOrigin, SqlType, false, Alias, string, undefined>,
+            ColumnDefinition<SubqueryOrigin, unknown, false, Alias, string, undefined>,
         ][] = cols.map(([name, def]) => {
-            const oldDef = def as ColumnDefinition<Origin, SqlType>
+            const oldDef = def as ColumnDefinition
             const newDef = {
                 [COLUMN_DEFINITION]: true,
                 tableOrigin: { type: "subquery", render: this.render },
                 tableAlias: alias,
                 columnName: name,
-                sqlType: oldDef.sqlType,
+                typeMapper: oldDef.typeMapper,
                 hasDefault: false,
                 references: undefined,
             } as const
@@ -419,35 +417,46 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
     insert = (row: InsertTypeFor<QueriedTable>) => {
         const {
             state: { primaryTable },
-            primaryTableAlias,
             primaryTableName,
         } = this.backend
-        const columnNames = Object.keys(row)
-        for (const columnName of columnNames) {
-            if (!(columnName in primaryTable)) {
-                throw Error(`column ${columnName} not found in table with alias ${primaryTableAlias}`)
+        const columns = Object.entries(row).map(([columnName, value]) => {
+            const columnDefinition = primaryTable[columnName]
+            if (columnDefinition === undefined) {
+                throw Error(`column ${columnName} not found in table ${primaryTableName}`)
             }
-        }
+            return { columnName, columnDefinition, value }
+        })
         const tableNameSql = primaryTableName.map(renderIdentifier).join(",")
-        if (columnNames.length === 0) {
+        if (columns.length === 0) {
             return this.executeStage(`INSERT INTO ${tableNameSql} DEFAULT VALUES`)
         } else {
-            const columnsSql = columnNames.map(renderIdentifier).join(", ")
-            const valuesSql = Object.values(row).map(renderLiteral).join(", ")
+            const columnsSql = columns.map(c => renderIdentifier(c.columnName)).join(", ")
+            const valuesSql = columns.map(c => renderLiteral(c.columnDefinition.typeMapper.jsToSql(c.value))).join(", ")
             return this.executeStage(`INSERT INTO ${tableNameSql} (${columnsSql}) VALUES (${valuesSql})`)
         }
     }
 
     update = (row: Partial<RowTypeFrom<QueriedTable>>) => {
         const {
-            state: { filter },
+            state: { filter, primaryTable },
             primaryTableName,
         } = this.backend
 
         const tableNameSql = primaryTableName.map(renderIdentifier).join(",")
+
         const updateSql = Object.entries(row)
-            .map(([key, value]) => `${renderIdentifier(key)} = ${renderLiteral(value)}`)
-            .join(",")
+            .map(([columnName, value]) => {
+                const columnDefinition = primaryTable[columnName]
+                if (columnDefinition === undefined) {
+                    throw Error(`column ${columnName} not found in table with alias ${primaryTableName}`)
+                }
+                return { columnName, columnDefinition, value }
+            })
+            .map(
+                ({ columnName, columnDefinition, value }) =>
+                    `${renderIdentifier(columnName)} = ${renderLiteral(columnDefinition.typeMapper.jsToSql(value))}`,
+            )
+            .join(", ")
         const sql = `UPDATE ${tableNameSql} SET ${updateSql}${whereSql(filter)}`
         return this.executeStage(sql)
     }
@@ -493,12 +502,12 @@ function parseWhereClause(left: {}, operator: {}, right: {}): FilterElement {
         type: "element",
         left:
             COLUMN_DEFINITION in left
-                ? { type: "column", definition: left as ColumnDefinition<Origin, SqlType> }
+                ? { type: "column", definition: left as ColumnDefinition }
                 : { type: "literal", literal: left },
         op: operator as SqlOperator,
         right:
             COLUMN_DEFINITION in right
-                ? { type: "column", definition: right as ColumnDefinition<Origin, SqlType> }
+                ? { type: "column", definition: right as ColumnDefinition }
                 : { type: "literal", literal: right },
     }
 }
@@ -552,11 +561,11 @@ function populateAtPath(object: any, path: string[], value: unknown) {
 
 function traverseSelection<T>(
     selection: any,
-    func: (keyPath: string[], columnDefinition: ColumnDefinition<Origin, unknown>) => T,
+    func: (keyPath: string[], columnDefinition: ColumnDefinition) => T,
     keyPathPrefix: string[] = [],
 ): T[] {
     if (COLUMN_DEFINITION in selection) {
-        return [func(keyPathPrefix, selection as ColumnDefinition<Origin, unknown>)]
+        return [func(keyPathPrefix, selection as ColumnDefinition)]
     } else if (RAW_SQL in selection) {
         // TODO handle raw sql
         throw Error("raw sql not supported yet")
@@ -634,7 +643,7 @@ function whereSql(filter: Filter | undefined) {
     if (filter === undefined) {
         return ""
     } else {
-        return `WHERE ${filterSql(filter)}`
+        return ` WHERE ${filterSql(filter)}`
     }
 }
 

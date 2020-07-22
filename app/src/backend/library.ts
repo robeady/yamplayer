@@ -1,5 +1,5 @@
 import { Database } from "./database"
-import { Dict } from "../util/types"
+import { AssocArray } from "../util/types"
 import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
 import * as tables from "./database/tables"
 import { AlbumId, ArtistId, TrackId, Track, Album, Artist } from "../model"
@@ -12,7 +12,7 @@ export class Library {
         this.qb = queryBuilder(database)
     }
 
-    async list(): Promise<{ tracks: Dict<Track>; albums: Dict<Album>; artists: Dict<Artist> }> {
+    async list(): Promise<{ tracks: AssocArray<Track>; albums: AssocArray<Album>; artists: AssocArray<Artist> }> {
         const { track, artist, album } = tables
         const rows = await this.qb(track)
             .innerJoin(album)
@@ -21,11 +21,11 @@ export class Library {
             .on(artist.artistId, "=", track.artistId)
             .fetch()
 
-        const tracks = {} as Dict<Track>
-        const artists = {} as Dict<Artist>
-        const albums = {} as Dict<Album>
+        const tracks = {} as AssocArray<Track>
+        const artists = {} as AssocArray<Artist>
+        const albums = {} as AssocArray<Album>
         for (const row of rows) {
-            const trackId = row.track.trackId
+            const trackId = row.track.trackId as TrackId
             delete row.track.trackId
             tracks[trackId] = {
                 ...row.track,
@@ -44,7 +44,7 @@ export class Library {
         return { tracks, artists, albums }
     }
 
-    async addSearchResult(searchResult: TrackSearchResult): Promise<TrackId> {
+    async addSearchResult(searchResult: TrackSearchResult): Promise<[TrackId, AlbumId, ArtistId]> {
         const artistId =
             searchResult.artist.libraryId ??
             (await this.qb(tables.artist).insert(pick(searchResult.artist, "name", "externalId", "imageUrl")).execute())
@@ -71,6 +71,6 @@ export class Library {
 
         console.log(`added track ${searchResult.track.externalId} to library as ${trackId}`)
 
-        return trackId as TrackId
+        return [trackId as TrackId, albumId as AlbumId, artistId as ArtistId]
     }
 }

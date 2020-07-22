@@ -1,3 +1,7 @@
 export type Dict<T = unknown> = {
-    [key: string]: T | undefined
+    [K in string]?: T
+}
+
+export type AssocArray<T = unknown> = {
+    [K in number]?: T
 }

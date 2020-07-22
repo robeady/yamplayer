@@ -1,37 +1,38 @@
-import { table, t } from "./dsl/definitions"
+import { table } from "./dsl/definitions"
+import { string, number } from "./dsl/types"
 
 export const track = table("track", {
-    trackId: t.number.withDefault(),
-    albumId: t.number,
-    artistId: t.number,
-    title: t.string,
-    isrc: t.string.orNull(),
-    durationSecs: t.number,
-    externalId: t.string,
+    trackId: number.withDefault(),
+    albumId: number,
+    artistId: number,
+    title: string,
+    isrc: string.orNull(),
+    durationSecs: number,
+    externalId: string,
 })
 
 export const album = table("album", {
-    albumId: t.number.withDefault(),
-    title: t.string,
-    coverImageUrl: t.string.orNull(),
-    releaseDate: t.string.orNull(),
-    externalId: t.string,
+    albumId: number.withDefault(),
+    title: string,
+    coverImageUrl: string.orNull(),
+    releaseDate: string.orNull(),
+    externalId: string,
 })
 
 export const artist = table("artist", {
-    artistId: t.number.withDefault(),
-    name: t.string,
-    imageUrl: t.string.orNull(),
-    externalId: t.string,
+    artistId: number.withDefault(),
+    name: string,
+    imageUrl: string.orNull(),
+    externalId: string,
 })
 
 export const playlist = table("playlist", {
-    playlistId: t.number,
-    name: t.string,
+    playlistId: number,
+    name: string,
 })
 
 export const playlistEntry = table("playlistEntry", {
-    playlistEntryId: t.number,
-    playlistId: t.number,
-    trackId: t.number,
+    playlistEntryId: number,
+    playlistId: number,
+    trackId: number,
 })

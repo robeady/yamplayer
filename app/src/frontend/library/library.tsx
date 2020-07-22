@@ -4,21 +4,8 @@ import { remote } from "../../backend/rpc/client"
 import { useState, useMemo, useEffect } from "react"
 import { createState, immerise } from "../state"
 import { Library } from "../../backend/library"
-
-interface Track {
-    title: string
-    albumId: string
-    artistId: string
-}
-
-interface Album {
-    title: string
-    coverImageUrl: string
-}
-
-interface Artist {
-    name: string
-}
+import { pick } from "lodash"
+import { Track, Album, Artist } from "../../model"
 
 const library = createState((props: { backendUrl: string }) => {
     const deezerClient = useMemo(() => remote<DeezerApiClient>(`${props.backendUrl}/deezer`), [props.backendUrl])
@@ -40,6 +27,20 @@ const library = createState((props: { backendUrl: string }) => {
 export const useLibraryState = library.useState
 export const useLibraryDispatch = library.useDispatch
 export const LibraryProvider = library.Provider
+
+export const useAddToLibrary = () => {
+    const { libraryClient, update } = useLibraryDispatch()
+
+    return (searchResult: TrackSearchResult) => {
+        libraryClient.addSearchResult(searchResult).then(([trackId, albumId, artistId]) => {
+            update(state => {
+                state.tracks[trackId] = {}
+                state.albums[albumId] = pick(searchResult.album, "title", "coverImageUrl")
+                state.artists[artistId] = {}
+            })
+        })
+    }
+}
 
 export const useLibrarySearch = (query: string | null): TrackSearchResult[] => {
     const { deezerClient, update } = useLibraryDispatch()

@@ -1,12 +1,18 @@
-import { table, t } from "./definitions"
+import { table } from "./definitions"
 import { queryBuilder, noDatabaseHandle, renderIdentifier, renderLiteral } from "./impl"
+import { string, number, intAsJsString } from "./types"
 
 const exampleTable = table("foo", {
-    col1: t.string,
-    col2: t.number,
+    col1: string,
+    col2: number,
 })
+
 const exampleTable2 = table("bar", {
-    col3: t.string,
+    col3: string,
+})
+
+const exampleTableWithMapping = table("baz", {
+    id: intAsJsString,
 })
 
 const qb = queryBuilder(noDatabaseHandle)
@@ -69,6 +75,23 @@ describe("insert", () => {
             "INSERT INTO `foo` (`col1`, `col2`) VALUES ('a', 42)",
         )
     })
+})
+
+describe("update", () => {
+    test("update renders correctly", () => {
+        expect(qb(exampleTable).update({ col1: "a", col2: 42 }).render().sql).toBe(
+            "UPDATE `foo` SET `col1` = 'a', `col2` = 42",
+        )
+    })
+    test("update renders correctly with where clause", () => {
+        expect(qb(exampleTable).where({ col1: "old" }).update({ col1: "a", col2: 42 }).render().sql).toBe(
+            "UPDATE `foo` SET `col1` = 'a', `col2` = 42 WHERE `foo`.`col1` = 'old'",
+        )
+    })
+    test("update applies type mapping", () => {
+        expect(qb(exampleTableWithMapping).update({ id: "42" }).render().sql).toBe("UPDATE `baz` SET `id` = 42")
+    })
+    // TODO: update should not use aliases?
 })
 
 describe("select", () => {

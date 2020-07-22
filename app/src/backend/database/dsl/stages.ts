@@ -1,4 +1,4 @@
-import { TableDefinition, ColumnDefinition, SqlType, Origin, SubqueryOrigin } from "./definitions"
+import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, TypeMapper } from "./definitions"
 import { PHANTOM_INSTANCE } from "./symbols"
 
 export interface ExecResult {
@@ -8,11 +8,9 @@ export interface ExecResult {
 
 export type PickStringProperties<T> = Pick<T, keyof T & string>
 
-type Field<T = unknown> = { sqlType: SqlType<T> }
+type ProjectedTypeOf<Col extends { typeMapper: TypeMapper }> = Col["typeMapper"][typeof PHANTOM_INSTANCE]
 
-type ProjectedTypeOf<F extends Field> = F["sqlType"][typeof PHANTOM_INSTANCE]
-
-export type ColumnsFrom<TableAlias, SelectedColumns extends Record<string, SqlType>> = {
+export type ColumnsFrom<TableAlias, SelectedColumns extends Record<string, TypeMapper>> = {
     [ColumnAlias in keyof SelectedColumns & string]: ColumnDefinition<
         SubqueryOrigin,
         SelectedColumns[ColumnAlias],
@@ -80,13 +78,13 @@ export type QueriedTablesFromSingle<QueriedTable extends TableDefinition> = Reco
 >
 
 export type DefaultSelectionFromSingle<QueriedTable extends TableDefinition> = {
-    [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["sqlType"]
+    [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["typeMapper"]
 }
 
 export type KeyByAlias<QueriedTable extends TableDefinition> = Record<PropOf<QueriedTable>["tableAlias"], QueriedTable>
 
 export type AliasIn<Selection> = {
-    [K in keyof Selection]: Selection[K] extends ColumnDefinition<Origin, SqlType> ? K : never
+    [K in keyof Selection]: Selection[K] extends ColumnDefinition ? K : never
 }[keyof Selection] &
     string
 
@@ -94,7 +92,7 @@ export type SelectionFrom<QueriedTables> = ColumnIn<QueriedTables> | SelectionRe
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface SelectionRecordFrom<QueriedTables> extends Record<string, SelectionFrom<QueriedTables>> {}
 
-export type RowTypeFrom<Selection> = Selection extends ColumnDefinition<Origin, SqlType>
+export type RowTypeFrom<Selection> = Selection extends ColumnDefinition
     ? ProjectedTypeOf<Selection>
     : {
           [K in keyof Selection]: RowTypeFrom<Selection[K]>
@@ -131,11 +129,7 @@ export interface JoinedStage<QueriedTables extends TableDefinitions>
 export interface JoinStage<QueriedTables extends TableDefinitions> {
     innerJoin<
         OtherTableOrigin extends Origin,
-        OtherTable extends TableDefinition<
-            OtherTableOrigin,
-            string,
-            Record<string, ColumnDefinition<OtherTableOrigin, SqlType>>
-        >
+        OtherTable extends TableDefinition<OtherTableOrigin, string, Record<string, ColumnDefinition<OtherTableOrigin>>>
     >(
         otherTable: OtherTable,
     ): OnStage<QueriedTables & KeyByAlias<OtherTable>>
@@ -208,14 +202,14 @@ export interface FetchStage<Selection> {
 
     asTable<Alias extends string>(
         alias: Alias,
-    ): Selection extends Record<string, ColumnDefinition<Origin, SqlType>>
+    ): Selection extends Record<string, ColumnDefinition>
         ? TableDefinition<
               SubqueryOrigin,
               Alias,
               ColumnsFrom<
                   Alias,
                   {
-                      [ColumnName in keyof Selection]: Selection[ColumnName]["sqlType"]
+                      [ColumnName in keyof Selection]: Selection[ColumnName]["typeMapper"]
                   }
               >
           >
