@@ -68,7 +68,7 @@ export function renderLiteral(literalValue: unknown): string {
     } else if (typeof literalValue === "number" || typeof literalValue === "bigint") {
         return literalValue.toString()
     } else if (typeof literalValue === "string") {
-        return "'" + literalValue + "'"
+        return "'" + literalValue.replace(/'/g, "''") + "'"
     } else {
         throw Error("invalid literal " + literalValue)
     }
@@ -432,8 +432,8 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
         if (columnNames.length === 0) {
             return this.executeStage(`INSERT INTO ${tableNameSql} DEFAULT VALUES`)
         } else {
-            const columnsSql = columnNames.map(renderIdentifier).join(",")
-            const valuesSql = Object.values(row).map(renderLiteral).join(",")
+            const columnsSql = columnNames.map(renderIdentifier).join(", ")
+            const valuesSql = Object.values(row).map(renderLiteral).join(", ")
             return this.executeStage(`INSERT INTO ${tableNameSql} (${columnsSql}) VALUES (${valuesSql})`)
         }
     }

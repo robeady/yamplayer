@@ -22,26 +22,33 @@ function expectExtraSql<T extends Renderable>(initial: T, delta: (initial: T) =>
     expect(b.slice(a.length)).toBe(expectedExtraSql)
 }
 
-test("render literal produces correct SQL", () => {
-    expect(renderLiteral("foo")).toBe("'foo'")
-    expect(renderLiteral(42)).toBe("42")
-    expect(renderLiteral(3.14)).toBe("3.14")
-    expect(renderLiteral(BigInt("999999"))).toBe("999999")
-    expect(renderLiteral(null)).toBe("NULL")
-    expect(renderLiteral(true)).toBe("TRUE")
-    expect(renderLiteral(false)).toBe("FALSE")
-})
+describe("rendering literals and identifiers", () => {
+    test("render literal produces correct SQL", () => {
+        expect(renderLiteral("foo")).toBe("'foo'")
+        expect(renderLiteral(42)).toBe("42")
+        expect(renderLiteral(3.14)).toBe("3.14")
+        expect(renderLiteral(BigInt("999999"))).toBe("999999")
+        expect(renderLiteral(null)).toBe("NULL")
+        expect(renderLiteral(true)).toBe("TRUE")
+        expect(renderLiteral(false)).toBe("FALSE")
+    })
 
-test("render identifer wraps in backticks", () => {
-    expect(renderIdentifier("foo")).toBe("`foo`")
-    expect(renderIdentifier("foo1")).toBe("`foo1`")
-    expect(renderIdentifier("foo_bar")).toBe("`foo_bar`")
-    expect(renderIdentifier("a b c")).toBe("`a b c`")
-    expect(renderIdentifier("221b")).toBe("`221b`")
-})
+    test("render literals escapes quotes", () => {
+        expect(renderLiteral("don't")).toBe("'don''t'")
+        expect(renderLiteral("don't won't")).toBe("'don''t won''t'")
+    })
 
-test("throw on identifier containing backquote", () => {
-    expect(() => renderIdentifier("I`ve got backtick")).toThrow()
+    test("render identifer wraps in backticks", () => {
+        expect(renderIdentifier("foo")).toBe("`foo`")
+        expect(renderIdentifier("foo1")).toBe("`foo1`")
+        expect(renderIdentifier("foo_bar")).toBe("`foo_bar`")
+        expect(renderIdentifier("a b c")).toBe("`a b c`")
+        expect(renderIdentifier("221b")).toBe("`221b`")
+    })
+
+    test("throw on identifier containing backquote", () => {
+        expect(() => renderIdentifier("I`ve got backtick")).toThrow()
+    })
 })
 
 test("query table with default selection", () => {
@@ -54,6 +61,14 @@ test("join", () => {
     expect(qb(exampleTable).innerJoin(exampleTable2).on(exampleTable.col1, "=", exampleTable2.col3).render().sql).toBe(
         "SELECT `foo`.`col1`, `foo`.`col2`, `bar`.`col3` FROM `foo` AS `foo` INNER JOIN `bar` AS `bar` ON (`foo`.`col1` = `bar`.`col3`)",
     )
+})
+
+describe("insert", () => {
+    test("insert renders corectly", () => {
+        expect(qb(exampleTable).insert({ col1: "a", col2: 42 }).render().sql).toBe(
+            "INSERT INTO `foo` (`col1`, `col2`) VALUES ('a', 42)",
+        )
+    })
 })
 
 describe("select", () => {
