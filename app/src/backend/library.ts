@@ -2,9 +2,10 @@ import { Database } from "./database"
 import { AssocArray } from "../util/types"
 import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
 import * as tables from "./database/tables"
-import { AlbumId, ArtistId, TrackId, Track, Album, Artist } from "../model"
+import { AlbumId, ArtistId, TrackId, Track, Album, Artist, SearchResults } from "../model"
 import { TrackSearchResult } from "./deezer/gateway"
 import { pick } from "lodash"
+import produce from "immer"
 
 export class Library {
     qb: QueryBuilder
@@ -42,6 +43,41 @@ export class Library {
             artists[artistId] = row.artist
         }
         return { tracks, artists, albums }
+    }
+
+    async match(searchResults: SearchResults): Promise<SearchResults> {
+        const { track, album, artist } = tables
+        return produce(searchResults, async resultsDraft => {
+            await Promise.all([
+                this.qb(track)
+                    .where(track.externalId, "IN", Object.keys(searchResults.tracksByExternalId))
+                    .select(pick(track, "trackId", "externalId"))
+                    .fetch()
+                    .then(tracks =>
+                        tracks.forEach(
+                            t => (resultsDraft.tracksByExternalId[t.externalId]!.libraryId = t.trackId as TrackId),
+                        ),
+                    ),
+                this.qb(album)
+                    .where(album.externalId, "IN", Object.keys(searchResults.albumsByExternalId))
+                    .select(pick(album, "albumId", "externalId"))
+                    .fetch()
+                    .then(albums =>
+                        albums.forEach(
+                            a => (resultsDraft.albumsByExternalId[a.externalId]!.libraryId = a.albumId as AlbumId),
+                        ),
+                    ),
+                this.qb(artist)
+                    .where(artist.externalId, "IN", Object.keys(searchResults.artistsByExternalId))
+                    .select(pick(artist, "artistId", "externalId"))
+                    .fetch()
+                    .then(artists =>
+                        artists.forEach(
+                            a => (resultsDraft.artistsByExternalId[a.externalId]!.libraryId = a.artistId as ArtistId),
+                        ),
+                    ),
+            ])
+        })
     }
 
     async addSearchResult(searchResult: TrackSearchResult): Promise<[TrackId, AlbumId, ArtistId]> {

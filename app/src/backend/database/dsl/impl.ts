@@ -69,6 +69,8 @@ export function renderLiteral(literalValue: unknown): string {
         return literalValue.toString()
     } else if (typeof literalValue === "string") {
         return "'" + literalValue.replace(/'/g, "''") + "'"
+    } else if (literalValue instanceof Array) {
+        return "(" + literalValue.map(renderLiteral).join(", ") + ")"
     } else {
         throw Error("invalid literal " + literalValue)
     }
@@ -96,7 +98,7 @@ interface FilterElement {
     right: Expression
 }
 
-const sqlOperators = ["=", "<>"] as const
+const sqlOperators = ["=", "<>", "IN"] as const
 type SqlOperator = typeof sqlOperators[number]
 
 type Expression = { type: "literal"; literal: unknown } | { type: "column"; definition: ColumnDefinition }
@@ -670,7 +672,16 @@ function filterComponentSql(filterComponent: boolean | Filter | FilterElement): 
 }
 
 function filterOperatorSql(op: SqlOperator): string {
-    return op === "=" ? "=" : "<>"
+    switch (op) {
+        case "=":
+            return "="
+        case "<>":
+            return "<>"
+        case "IN":
+            return "IN"
+        default:
+            unreachable(op)
+    }
 }
 
 function expressionSql(expr: Expression): string {
@@ -703,6 +714,6 @@ function tableDetails(definition: TableDefinition): { tableAlias: string; tableO
     return cols[0]
 }
 
-function unreachable(): never {
+function unreachable(v: never): never {
     throw Error("unreachable")
 }

@@ -37,6 +37,7 @@ describe("rendering literals and identifiers", () => {
         expect(renderLiteral(null)).toBe("NULL")
         expect(renderLiteral(true)).toBe("TRUE")
         expect(renderLiteral(false)).toBe("FALSE")
+        expect(renderLiteral(["foo", 42, true])).toBe("('foo', 42, TRUE)")
     })
 
     test("render literals escapes quotes", () => {
@@ -69,8 +70,18 @@ test("join", () => {
     )
 })
 
+describe("where clause", () => {
+    test("renders IN correctly", () => {
+        // remark: we allow the wrong type to appear after IN (but not every option can be of the wrong type)
+        // seems harmless enough
+        expect(qb(exampleTable).where(exampleTable.col1, "IN", ["foo", "bar", true]).render().sql).toBe(
+            "SELECT `foo`.`col1` AS `col1`, `foo`.`col2` AS `col2` FROM `foo` AS `foo` WHERE `foo`.`col1` IN ('foo', 'bar', TRUE)",
+        )
+    })
+})
+
 describe("insert", () => {
-    test("insert renders corectly", () => {
+    test("insert renders correctly", () => {
         expect(qb(exampleTable).insert({ col1: "a", col2: 42 }).render().sql).toBe(
             "INSERT INTO `foo` (`col1`, `col2`) VALUES ('a', 42)",
         )

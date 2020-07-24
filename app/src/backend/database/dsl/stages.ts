@@ -22,7 +22,12 @@ export type ColumnsFrom<TableAlias, SelectedColumns extends Record<string, TypeM
 
 export interface FilterTableFunction<QueriedTable extends TableDefinition, ReturnType> {
     (matching: Partial<RowTypeFrom<QueriedTable>>): ReturnType
-    <T>(column: PropOf<QueriedTable>, operator: "==" | "<>", value: T): ReturnType
+    <T, C extends PropOf<QueriedTable> & ColumnDefinition<Origin, T>>(
+        column: C,
+        operator: "=" | "<>",
+        value: T,
+    ): ReturnType
+    <T, C extends PropOf<QueriedTable> & ColumnDefinition<Origin, T>>(column: C, operator: "IN", value: T[]): ReturnType
 }
 
 export interface FilterFunction<QueriedTables extends TableDefinitions, ReturnType> {
