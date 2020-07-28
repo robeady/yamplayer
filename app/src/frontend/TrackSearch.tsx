@@ -3,12 +3,10 @@ import { remote } from "../backend/rpc/client"
 import { DeezerApiClient } from "../backend/deezer/gateway"
 import { DeezerCodec } from "../backend/deezer/DeezerCodec"
 import { Playback } from "./playback/playback"
-import { useLibrarySearch, useLibraryDispatch } from "./library/library"
+import { useSearchResults, useExplorerDispatch, useExplorerState, resolveCanonical } from "./library/library"
 import { css } from "linaria"
 import { styled } from "linaria/react"
 import PlayArrow from "./icons/play_arrow.svg"
-import { Library } from "../backend/library"
-import { keyBy } from "lodash"
 import { TrackId } from "../model"
 
 function SearchBox(props: { onSubmit: (text: string) => void }) {
@@ -46,27 +44,36 @@ const TrackRow = styled.div`
 `
 
 function SearchResults(props: {
-    tracks: Track[]
+    trackIds: string[]
     playTrack: (trackId: string) => void
     addTrackToLibrary: (trackId: string) => void
 }) {
+    const allTracks = useExplorerState(s => s.tracks)
+    const allAlbums = useExplorerState(s => s.albums)
+    const allArtists = useExplorerState(s => s.artists)
+    const results = props.trackIds.map(trackId => {
+        const track = resolveCanonical(allTracks, trackId)
+        const artist = resolveCanonical(allArtists, track.artistId)
+        const album = resolveCanonical(allAlbums, track.albumId)
+        return { trackId, track, artist, album }
+    })
     return (
         <div
             className={css`
                 font-size: 14px;
             `}>
-            {props.tracks.map(t => (
-                <TrackRow key={t.externalId}>
-                    <CoverImage url={t.coverImageUrl} size={36} play={() => props.playTrack(t.externalId)} />
+            {results.map(t => (
+                <TrackRow key={t.trackId}>
+                    <CoverImage url={t.album.coverImageUrl ?? ""} size={36} play={() => props.playTrack(t.trackId)} />
                     <TrackAndAlbumTitle
-                        track={t.title}
-                        play={() => props.playTrack(t.externalId)}
-                        album={t.albumTitle}
+                        track={t.track.title}
+                        play={() => props.playTrack(t.trackId)}
+                        album={t.album.title}
                     />
-                    <span>{t.artistName}</span>
+                    <span>{t.artist.name}</span>
                     <AddToLibraryButton
-                        onClick={() => props.addTrackToLibrary(t.externalId)}
-                        alreadyInLibrary={t.libraryId !== null}
+                        onClick={() => props.addTrackToLibrary(t.trackId)}
+                        alreadyInLibrary={t.track.saved}
                     />
                 </TrackRow>
             ))}
@@ -177,28 +184,18 @@ async function downloadAndDecryptTrack(id: string) {
 export function TrackSearch() {
     const [searchQuery, setSearchQuery] = useState(null as string | null)
     const { enqueueTrack } = Playback.useDispatch()
-    const { libraryClient } = useLibraryDispatch()
-    const searchResults = useLibrarySearch(searchQuery)
-    const searchResultsByExternalTrackId = keyBy(searchResults, s => s.track.externalId)
+    const { explorerClient } = useExplorerDispatch()
+    const searchResults = useSearchResults(searchQuery)
     return (
         <div>
             <SearchBox onSubmit={setSearchQuery} />
             <SearchResults
-                tracks={searchResults.map(r => ({
-                    libraryId: r.track.libraryId,
-                    externalId: r.track.externalId,
-                    title: r.track.title,
-                    albumTitle: r.album.title,
-                    artistName: r.artist.name,
-                    coverImageUrl: r.album.coverImageUrl,
-                }))}
+                trackIds={searchResults.externalTrackIds}
                 playTrack={async id => {
                     const buffer = await downloadAndDecryptTrack(id)
                     enqueueTrack(id, buffer)
                 }}
-                addTrackToLibrary={externalId =>
-                    libraryClient.addSearchResult(searchResultsByExternalTrackId[externalId])
-                }
+                addTrackToLibrary={externalId => explorerClient.addTrack(externalId)}
             />
         </div>
     )

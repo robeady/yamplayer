@@ -1,29 +1,30 @@
 import { table } from "./dsl/definitions"
-import { string, number } from "./dsl/types"
+import { string, number, boolean } from "./dsl/types"
 
 export const track = table("track", {
     trackId: number.withDefault(),
+    externalId: string,
     albumId: number,
     artistId: number,
+    saved: boolean,
     title: string,
     isrc: string.orNull(),
     durationSecs: number,
-    externalId: string,
 })
 
 export const album = table("album", {
     albumId: number.withDefault(),
+    externalId: string,
     title: string,
     coverImageUrl: string.orNull(),
     releaseDate: string.orNull(),
-    externalId: string,
 })
 
 export const artist = table("artist", {
     artistId: number.withDefault(),
+    externalId: string,
     name: string,
     imageUrl: string.orNull(),
-    externalId: string,
 })
 
 export const playlist = table("playlist", {
@@ -32,7 +33,7 @@ export const playlist = table("playlist", {
 })
 
 export const playlistEntry = table("playlistEntry", {
-    playlistEntryId: number,
+    playlistEntryId: number.withDefault(),
     playlistId: number,
     trackId: number,
 })

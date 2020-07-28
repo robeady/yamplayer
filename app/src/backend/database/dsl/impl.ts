@@ -272,6 +272,8 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
 
         const selectionDestinations = traverseSelection(this.selection, keyPath => keyPath)
 
+        const selectionTypeMappers = traverseSelection(this.selection, (_, columnDef) => columnDef.typeMapper)
+
         const columnsInPrimaryTable = Object.values(this.state.primaryTable)
         if (columnsInPrimaryTable.length === 0) throw Error("Primary table has no columns")
         const { tableOrigin, tableAlias } = Object.values(this.state.primaryTable)[0]
@@ -286,12 +288,19 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         const mapRow = (row: unknown[]) => {
             let rowObject: any = {}
             for (let i = 0; i < row.length; i++) {
-                rowObject = populateAtPath(rowObject, selectionDestinations[i], row[i])
+                rowObject = populateAtPath(rowObject, selectionDestinations[i], selectionTypeMappers[i].sqlToJs(row[i]))
             }
             return rowObject
         }
 
         return { sql, mapRow }
+    }
+
+    fetchOne = async (): Promise<RowTypeFrom<Selection>> => {
+        const { sql, mapRow } = this.render()
+        const rows = await this.state.databaseHandle.query(sql)
+        if (rows.length !== 1) throw Error("Expected 1 row, got " + rows.length)
+        return mapRow(rows[0])
     }
 
     fetch = async (): Promise<RowTypeFrom<Selection>[]> => {
@@ -353,6 +362,7 @@ class SelectedStageImpl<QueriedTables extends TableDefinitions, Selection>
     limit = this.attach(this.backend.limit)
     offset = this.attach(this.backend.offset)
     fetch = this.backend.fetch
+    fetchOne = this.backend.fetchOne
     asTable = this.backend.asTable
     render = this.backend.render
 }
@@ -384,6 +394,7 @@ class MultiTableStageImpl<QueriedTables extends TableDefinitions> implements OnS
     offset = this.attach(this.backend.offset)
 
     fetch = this.backend.fetch
+    fetchOne = this.backend.fetchOne
     asTable = this.backend.asTable
     render = this.backend.render
 }
@@ -413,8 +424,14 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
         return new SelectedStageImpl(this.backend.select(selection))
     }
     fetch = this.backend.fetch
+    fetchOne = this.backend.fetchOne
     asTable = this.backend.asTable
     render = this.backend.render
+
+    truncate = () => {
+        const tableNameSql = this.backend.primaryTableName.map(renderIdentifier).join(".")
+        return this.executeStage(`TRUNCATE TABLE ${tableNameSql}`)
+    }
 
     insert = (row: InsertTypeFor<QueriedTable>) => {
         const {
@@ -428,7 +445,7 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
             }
             return { columnName, columnDefinition, value }
         })
-        const tableNameSql = primaryTableName.map(renderIdentifier).join(",")
+        const tableNameSql = primaryTableName.map(renderIdentifier).join(".")
         if (columns.length === 0) {
             return this.executeStage(`INSERT INTO ${tableNameSql} DEFAULT VALUES`)
         } else {
@@ -444,7 +461,7 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
             primaryTableName,
         } = this.backend
 
-        const tableNameSql = primaryTableName.map(renderIdentifier).join(",")
+        const tableNameSql = primaryTableName.map(renderIdentifier).join(".")
 
         const updateSql = Object.entries(row)
             .map(([columnName, value]) => {
@@ -468,7 +485,7 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
             state: { filter },
             primaryTableName,
         } = this.backend
-        const tableNameSql = primaryTableName.map(renderIdentifier).join(",")
+        const tableNameSql = primaryTableName.map(renderIdentifier).join(".")
         const sql = `DELETE FROM ${tableNameSql}${whereSql(filter)}`
         return this.executeStage(sql)
     }
@@ -637,7 +654,7 @@ function orderDirectionSql(direction: undefined | "ASC" | "DESC") {
         case "DESC":
             return " DESC"
         default:
-            unreachable()
+            unreachable(direction)
     }
 }
 
@@ -698,7 +715,7 @@ function joinTypeSql(joinType: JoinType): string {
         case "inner":
             return "INNER JOIN"
         default:
-            unreachable()
+            unreachable(joinType)
     }
 }
 
@@ -714,6 +731,6 @@ function tableDetails(definition: TableDefinition): { tableAlias: string; tableO
     return cols[0]
 }
 
-function unreachable(v: never): never {
+function unreachable(_: never): never {
     throw Error("unreachable")
 }

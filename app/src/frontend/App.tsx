@@ -6,7 +6,7 @@ import { TrackSearch } from "./TrackSearch"
 import { Playback } from "./playback/playback"
 import { css } from "linaria"
 import { AudioPlayer } from "./playback/AudioPlayer"
-import { LibraryProvider } from "./library/library"
+import { ExplorerProvider } from "./library/library"
 import { Link, Switch, Route, HashRouter } from "react-router-dom"
 
 const App = () => (
@@ -81,7 +81,7 @@ function Providers(props: PropsWithChildren<{}>) {
     return (
         <HashRouter>
             <Playback.Provider player={playerRef.current}>
-                <LibraryProvider backendUrl="http://127.0.0.1:8280">{props.children}</LibraryProvider>
+                <ExplorerProvider backendUrl="http://127.0.0.1:8280">{props.children}</ExplorerProvider>
             </Playback.Provider>
         </HashRouter>
     )

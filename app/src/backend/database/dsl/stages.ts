@@ -117,6 +117,7 @@ type ColumnsWithoutDefaultsIn<Table extends TableDefinition> = {
 export interface InsertStage<QueriedTable extends TableDefinition>
     extends FilterTableStage<QueriedTable>,
         JoinStage<QueriedTablesFromSingle<QueriedTable>> {
+    truncate(): ExecuteStage
     insert(row: InsertTypeFor<QueriedTable>): ExecuteStage
 }
 
@@ -200,6 +201,7 @@ export interface OffsetStage<Selection> extends FetchStage<Selection> {
 
 export interface FetchStage<Selection> {
     fetch(): Promise<RowTypeFrom<Selection>[]>
+    fetchOne(): Promise<RowTypeFrom<Selection>>
 
     render(): { sql: string; mapRow: (row: unknown[]) => RowTypeFrom<Selection> }
 

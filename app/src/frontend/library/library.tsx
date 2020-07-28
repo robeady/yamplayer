@@ -1,80 +1,76 @@
 import { Dict } from "../../util/types"
-import { TrackSearchResult, DeezerApiClient } from "../../backend/deezer/gateway"
 import { remote } from "../../backend/rpc/client"
 import { useState, useMemo, useEffect } from "react"
 import { createState, immerise } from "../state"
-import { Library } from "../../backend/library"
-import { pick } from "lodash"
-import { Track, Album, Artist } from "../../model"
+import { Track, Album, Artist, SearchResultLists } from "../../model"
+import { Explorer } from "../../backend/explorer"
 
-const library = createState((props: { backendUrl: string }) => {
-    const deezerClient = useMemo(() => remote<DeezerApiClient>(`${props.backendUrl}/deezer`), [props.backendUrl])
-    const libraryClient = useMemo(() => remote<Library>(`${props.backendUrl}/library`), [props.backendUrl])
-
-    const [state, setState] = useState({
-        searchResultsByQuery: {} as Dict<TrackSearchResult[]>,
-        tracks: {} as Dict<Track>,
-        externalTracks: {} as Dict<Track>,
-        albums: {} as Dict<Album>,
-        artists: {} as Dict<Artist>,
-        libraryTrackIds: null as string[] | null,
-    })
-    const update = immerise(setState)
-
-    return [state, { update, deezerClient, libraryClient }]
-})
-
-export const useLibraryState = library.useState
-export const useLibraryDispatch = library.useDispatch
-export const LibraryProvider = library.Provider
-
-export const useAddToLibrary = () => {
-    const { libraryClient, update } = useLibraryDispatch()
-
-    return (searchResult: TrackSearchResult) => {
-        libraryClient.addSearchResult(searchResult).then(([trackId, albumId, artistId]) => {
-            update(state => {
-                state.tracks[trackId] = {}
-                state.albums[albumId] = pick(searchResult.album, "title", "coverImageUrl")
-                state.artists[artistId] = {}
-            })
-        })
-    }
+interface ExplorerState {
+    searchResultsByQuery: Dict<SearchResultLists>
+    tracks: Dict<Track | string>
+    albums: Dict<Album | string>
+    artists: Dict<Artist | string>
 }
 
-export const useLibrarySearch = (query: string | null): TrackSearchResult[] => {
-    const { deezerClient, update } = useLibraryDispatch()
-    const searchResults = useLibraryState(s => query && s.searchResultsByQuery[query])
+export const { Provider: ExplorerProvider, useState: useExplorerState, useDispatch: useExplorerDispatch } = createState(
+    (props: { backendUrl: string }) => {
+        const [state, setState] = useState<ExplorerState>({
+            searchResultsByQuery: {},
+            tracks: {},
+            albums: {},
+            artists: {},
+        })
+        const dispatch = useMemo(() => {
+            const update = immerise(setState)
+            const explorerClient = remote<Explorer>(`${props.backendUrl}/explorer`)
+
+            const addToLibrary = async (externalTrackId: string) => {
+                const { track, album, artist } = await explorerClient.addTrack(externalTrackId)
+                update(s => {
+                    s.tracks[track.libraryId] = track
+                    s.tracks[track.externalId] = track.libraryId
+                    s.albums[album.libraryId] = album
+                    s.albums[album.externalId] = album.libraryId
+                    s.artists[artist.libraryId] = artist
+                    s.artists[artist.externalId] = artist.libraryId
+                })
+            }
+
+            return { update, addToLibrary, explorerClient }
+        }, [props.backendUrl])
+
+        return [state, dispatch]
+    },
+)
+
+export function resolveCanonical<T>(dict: Dict<T | string>, id: string): T {
+    let r: string | T = id
+    while (typeof r === "string") {
+        // TODO: handle cycles
+        r = dict[r]
+    }
+    return r
+}
+
+export const useSearchResults = (query: string | null): SearchResultLists => {
+    const { explorerClient, update } = useExplorerDispatch()
+    const searchResults = useExplorerState(s => query && s.searchResultsByQuery[query])
     useEffect(() => {
         async function fetchSearchResults() {
-            if (searchResults === undefined && query !== null) {
+            if (searchResults === undefined && query !== null && query !== "") {
                 console.log(`searching for ${query}`)
-                const results = await deezerClient.searchTracks(query)
-                console.log(`${results.length} results`)
+                const r = await explorerClient.searchTracks(query)
                 update(s => {
-                    // TODO turn list of search results by query into a list of track/artist/album IDs
-                    s.searchResultsByQuery[query] = results
-                    for (const result of results) {
-                        console.log("adding a result to the state")
-                        s.tracks[result.track.externalId] = {
-                            title: result.track.title,
-                            albumId: result.album.externalId,
-                            artistId: result.artist.externalId,
-                        }
-                        s.albums[result.album.externalId] = {
-                            title: result.album.title,
-                            coverImageUrl: result.album.coverImageUrl,
-                        }
-                        s.artists[result.artist.externalId] = {
-                            name: result.artist.name,
-                        }
-                    }
-                    console.log("new state has " + JSON.stringify({ tracks: s.tracks }))
+                    s.searchResultsByQuery[query] = r.results
+                    // TODO: use some sort of version number to detect old versions
+                    s.tracks = { ...s.tracks, ...r.tracks }
+                    s.albums = { ...s.albums, ...r.albums }
+                    s.artists = { ...s.artists, ...r.artists }
                 })
             }
         }
         fetchSearchResults()
-    }, [deezerClient, query, searchResults, update])
+    }, [explorerClient, query, searchResults, update])
 
-    return searchResults || []
+    return searchResults || { externalTrackIds: [], externalAlbumIds: [], externalArtistIds: [] }
 }

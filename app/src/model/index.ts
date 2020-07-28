@@ -6,16 +6,13 @@ export type TrackId = number & { readonly [NEWTYPE]: unique symbol }
 export type ArtistId = number & { readonly [NEWTYPE]: unique symbol }
 export type AlbumId = number & { readonly [NEWTYPE]: unique symbol }
 
-export interface Track extends TrackInfo {
-    albumId: AlbumId
-    artistId: ArtistId
-    externalId: string
+export interface Track extends TrackWithLinks {
+    saved: boolean
 }
 
-export interface ExternalTrack extends TrackInfo {
-    libraryId: TrackId | null
-    externalAlbumId: string
-    externalArtistId: string
+export interface TrackWithLinks extends TrackInfo {
+    albumId: string
+    artistId: string
 }
 
 export interface TrackInfo {
@@ -24,40 +21,50 @@ export interface TrackInfo {
     durationSecs: number
 }
 
-export interface Album extends AlbumInfo {
-    externalId: string
-}
-
-export interface ExternalAlbum extends AlbumInfo {
-    libraryId: AlbumId | null
-}
-
-export interface AlbumInfo {
+export interface Album {
     title: string
     coverImageUrl: string | null
     releaseDate: string | null
 }
 
-export interface Artist extends ArtistInfo {
-    externalId: string
-}
-
-export interface ExternalArtist extends ArtistInfo {
-    libraryId: ArtistId | null
-}
-
-export interface ArtistInfo {
+export interface Artist {
     name: string
     imageUrl: string | null
 }
 
+export type Library<T> = T & {
+    libraryId: string
+    externalId: string | null
+}
+
+export type Matched<T> = T & {
+    libraryId: string | null
+    externalId: string
+}
+
+export type External<T> = T & { externalId: string }
+
+export type Added<T> = T & {
+    libraryId: string
+    externalId: string
+}
+
+export interface SearchResultLists {
+    externalTrackIds: string[]
+    externalAlbumIds: string[]
+    externalArtistIds: string[]
+}
+
 export interface SearchResults {
-    results: {
-        externalTrackIds: string[]
-        externalAlbumIds: string[]
-        externalArtistIds: string[]
-    }
-    tracksByExternalId: Dict<ExternalTrack>
-    albumsByExternalId: Dict<ExternalAlbum>
-    artistsByExternalId: Dict<ExternalArtist>
+    results: SearchResultLists
+    tracks: Dict<External<TrackWithLinks>>
+    albums: Dict<External<Album>>
+    artists: Dict<External<Artist>>
+}
+
+export interface MatchedSearchResults {
+    results: SearchResultLists
+    tracks: Dict<External<Track> | string>
+    albums: Dict<External<Album> | string>
+    artists: Dict<External<Artist> | string>
 }

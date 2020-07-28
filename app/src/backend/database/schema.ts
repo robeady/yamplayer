@@ -11,27 +11,28 @@ alter database yamplayer
 
 create table track (
     trackId bigint primary key auto_increment,
+    externalId varchar(50) not null,
     albumId integer not null references album (albumId),
     artistId integer not null references artist (artistId),
     title varchar(255) not null,
     isrc char(12),
     durationSecs double precision not null,
-    externalId varchar(50) not null
+    saved boolean not null
 );
 
 create table album (
     albumId bigint primary key auto_increment,
+    externalId varchar(50) not null,
     title varchar(255) not null,
     coverImageUrl varchar(2000),
-    releaseDate varchar(10),
-    externalId varchar(50) not null
+    releaseDate varchar(10)
 );
 
 create table artist (
     artistId bigint primary key auto_increment,
+    externalId varchar(50) not null,
     name varchar(255) not null,
-    imageUrl varchar(2000),
-    externalId varchar(50) not null
+    imageUrl varchar(2000)
 );
 
 create table playlist (

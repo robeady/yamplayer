@@ -8,7 +8,7 @@ import { PlayPauseButton } from "./components/PlayPause"
 import { useState, useEffect } from "react"
 import { Slider } from "./components/Slider"
 import { VolumeControl } from "./components/Volume"
-import { useLibraryState } from "./library/library"
+import { useExplorerState, resolveCanonical } from "./library/library"
 
 const Player = () => {
     return (
@@ -28,11 +28,11 @@ const Player = () => {
 function PlayingTrack() {
     const status = Playback.useState(s => s.status)
     const nowPlayingTrackId = Playback.useState(s => s.queue[0]?.trackId as string | undefined)
-    const playingTrack = useLibraryState(s =>
-        nowPlayingTrackId === undefined ? undefined : s.tracks[nowPlayingTrackId]!,
+    const playingTrack = useExplorerState(s =>
+        nowPlayingTrackId === undefined ? undefined : resolveCanonical(s.tracks, nowPlayingTrackId),
     )
-    const playingAlbum = useLibraryState(s => playingTrack && s.albums[playingTrack.albumId])
-    const playingArtist = useLibraryState(s => playingTrack && s.artists[playingTrack.artistId])
+    const playingAlbum = useExplorerState(s => playingTrack && resolveCanonical(s.albums, playingTrack.albumId))
+    const playingArtist = useExplorerState(s => playingTrack && resolveCanonical(s.artists, playingTrack.artistId))
 
     if (nowPlayingTrackId === undefined) {
         return <span>We are {status.state}</span>
@@ -46,7 +46,7 @@ function PlayingTrack() {
                     className={css`
                         display: flex;
                     `}>
-                    <img src={playingAlbum?.coverImageUrl} height={40} />
+                    <img src={playingAlbum?.coverImageUrl ?? undefined} height={40} />
                     <div>
                         <div>{playingTrack?.title}</div>
                         <div>

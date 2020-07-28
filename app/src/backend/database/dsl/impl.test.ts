@@ -1,6 +1,6 @@
 import { table } from "./definitions"
 import { queryBuilder, noDatabaseHandle, renderIdentifier, renderLiteral } from "./impl"
-import { string, number, intAsJsString } from "./types"
+import { string, number, intAsJsString, boolean } from "./types"
 
 const exampleTable = table("foo", {
     col1: string,
@@ -11,8 +11,9 @@ const exampleTable2 = table("bar", {
     col3: string,
 })
 
-const exampleTableWithMapping = table("baz", {
+const mappyTable = table("baz", {
     id: intAsJsString,
+    enabled: boolean,
 })
 
 const qb = queryBuilder(noDatabaseHandle)
@@ -58,6 +59,10 @@ describe("rendering literals and identifiers", () => {
     })
 })
 
+test("truncate", () => {
+    expect(qb(exampleTable).truncate().render().sql).toBe("TRUNCATE TABLE `foo`")
+})
+
 test("query table with default selection", () => {
     expect(qb(exampleTable).render().sql).toBe(
         "SELECT `foo`.`col1` AS `col1`, `foo`.`col2` AS `col2` FROM `foo` AS `foo`",
@@ -100,7 +105,7 @@ describe("update", () => {
         )
     })
     test("update applies type mapping", () => {
-        expect(qb(exampleTableWithMapping).update({ id: "42" }).render().sql).toBe("UPDATE `baz` SET `id` = 42")
+        expect(qb(mappyTable).update({ id: "42" }).render().sql).toBe("UPDATE `baz` SET `id` = 42")
     })
     // TODO: update should not use aliases?
 })
@@ -115,19 +120,19 @@ describe("select", () => {
     test("select multiple columns", () => {
         const r = qb(exampleTable).select({ col1: exampleTable.col1, col2: exampleTable.col2 }).render()
         expect(r.sql).toBe("SELECT `foo`.`col1` AS `col1`, `foo`.`col2` AS `col2` FROM `foo` AS `foo`")
-        expect(r.mapRow(["a", "b"])).toStrictEqual({ col1: "a", col2: "b" })
+        expect(r.mapRow(["a", 42])).toStrictEqual({ col1: "a", col2: 42 })
     })
 
     test("rename columns", () => {
         const r = qb(exampleTable).select({ foo: exampleTable.col1, bar: exampleTable.col2 }).render()
         expect(r.sql).toBe("SELECT `foo`.`col1` AS `foo`, `foo`.`col2` AS `bar` FROM `foo` AS `foo`")
-        expect(r.mapRow(["a", "b"])).toStrictEqual({ foo: "a", bar: "b" })
+        expect(r.mapRow(["a", 42])).toStrictEqual({ foo: "a", bar: 42 })
     })
 
     test("nested table in select", () => {
         const r = qb(exampleTable).select({ foo: exampleTable.col1, exampleTable }).render()
         expect(r.sql).toBe("SELECT `foo`.`col1` AS `foo`, `foo`.`col1`, `foo`.`col2` FROM `foo` AS `foo`")
-        expect(r.mapRow(["a", "b", "c"])).toStrictEqual({ foo: "a", exampleTable: { col1: "b", col2: "c" } })
+        expect(r.mapRow(["a", "b", 42])).toStrictEqual({ foo: "a", exampleTable: { col1: "b", col2: 42 } })
     })
 
     test("deep nesting", () => {
@@ -135,7 +140,7 @@ describe("select", () => {
             .select({ c1: exampleTable.col1, foo: { bar: { baz: exampleTable } } })
             .render()
         expect(r.sql).toBe("SELECT `foo`.`col1` AS `c1`, `foo`.`col1`, `foo`.`col2` FROM `foo` AS `foo`")
-        expect(r.mapRow(["a", "b", "c"])).toStrictEqual({ c1: "a", foo: { bar: { baz: { col1: "b", col2: "c" } } } })
+        expect(r.mapRow(["a", "b", 42])).toStrictEqual({ c1: "a", foo: { bar: { baz: { col1: "b", col2: 42 } } } })
     })
 })
 
@@ -162,4 +167,23 @@ test("limit", () => {
 
 test("offset", () => {
     expectExtraSql(qb(exampleTable), q => q.offset(42), " OFFSET 42")
+})
+
+describe("fetching", () => {
+    test("fetchOne throws on 0 rows", () => {
+        expect(queryBuilder({ query: () => Promise.resolve([]) } as any)(exampleTable).fetchOne()).rejects.toThrow(
+            "expected 1 row, got 0",
+        )
+    })
+    test("fetchOne throws on >1 row", () => {
+        expect(
+            queryBuilder({ query: () => Promise.resolve([{}, {}, {}]) } as any)(exampleTable).fetchOne(),
+        ).rejects.toThrow("expected 1 row, got 3")
+    })
+})
+
+describe("row mapping", () => {
+    test("maps types", () => {
+        expect(qb(mappyTable).render().mapRow([42, 1])).toStrictEqual({ id: "42", enabled: true })
+    })
 })

@@ -5,7 +5,7 @@ export const number = columnType<number, false, undefined>(
         if (typeof value === "number") {
             return value
         } else {
-            throw Error(`expected number, got ${typeof value} ${value}`)
+            throwError("number", value)
         }
     }),
     false,
@@ -17,7 +17,7 @@ export const string = columnType<string, false, undefined>(
         if (typeof value === "string") {
             return value
         } else {
-            throw Error(`expected string, got ${typeof value} ${value}`)
+            throwError("string", value)
         }
     }),
     false,
@@ -32,17 +32,45 @@ export const intAsJsString = columnType<string, false, undefined>(
             } else if (typeof value === "string") {
                 return value
             } else {
-                throw Error(`expected string or number, got ${typeof value} ${value}`)
+                throwError("string or number", value)
             }
         },
         jsToSql: value => {
             if (typeof value === "string") {
                 return parseInt(value)
             } else {
-                throw Error(`expected string, got ${typeof value} ${value}`)
+                throwError("string", value)
             }
         },
     }),
     false,
     undefined,
 )
+
+export const boolean = columnType<boolean, false, undefined>(
+    typeMapper({
+        sqlToJs: value => {
+            switch (value) {
+                case 0:
+                    return false
+                case 1:
+                    return true
+                default:
+                    throwError("boolean number (0 or 1)", value)
+            }
+        },
+        jsToSql: value => {
+            if (typeof value === "boolean") {
+                return value
+            } else {
+                throwError("boolean number (0 or 1)", value)
+            }
+        },
+    }),
+    false,
+    undefined,
+)
+
+function throwError(expectedType: string, value: unknown): never {
+    throw Error(`expected ${expectedType}, got ${typeof value} ${JSON.stringify(value)}`)
+}
