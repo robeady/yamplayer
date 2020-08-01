@@ -172,13 +172,13 @@ test("offset", () => {
 describe("fetching", () => {
     test("fetchOne throws on 0 rows", () => {
         expect(queryBuilder({ query: () => Promise.resolve([]) } as any)(exampleTable).fetchOne()).rejects.toThrow(
-            "expected 1 row, got 0",
+            "Expected 1 row, got 0",
         )
     })
     test("fetchOne throws on >1 row", () => {
         expect(
             queryBuilder({ query: () => Promise.resolve([{}, {}, {}]) } as any)(exampleTable).fetchOne(),
-        ).rejects.toThrow("expected 1 row, got 3")
+        ).rejects.toThrow("Expected 1 row, got 3")
     })
 })
 
