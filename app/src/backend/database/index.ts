@@ -21,11 +21,20 @@ export class MariaDB implements DatabaseHandle {
     }
 
     async query(sql: string): Promise<unknown[][]> {
-        return await this.connection.query({ sql, rowsAsArray: true })
+        try {
+            const result: unknown[][] = await this.connection.query({ sql, rowsAsArray: true })
+            console.log(`${sql} produced ${result.length} rows`)
+            return result
+        } catch (e) {
+            console.log(`${sql} threw ${e}`)
+            throw e
+        }
     }
 
     async execute(sql: string): Promise<ExecResult> {
+        console.log(sql)
         const result = (await this.connection.query(sql)) as UpsertResult
+        console.log(result)
         return { rowsAffected: result.affectedRows, lastInsertedId: result.insertId }
     }
 
