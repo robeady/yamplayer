@@ -64,6 +64,7 @@ describe("library store tests", () => {
                     title: "1",
                     durationSecs: 0,
                     isrc: null,
+                    saved: true,
                 },
             },
             albums: {
