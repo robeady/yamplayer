@@ -23,10 +23,10 @@ export function TrackListing(props: { trackIds: string[] }) {
         <div>
             {tracksToList.map(t => (
                 <TrackRow key={t.trackId}>
-                    <CoverImage url={t.album.coverImageUrl ?? ""} size={36} play={() => enqueueTrack(t.trackId)} />
+                    <CoverImage url={t.album.coverImageUrl ?? ""} size={36} play={() => enqueueTrack(t.track)} />
                     <TrackAndAlbumTitle
                         track={t.track.title}
-                        play={() => enqueueTrack(t.trackId)}
+                        play={() => enqueueTrack(t.track)}
                         album={t.album.title}
                     />
                     <span>{t.artist.name}</span>
@@ -64,12 +64,20 @@ function CoverImage(props: { url: string; size: number; play: () => void }) {
     )
 }
 
+const TrackRow = styled.div`
+    padding: 4px;
+    display: grid;
+    grid-template-columns: 50px 250px auto 50px;
+    align-items: center;
+    border-bottom: 1px solid gainsboro;
+`
+
 function PlayCircle(props: { displayed: boolean; size: number; onClick: () => void }) {
     if (!props.displayed) return null
     return (
         <div
             className={css`
-                background: hsl(270, 100%, 40%);
+                background: hsl(270, 100%, 50%);
                 border-radius: 50%;
                 display: none;
                 ${TrackRow}:hover & {
@@ -91,14 +99,6 @@ function PlayCircle(props: { displayed: boolean; size: number; onClick: () => vo
         </div>
     )
 }
-
-const TrackRow = styled.div`
-    padding: 4px;
-    display: grid;
-    grid-template-columns: 50px 250px auto 50px;
-    align-items: center;
-    border-bottom: 1px solid gainsboro;
-`
 
 function AddToLibraryButton(props: { alreadyInLibrary: boolean; onClick: () => void }) {
     return (

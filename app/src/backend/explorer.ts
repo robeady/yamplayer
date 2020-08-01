@@ -1,13 +1,13 @@
 import { LibraryStore } from "./library"
 import { DeezerApiClient } from "./deezer/gateway"
 import { Dict } from "../util/types"
-import { Album, Track, Artist, Added, Library, MatchedSearchResults, External } from "../model"
+import { Album, AddedTrack, Artist, MatchedSearchResults, Track, AddedAlbum, AddedArtist } from "../model"
 import { forEach } from "lodash"
 
 export interface LibraryContents {
-    tracks: Dict<Library<Track>>
-    albums: Dict<Library<Album>>
-    artists: Dict<Library<Artist>>
+    tracks: Dict<AddedTrack>
+    albums: Dict<AddedAlbum>
+    artists: Dict<AddedArtist>
 }
 
 export class Explorer {
@@ -29,13 +29,18 @@ export class Explorer {
             this.library.matchArtists(Object.keys(searchResponse.artists)),
         ])
 
-        const tracks: Dict<External<Track> | string> = {}
+        const tracks: Dict<Track | string> = {}
         forEach(searchResponse.tracks, (track, id) => {
-            tracks[id] = { ...track, saved: false }
+            tracks[id] = { ...track, libraryId: null, saved: false }
         })
-        const albums: Dict<External<Album> | string> = { ...searchResponse.albums }
-        const artists: Dict<External<Artist> | string> = { ...searchResponse.artists }
-
+        const albums: Dict<Album | string> = {}
+        forEach(searchResponse.albums, (album, id) => {
+            albums[id] = { ...album, libraryId: null }
+        })
+        const artists: Dict<Artist | string> = {}
+        forEach(searchResponse.artists, (artist, id) => {
+            artists[id] = { ...artist, libraryId: null }
+        })
         for (const t of matchedTracks) {
             tracks[t.externalId] = t.libraryId
             tracks[t.libraryId] = t
@@ -52,9 +57,7 @@ export class Explorer {
         return { results: searchResponse.results, tracks, albums, artists }
     }
 
-    async addTrack(
-        externalTrackId: string,
-    ): Promise<{ track: Added<Track>; album: Added<Album>; artist: Added<Artist> }> {
+    async addTrack(externalTrackId: string): Promise<{ track: AddedTrack; album: AddedAlbum; artist: AddedArtist }> {
         const externalTrack = await this.deezerClient.getTrack(externalTrackId)
         const [matchingTrack = undefined] = await this.library.matchTracks([externalTrack.externalId])
         if (matchingTrack !== undefined) {

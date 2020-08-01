@@ -1,23 +1,24 @@
-import mariadb, { Connection, UpsertResult } from "mariadb"
+import mariadb, { Connection, Pool, UpsertResult } from "mariadb"
 import schemaSql from "./schema"
 import { DatabaseHandle } from "./dsl/impl"
 import { ExecResult } from "./dsl/stages"
 
 export class MariaDB implements DatabaseHandle {
-    private constructor(private connection: Connection) {}
+    private constructor(private connection: Pool) {}
 
     static async connect(port = 3306): Promise<MariaDB> {
-        const connection = await mariadb.createConnection({
+        const connectionPool = mariadb.createPool({
             host: "localhost",
             port,
             user: "yamplayer_user",
             password: "hunter2",
             database: "yamplayer",
             multipleStatements: true,
+            connectionLimit: 3,
         })
-        await connection.query(schemaSql)
+        await connectionPool.query(schemaSql)
         console.log("successfully initialised db schema")
-        return new MariaDB(connection)
+        return new MariaDB(connectionPool)
     }
 
     async query(sql: string): Promise<unknown[][]> {

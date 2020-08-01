@@ -1,8 +1,8 @@
 import { Dict } from "../../util/types"
 import { remote } from "../../backend/rpc/client"
-import { useState, useMemo, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { createState, immerise } from "../state"
-import { Track, Album, Artist, SearchResultLists } from "../../model"
+import { Album, Artist, SearchResultLists, Track } from "../../model"
 import { Explorer } from "../../backend/explorer"
 
 interface ExplorerState {

@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { createState, immerise } from "../state"
 import { AudioPlayer } from "./AudioPlayer"
 import { useExplorerDispatch } from "../library/library"
 import { Explorer } from "../../backend/explorer"
 import { Remote } from "../../backend/rpc/client"
 import { DeezerCodec } from "../../backend/deezer/DeezerCodec"
+import { AddedTrack, Track } from "../../model"
 
 type TrackBuffer = Uint8Array
 
@@ -18,12 +19,12 @@ export interface QueueEntry {
     buffer: TrackBuffer
 }
 
-async function loadTrackData(explorerClient: Remote<Explorer>, trackId: string) {
-    const url = await explorerClient.getTrackUrl(trackId)
+async function loadTrackData(explorerClient: Remote<Explorer>, track: Track) {
+    const url = await explorerClient.getTrackUrl(track.externalId)
     const response = await fetch(url)
     const buffer = await response.arrayBuffer()
     // TODO: call on some generic thing to decode the data given a track ID
-    const sngId = trackId.split(":")[1]
+    const sngId = track.externalId.split(":")[1]
     return new DeezerCodec().decodeTrack(new Uint8Array(buffer), sngId)
 }
 
@@ -52,12 +53,12 @@ function usePlayerStateInternal(props: { player: AudioPlayer }) {
     }, [props.player, update])
     const actions = useMemo(
         () => ({
-            enqueueTrack: async (trackId: string) => {
-                const trackData: TrackBuffer = await loadTrackData(explorerClient, trackId)
+            enqueueTrack: async (track: Track) => {
+                const trackData: TrackBuffer = await loadTrackData(explorerClient, track)
                 props.player.enqueue(trackData)
                 const timestamp = performance.now()
                 update(s => {
-                    s.queue.push({ trackId, buffer: trackData })
+                    s.queue.push({ trackId: track.libraryId ?? track.externalId, buffer: trackData })
                     if (s.status.state === "stopped") {
                         s.status = { state: "playing", sinceTimestampMillis: timestamp, positionAtTimestamp: 0 }
                     }

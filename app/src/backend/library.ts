@@ -2,7 +2,7 @@ import { MariaDB } from "./database"
 import { Dict } from "../util/types"
 import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
 import * as tables from "./database/tables"
-import { Track, Library, Album, Artist, Added, External, TrackWithLinks } from "../model"
+import { AddedTrack, ExternalTrack, AddedAlbum, ExternalAlbum, AddedArtist, ExternalArtist } from "../model"
 import { RowTypeFrom } from "./database/dsl/stages"
 
 export class LibraryStore {
@@ -16,9 +16,9 @@ export class LibraryStore {
     }
 
     async list(): Promise<{
-        tracks: Dict<Library<Track>>
-        albums: Dict<Library<Album>>
-        artists: Dict<Library<Artist>>
+        tracks: Dict<AddedTrack>
+        albums: Dict<AddedAlbum>
+        artists: Dict<AddedArtist>
     }> {
         const { track, artist, album } = tables
         const rows = await this.qb(track)
@@ -29,9 +29,9 @@ export class LibraryStore {
             .where({ track: { saved: true } })
             .fetch()
 
-        const tracks = {} as Dict<Library<Track>>
-        const artists = {} as Dict<Library<Artist>>
-        const albums = {} as Dict<Library<Album>>
+        const tracks = {} as Dict<AddedTrack>
+        const artists = {} as Dict<AddedArtist>
+        const albums = {} as Dict<AddedAlbum>
         for (const row of rows) {
             tracks[row.track.trackId] = mapTrack(row.track)
             albums[row.album.albumId] = mapAlbum(row.album)
@@ -63,7 +63,7 @@ export class LibraryStore {
             .execute()
     }
 
-    async addTrack(trackPointingToInternalArtistAndAlbum: External<TrackWithLinks>): Promise<Added<Track>> {
+    async addTrack(trackPointingToInternalArtistAndAlbum: ExternalTrack): Promise<AddedTrack> {
         const result = await this.qb(tables.track)
             .insert({
                 title: trackPointingToInternalArtistAndAlbum.title,
@@ -79,7 +79,7 @@ export class LibraryStore {
         return { ...trackPointingToInternalArtistAndAlbum, libraryId, saved: true }
     }
 
-    async addAlbum(externalAlbum: External<Album>): Promise<Added<Album>> {
+    async addAlbum(externalAlbum: ExternalAlbum): Promise<AddedAlbum> {
         const result = await this.qb(tables.album)
             .insert({
                 title: externalAlbum.title,
@@ -92,7 +92,7 @@ export class LibraryStore {
         return { ...externalAlbum, libraryId }
     }
 
-    async addArtist(externalArtist: External<Artist>): Promise<Added<Artist>> {
+    async addArtist(externalArtist: ExternalArtist): Promise<AddedArtist> {
         const result = await this.qb(tables.artist)
             .insert({
                 name: externalArtist.name,
@@ -125,7 +125,7 @@ export class LibraryStore {
     }
 }
 
-function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): Added<Album> {
+function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): AddedAlbum {
     return {
         libraryId: albumFromDb.albumId.toString(),
         externalId: albumFromDb.externalId,
@@ -135,7 +135,7 @@ function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): Added<Album
     }
 }
 
-function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): Added<Artist> {
+function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): AddedArtist {
     return {
         libraryId: artistFromDb.artistId.toString(),
         externalId: artistFromDb.externalId,
@@ -144,7 +144,7 @@ function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): Added<Ar
     }
 }
 
-function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): Added<Track> {
+function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): AddedTrack {
     return {
         libraryId: trackFromDb.trackId.toString(),
         albumId: trackFromDb.albumId.toString(),
