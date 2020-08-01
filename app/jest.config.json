@@ -1,3 +1,4 @@
 {
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "reporters": [["jest-silent-reporter", { "showPaths": true, "useDots": true }]]
 }
