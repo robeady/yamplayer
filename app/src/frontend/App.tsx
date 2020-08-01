@@ -3,11 +3,12 @@ import React, { PropsWithChildren, useRef } from "react"
 import Counter from "./Counter"
 import Player, { NowPlaying } from "./Player"
 import { TrackSearch } from "./TrackSearch"
-import { Playback } from "./playback/playback"
 import { css } from "linaria"
 import { AudioPlayer } from "./playback/AudioPlayer"
 import { ExplorerProvider } from "./library/library"
 import { Link, Switch, Route, HashRouter } from "react-router-dom"
+import { LibraryTracks } from "./LibraryTracks"
+import { PlaybackProvider } from "./playback/playback"
 
 const App = () => (
     <Providers>
@@ -48,6 +49,9 @@ function Main() {
                     <Route path="/search">
                         <TrackSearch />
                     </Route>
+                    <Route path="/library/tracks">
+                        <LibraryTracks />
+                    </Route>
                     <Route path="/">Welcome!</Route>
                 </Switch>
             </main>
@@ -69,6 +73,9 @@ function LeftNav() {
             <div>
                 <Link to="/search">Search</Link>
             </div>
+            <div>
+                <Link to="/library/tracks">Library Tracks</Link>
+            </div>
             <br />
             <Counter />
         </nav>
@@ -80,9 +87,9 @@ function Providers(props: PropsWithChildren<{}>) {
     const playerRef = useRef(new AudioPlayer(0.1))
     return (
         <HashRouter>
-            <Playback.Provider player={playerRef.current}>
-                <ExplorerProvider backendUrl="http://127.0.0.1:8280">{props.children}</ExplorerProvider>
-            </Playback.Provider>
+            <ExplorerProvider backendUrl="http://127.0.0.1:8280">
+                <PlaybackProvider player={playerRef.current}>{props.children}</PlaybackProvider>
+            </ExplorerProvider>
         </HashRouter>
     )
 }

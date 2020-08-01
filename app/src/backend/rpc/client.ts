@@ -2,7 +2,7 @@ type Promised<T> = T extends (...args: infer U) => infer V
     ? (...args: U) => V extends Promise<unknown> ? V : Promise<V>
     : never
 
-type AllPromised<T> = {
+export type Remote<T> = {
     [P in keyof T]: Promised<T[P]>
 }
 
@@ -10,7 +10,7 @@ type AllPromised<T> = {
  * Create a client proxy for a remote object.
  * @param baseUrl the url prefix for this object; must not end in a slash.
  */
-export function remote<T>(baseUrl: string): AllPromised<T> {
+export function remote<T>(baseUrl: string): Remote<T> {
     return new Proxy(
         {},
         {

@@ -7,12 +7,11 @@
     "arrowParens": "avoid",
     "overrides": [
         {
-            "files": [
-                "*.md"
-            ],
+            "files": ["*.md"],
             "options": {
                 "tabWidth": 2
             }
         }
-    ]
+    ],
+    "endOfLine": "auto"
 }

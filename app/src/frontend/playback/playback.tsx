@@ -1,6 +1,10 @@
 import { useState, useMemo, useEffect } from "react"
 import { createState, immerise } from "../state"
 import { AudioPlayer } from "./AudioPlayer"
+import { useExplorerDispatch } from "../library/library"
+import { Explorer } from "../../backend/explorer"
+import { Remote } from "../../backend/rpc/client"
+import { DeezerCodec } from "../../backend/deezer/DeezerCodec"
 
 type TrackBuffer = Uint8Array
 
@@ -14,7 +18,17 @@ export interface QueueEntry {
     buffer: TrackBuffer
 }
 
-function usePlayerState(props: { player: AudioPlayer }) {
+async function loadTrackData(explorerClient: Remote<Explorer>, trackId: string) {
+    const url = await explorerClient.getTrackUrl(trackId)
+    const response = await fetch(url)
+    const buffer = await response.arrayBuffer()
+    // TODO: call on some generic thing to decode the data given a track ID
+    const sngId = trackId.split(":")[1]
+    return new DeezerCodec().decodeTrack(new Uint8Array(buffer), sngId)
+}
+
+function usePlayerStateInternal(props: { player: AudioPlayer }) {
+    const { explorerClient } = useExplorerDispatch()
     const [state, setState] = useState({
         status: { state: "stopped" } as PlaybackStatus,
         volume: props.player.volume(),
@@ -38,7 +52,8 @@ function usePlayerState(props: { player: AudioPlayer }) {
     }, [props.player, update])
     const actions = useMemo(
         () => ({
-            enqueueTrack: (trackId: string, trackData: TrackBuffer) => {
+            enqueueTrack: async (trackId: string) => {
+                const trackData: TrackBuffer = await loadTrackData(explorerClient, trackId)
                 props.player.enqueue(trackData)
                 const timestamp = performance.now()
                 update(s => {
@@ -89,9 +104,11 @@ function usePlayerState(props: { player: AudioPlayer }) {
                 update(s => (s.muted = !s.muted))
             },
         }),
-        [update, props.player],
+        [update, props.player, explorerClient],
     )
     return [state, actions] as const
 }
 
-export const Playback = createState(usePlayerState)
+export const { useState: usePlayerState, useDispatch: usePlayerDispatch, Provider: PlaybackProvider } = createState(
+    usePlayerStateInternal,
+)

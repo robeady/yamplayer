@@ -1,14 +1,13 @@
 import * as React from "react"
-import { Playback } from "./playback/playback"
 import SkipPrevious from "./icons/skip_previous.svg"
 import SkipNext from "./icons/skip_next.svg"
 import { css } from "linaria"
 import { PlayPauseButton } from "./components/PlayPause"
-
 import { useState, useEffect } from "react"
 import { Slider } from "./components/Slider"
 import { VolumeControl } from "./components/Volume"
 import { useExplorerState, resolveCanonical } from "./library/library"
+import { usePlayerState, usePlayerDispatch } from "./playback/playback"
 
 const Player = () => {
     return (
@@ -26,8 +25,8 @@ const Player = () => {
 }
 
 function PlayingTrack() {
-    const status = Playback.useState(s => s.status)
-    const nowPlayingTrackId = Playback.useState(s => s.queue[0]?.trackId as string | undefined)
+    const status = usePlayerState(s => s.status)
+    const nowPlayingTrackId = usePlayerState(s => s.queue[0]?.trackId as string | undefined)
     const playingTrack = useExplorerState(s =>
         nowPlayingTrackId === undefined ? undefined : resolveCanonical(s.tracks, nowPlayingTrackId),
     )
@@ -73,7 +72,7 @@ function ControlsAndProgressBar() {
 }
 
 function PlayPauseSkipControls() {
-    const { skipNext } = Playback.useDispatch()
+    const { skipNext } = usePlayerDispatch()
     return (
         <div
             className={css`
@@ -112,8 +111,8 @@ function PlayPauseSkipControls() {
 }
 
 function PlayPause(props: { size: number }) {
-    const status = Playback.useState(s => s.status)
-    const { pause, unpause } = Playback.useDispatch()
+    const status = usePlayerState(s => s.status)
+    const { pause, unpause } = usePlayerDispatch()
     if (status.state === "stopped") {
         return <PlayPauseButton icon="play" disabled {...props} />
     } else if (status.state === "paused") {
@@ -124,7 +123,7 @@ function PlayPause(props: { size: number }) {
 }
 
 function ProgressBar() {
-    const status = Playback.useState(s => s.status)
+    const status = usePlayerState(s => s.status)
     const songDuration = 180 // TODO
     const refreshIntervalMillis = 500
 
@@ -205,7 +204,7 @@ function SecondaryControls() {
 }
 
 export function NowPlaying() {
-    const queue = Playback.useState(s => s.queue)
+    const queue = usePlayerState(s => s.queue)
     return (
         <div>
             <br />

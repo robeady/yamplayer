@@ -13,6 +13,10 @@ export interface LibraryContents {
 export class Explorer {
     constructor(private library: LibraryStore, private deezerClient: DeezerApiClient) {}
 
+    async getTrackUrl(trackId: string): Promise<string> {
+        return this.deezerClient.getTrackUrl(trackId)
+    }
+
     async getLibrary(): Promise<LibraryContents> {
         return this.library.list()
     }
