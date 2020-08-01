@@ -184,7 +184,7 @@ async function downloadAndDecryptTrack(id: string) {
 export function TrackSearch() {
     const [searchQuery, setSearchQuery] = useState(null as string | null)
     const { enqueueTrack } = Playback.useDispatch()
-    const { explorerClient } = useExplorerDispatch()
+    const { addToLibrary } = useExplorerDispatch()
     const searchResults = useSearchResults(searchQuery)
     return (
         <div>
@@ -195,7 +195,7 @@ export function TrackSearch() {
                     const buffer = await downloadAndDecryptTrack(id)
                     enqueueTrack(id, buffer)
                 }}
-                addTrackToLibrary={externalId => explorerClient.addTrack(externalId)}
+                addTrackToLibrary={addToLibrary}
             />
         </div>
     )
