@@ -4,6 +4,7 @@ import { css } from "linaria"
 import PlayArrow from "../icons/play_arrow.svg"
 import { useExplorerState, resolveCanonical, useExplorerDispatch } from "../library/library"
 import { usePlayerDispatch } from "../playback/playback"
+import { Album, Track } from "../../model"
 
 export function TrackListing(props: { trackIds: string[] }) {
     const allTracks = useExplorerState(s => s.tracks)
@@ -20,16 +21,31 @@ export function TrackListing(props: { trackIds: string[] }) {
     const { enqueueTrack } = usePlayerDispatch()
 
     return (
-        <div>
+        <div
+            className={css`
+                font-size: 14px;
+            `}>
             {tracksToList.map(t => (
-                <TrackRow key={t.trackId}>
-                    <CoverImage url={t.album.coverImageUrl ?? ""} size={36} play={() => enqueueTrack(t.track)} />
-                    <TrackAndAlbumTitle
-                        track={t.track.title}
-                        play={() => enqueueTrack(t.track)}
-                        album={t.album.title}
-                    />
-                    <span>{t.artist.name}</span>
+                <TrackRow key={t.trackId} onDoubleClick={() => enqueueTrack(t.track)}>
+                    <CoverAndTrackTitle {...t} />
+                    <span
+                        className={css`
+                            color: rgb(90, 90, 90);
+                            &:hover {
+                                text-decoration: underline;
+                            }
+                        `}>
+                        {t.album.title}
+                    </span>
+                    <span
+                        className={css`
+                            color: rgb(90, 90, 90);
+                            &:hover {
+                                text-decoration: underline;
+                            }
+                        `}>
+                        {t.artist.name}
+                    </span>
                     <AddToLibraryButton onClick={() => addToLibrary(t.trackId)} alreadyInLibrary={t.track.saved} />
                 </TrackRow>
             ))}
@@ -37,7 +53,25 @@ export function TrackListing(props: { trackIds: string[] }) {
     )
 }
 
-function CoverImage(props: { url: string; size: number; play: () => void }) {
+function CoverAndTrackTitle(props: { track: Track; album: Album }) {
+    return (
+        <div
+            className={css`
+                display: flex;
+                align-items: center;
+            `}>
+            <CoverImage url={props.album.coverImageUrl ?? ""} size={36} />
+            <span
+                className={css`
+                    padding-left: 12px;
+                `}>
+                {props.track.title}
+            </span>
+        </div>
+    )
+}
+
+function CoverImage(props: { url: string; size: number }) {
     return (
         <div
             className={css`
@@ -58,21 +92,25 @@ function CoverImage(props: { url: string; size: number; play: () => void }) {
                     top: 2px;
                     left: 2px;
                 `}>
-                <PlayCircle displayed size={props.size - 4} onClick={props.play} />
+                <PlayCircle displayed size={props.size - 4} />
             </div>
         </div>
     )
 }
 
 const TrackRow = styled.div`
-    padding: 4px;
+    padding: 0 4px;
+    height: 40px;
     display: grid;
-    grid-template-columns: 50px 250px auto 50px;
+    grid-template-columns: auto 30% 20% 50px;
     align-items: center;
-    border-bottom: 1px solid gainsboro;
+    border-bottom: 1px solid rgb(225, 225, 235);
+    &:hover {
+        background: rgb(245, 245, 248);
+    }
 `
 
-function PlayCircle(props: { displayed: boolean; size: number; onClick: () => void }) {
+function PlayCircle(props: { displayed: boolean; size: number }) {
     if (!props.displayed) return null
     return (
         <div
@@ -84,8 +122,7 @@ function PlayCircle(props: { displayed: boolean; size: number; onClick: () => vo
                     display: block;
                 }
                 cursor: pointer;
-            `}
-            onClick={props.onClick}>
+            `}>
             <PlayArrow
                 className={css`
                     display: block;
