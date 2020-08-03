@@ -6,6 +6,9 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin")
 
 const DEV = process.env.NODE_ENV !== "production"
 
+// disable vendor prefixing of linaria css
+require("stylis").set({ prefix: false })
+
 const appConfig = {
     mode: process.env.NODE_ENV || "development",
     entry: ["./src/frontend/index"],
