@@ -43,7 +43,7 @@ export class LibraryStore {
     async getAlbum(libraryId: string) {
         return mapAlbum(
             await this.qb(tables.album)
-                .where({ albumId: parseInt(libraryId) })
+                .where({ albumId: parseId(libraryId) })
                 .fetchOne(),
         )
     }
@@ -51,21 +51,21 @@ export class LibraryStore {
     async getArtist(libraryId: string) {
         return mapArtist(
             await this.qb(tables.artist)
-                .where({ artistId: parseInt(libraryId) })
+                .where({ artistId: parseId(libraryId) })
                 .fetchOne(),
         )
     }
 
     async save(trackLibraryId: string) {
         await this.qb(tables.track)
-            .where({ trackId: parseInt(trackLibraryId) })
+            .where({ trackId: parseId(trackLibraryId) })
             .update({ saved: true })
             .execute()
     }
 
     async unsave(trackLibraryId: string) {
         await this.qb(tables.track)
-            .where({ trackId: parseInt(trackLibraryId) })
+            .where({ trackId: parseId(trackLibraryId) })
             .update({ saved: false })
             .execute()
     }
@@ -75,8 +75,8 @@ export class LibraryStore {
             .insert({
                 title: trackPointingToInternalArtistAndAlbum.title,
                 externalId: trackPointingToInternalArtistAndAlbum.externalId,
-                albumId: parseInt(trackPointingToInternalArtistAndAlbum.albumId),
-                artistId: parseInt(trackPointingToInternalArtistAndAlbum.artistId),
+                albumId: parseId(trackPointingToInternalArtistAndAlbum.albumId),
+                artistId: parseId(trackPointingToInternalArtistAndAlbum.artistId),
                 saved: true,
                 durationSecs: trackPointingToInternalArtistAndAlbum.durationSecs,
                 isrc: trackPointingToInternalArtistAndAlbum.isrc,
@@ -137,7 +137,7 @@ export class LibraryStore {
             throw Error(`tried to give track ${trackId} invalid rating ${rating}`)
         }
         await this.qb(tables.track)
-            .where({ trackId: parseInt(trackId) })
+            .where({ trackId: parseId(trackId) })
             .update({ rating })
             .execute()
         // TODO: verify that the track existed (affected rows may still be 0 if the rating didn't change)
@@ -175,4 +175,12 @@ function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): AddedTrack 
         saved: trackFromDb.saved,
         rating: trackFromDb.rating,
     }
+}
+
+function parseId(id: string): number {
+    const n = parseInt(id, 10)
+    if (isNaN(n)) {
+        throw Error(`${id} is not a valid library ID`)
+    }
+    return n
 }
