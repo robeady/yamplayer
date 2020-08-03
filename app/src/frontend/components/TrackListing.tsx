@@ -5,6 +5,8 @@ import PlayArrow from "../icons/play_arrow.svg"
 import { useExplorerState, resolveCanonical, useExplorerDispatch } from "../library/library"
 import { usePlayerDispatch } from "../playback/playback"
 import { Album, Track } from "../../model"
+import Rating from "react-rating"
+import Star from "../icons/star_rate.svg"
 
 export function TrackListing(props: { trackIds: string[] }) {
     const allTracks = useExplorerState(s => s.tracks)
@@ -36,6 +38,7 @@ export function TrackListing(props: { trackIds: string[] }) {
                     }}
                     onDoubleClick={() => enqueueTrack(t.track)}>
                     <CoverAndTrackTitle {...t} />
+                    <TrackRating stars={3} />
                     <span
                         className={css`
                             color: rgb(90, 90, 90);
@@ -57,6 +60,39 @@ export function TrackListing(props: { trackIds: string[] }) {
                     <SaveButton trackId={t.trackId} />
                 </TrackRow>
             ))}
+        </div>
+    )
+}
+
+const ratingClass = css``
+
+function CroppedStar(props: { className: string }) {
+    return <Star className={props.className} viewBox={"4 4 16 16"} width={16} height={16} />
+}
+
+function TrackRating(props: { stars: number | null }) {
+    return (
+        <div className={ratingClass}>
+            <Rating
+                initialRating={props.stars ?? 0}
+                emptySymbol={
+                    <CroppedStar
+                        className={css`
+                            fill: hsl(0, 0%, 92%);
+                        `}
+                    />
+                }
+                fullSymbol={
+                    <CroppedStar
+                        className={css`
+                            fill: hsl(0, 0%, 75%);
+                            .${ratingClass}:hover & {
+                                fill: hsl(270, 80%, 70%);
+                            }
+                        `}
+                    />
+                }
+            />
         </div>
     )
 }
@@ -110,7 +146,7 @@ const TrackRow = styled.div`
     padding: 0 4px;
     height: 40px;
     display: grid;
-    grid-template-columns: auto 30% 20% 50px;
+    grid-template-columns: auto 100px 30% 20% 50px;
     align-items: center;
     border-bottom: 1px solid rgb(225, 225, 235);
     &:hover {
