@@ -26,7 +26,15 @@ export function TrackListing(props: { trackIds: string[] }) {
                 font-size: 14px;
             `}>
             {tracksToList.map(t => (
-                <TrackRow key={t.trackId} onDoubleClick={() => enqueueTrack(t.track)}>
+                <TrackRow
+                    key={t.trackId}
+                    onClick={e => {
+                        // if this is the second click, prevent text selection
+                        if (e.detail === 2) {
+                            e.preventDefault()
+                        }
+                    }}
+                    onDoubleClick={() => enqueueTrack(t.track)}>
                     <CoverAndTrackTitle {...t} />
                     <span
                         className={css`
