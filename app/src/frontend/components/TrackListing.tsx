@@ -41,7 +41,7 @@ export function TrackListing(props: { trackIds: string[] }) {
                     <TrackRating
                         rating={t.track.rating}
                         enabled={t.track.libraryId !== null}
-                        onRate={newRating => setTrackRating(t.trackId, newRating)}
+                        onRate={newRating => setTrackRating(t.track.libraryId!, newRating)}
                     />
                     <span
                         className={css`
