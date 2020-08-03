@@ -16,7 +16,7 @@ export function serve<T>(object: T | Promise<T>) {
             if (method in target) {
                 // TODO: `func` might not return a promise. is this a performance issue?
                 const result = await target[method](...args)
-                res.json(result)
+                res.status(result === undefined ? 204 : 200).json(result)
             } else {
                 res.status(404).json(`method ${method} not found`)
             }

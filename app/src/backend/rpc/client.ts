@@ -24,12 +24,12 @@ export function remote<T>(baseUrl: string): Remote<T> {
                         },
                         body: JSON.stringify(args),
                     })
-                    const json = await result.json()
-                    if (result.ok) {
-                        return json
+                    if (result.status === 204) {
+                        return undefined
+                    } else if (result.ok) {
+                        return await result.json()
                     } else {
-                        // re-encoding as json is a bit sad but this should be uncommon
-                        throw Error(typeof json === "string" ? json : JSON.stringify(json))
+                        throw Error(await result.text())
                     }
                 }
             },
