@@ -46,7 +46,18 @@ export const { Provider: ExplorerProvider, useState: useExplorerState, useDispat
                 })
             }
 
-            return { update, addToLibrary, unsave, explorerClient }
+            const setTrackRating = async (trackId: string, newRating: number | null) => {
+                console.log(`setting rating of track ${trackId} to ${newRating}`)
+                await explorerClient.setTrackRating(trackId, newRating)
+                update(s => {
+                    const track = s.tracks[trackId]
+                    if (typeof track !== "string") {
+                        track.rating = newRating
+                    }
+                })
+            }
+
+            return { update, addToLibrary, unsave, setTrackRating, explorerClient }
         }, [props.backendUrl])
 
         return [state, dispatch]

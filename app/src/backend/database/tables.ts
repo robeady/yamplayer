@@ -10,6 +10,7 @@ export const track = table("track", {
     title: string,
     isrc: string.orNull(),
     durationSecs: number,
+    rating: number.orNull(),
 })
 
 export const album = table("album", {

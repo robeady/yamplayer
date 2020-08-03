@@ -51,6 +51,7 @@ describe("library store tests", () => {
             title: "1",
             durationSecs: 0,
             isrc: null,
+            rating: 2,
         })
         expect(track.albumId).toBe(album.libraryId)
         expect(track.artistId).toBe(artist.libraryId)
@@ -65,6 +66,7 @@ describe("library store tests", () => {
                     durationSecs: 0,
                     isrc: null,
                     saved: true,
+                    rating: 2,
                 },
             },
             albums: {

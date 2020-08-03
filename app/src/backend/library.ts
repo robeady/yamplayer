@@ -80,10 +80,11 @@ export class LibraryStore {
                 saved: true,
                 durationSecs: trackPointingToInternalArtistAndAlbum.durationSecs,
                 isrc: trackPointingToInternalArtistAndAlbum.isrc,
+                rating: trackPointingToInternalArtistAndAlbum.rating,
             })
             .execute()
         const libraryId = result.lastInsertedId.toString()
-        return { ...trackPointingToInternalArtistAndAlbum, libraryId, saved: true }
+        return { ...trackPointingToInternalArtistAndAlbum, libraryId, saved: true, rating: null }
     }
 
     async addAlbum(externalAlbum: ExternalAlbum): Promise<AddedAlbum> {
@@ -130,6 +131,17 @@ export class LibraryStore {
                   mapArtist,
               )
     }
+
+    async setRating(trackId: string, rating: number | null): Promise<void> {
+        if (rating !== null && (rating < 0 || rating > 1)) {
+            throw Error(`tried to give track ${trackId} invalid rating ${rating}`)
+        }
+        await this.qb(tables.track)
+            .where({ trackId: parseInt(trackId) })
+            .update({ rating })
+            .execute()
+        // TODO: verify that the track existed (affected rows may still be 0 if the rating didn't change)
+    }
 }
 
 function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): AddedAlbum {
@@ -161,5 +173,6 @@ function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): AddedTrack 
         durationSecs: trackFromDb.durationSecs,
         isrc: trackFromDb.isrc,
         saved: trackFromDb.saved,
+        rating: trackFromDb.rating,
     }
 }

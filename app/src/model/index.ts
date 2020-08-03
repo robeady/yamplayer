@@ -23,6 +23,7 @@ export interface ExternalTrack {
     title: string
     isrc: string | null
     durationSecs: number
+    rating: number | null
 }
 
 export interface AddedAlbum extends Album {

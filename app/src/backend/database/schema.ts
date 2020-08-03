@@ -17,7 +17,8 @@ create table track (
     title varchar(255) not null,
     isrc char(12),
     durationSecs double precision not null,
-    saved boolean not null
+    saved boolean not null,
+    rating double precision
 );
 
 create table album (

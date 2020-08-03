@@ -12,7 +12,7 @@ export function TrackListing(props: { trackIds: string[] }) {
     const allTracks = useExplorerState(s => s.tracks)
     const allAlbums = useExplorerState(s => s.albums)
     const allArtists = useExplorerState(s => s.artists)
-    const { addToLibrary } = useExplorerDispatch()
+    const { setTrackRating } = useExplorerDispatch()
     const tracksToList = props.trackIds.map(trackId => {
         const track = resolveCanonical(allTracks, trackId)
         const artist = resolveCanonical(allArtists, track.artistId)
@@ -38,7 +38,11 @@ export function TrackListing(props: { trackIds: string[] }) {
                     }}
                     onDoubleClick={() => enqueueTrack(t.track)}>
                     <CoverAndTrackTitle {...t} />
-                    <TrackRating stars={3} />
+                    <TrackRating
+                        rating={t.track.rating}
+                        enabled={t.track.libraryId !== null}
+                        onRate={newRating => setTrackRating(t.trackId, newRating)}
+                    />
                     <span
                         className={css`
                             color: rgb(90, 90, 90);
@@ -70,29 +74,33 @@ function CroppedStar(props: { className: string }) {
     return <Star className={props.className} viewBox={"4 4 16 16"} width={16} height={16} />
 }
 
-function TrackRating(props: { stars: number | null }) {
+function TrackRating(props: { enabled: boolean; rating: number | null; onRate: (newRating: number) => void }) {
     return (
         <div className={ratingClass}>
-            <Rating
-                initialRating={props.stars ?? 0}
-                emptySymbol={
-                    <CroppedStar
-                        className={css`
-                            fill: hsl(0, 0%, 92%);
-                        `}
-                    />
-                }
-                fullSymbol={
-                    <CroppedStar
-                        className={css`
-                            fill: hsl(0, 0%, 75%);
-                            .${ratingClass}:hover & {
-                                fill: hsl(270, 80%, 70%);
-                            }
-                        `}
-                    />
-                }
-            />
+            {props.enabled && (
+                <Rating
+                    // TODO: rounding
+                    initialRating={(props.rating ?? 0) * 5}
+                    onChange={newRating => props.onRate(newRating / 5)}
+                    emptySymbol={
+                        <CroppedStar
+                            className={css`
+                                fill: hsl(0, 0%, 92%);
+                            `}
+                        />
+                    }
+                    fullSymbol={
+                        <CroppedStar
+                            className={css`
+                                fill: hsl(0, 0%, 75%);
+                                .${ratingClass}:hover & {
+                                    fill: hsl(270, 80%, 70%);
+                                }
+                            `}
+                        />
+                    }
+                />
+            )}
         </div>
     )
 }
