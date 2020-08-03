@@ -63,6 +63,13 @@ export class LibraryStore {
             .execute()
     }
 
+    async unsave(trackLibraryId: string) {
+        await this.qb(tables.track)
+            .where({ trackId: parseInt(trackLibraryId) })
+            .update({ saved: false })
+            .execute()
+    }
+
     async addTrack(trackPointingToInternalArtistAndAlbum: ExternalTrack): Promise<AddedTrack> {
         const result = await this.qb(tables.track)
             .insert({

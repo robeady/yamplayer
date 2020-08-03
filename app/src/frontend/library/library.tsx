@@ -36,7 +36,17 @@ export const { Provider: ExplorerProvider, useState: useExplorerState, useDispat
                 })
             }
 
-            return { update, addToLibrary, explorerClient }
+            const unsave = async (trackId: string) => {
+                await explorerClient.unsave(trackId)
+                update(s => {
+                    const track = s.tracks[trackId]
+                    if (typeof track !== "string") {
+                        track.saved = false
+                    }
+                })
+            }
+
+            return { update, addToLibrary, unsave, explorerClient }
         }, [props.backendUrl])
 
         return [state, dispatch]

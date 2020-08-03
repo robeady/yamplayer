@@ -54,7 +54,7 @@ export function TrackListing(props: { trackIds: string[] }) {
                         `}>
                         {t.artist.name}
                     </span>
-                    <AddToLibraryButton onClick={() => addToLibrary(t.trackId)} alreadyInLibrary={t.track.saved} />
+                    <SaveButton trackId={t.trackId} />
                 </TrackRow>
             ))}
         </div>
@@ -145,12 +145,15 @@ function PlayCircle(props: { displayed: boolean; size: number }) {
     )
 }
 
-function AddToLibraryButton(props: { alreadyInLibrary: boolean; onClick: () => void }) {
-    return (
-        <button disabled={props.alreadyInLibrary} onClick={props.onClick}>
-            Add
-        </button>
-    )
+function SaveButton(props: { trackId: string }) {
+    const track = useExplorerState(s => resolveCanonical(s.tracks, props.trackId))
+    const { addToLibrary, unsave } = useExplorerDispatch()
+    if (track.saved) {
+        return <button onClick={() => unsave(track.libraryId!)}>-</button>
+    } else {
+        // TODO: support re-saving
+        return <button onClick={() => addToLibrary(track.externalId)}>Add</button>
+    }
 }
 
 function TrackAndAlbumTitle(props: { track: string; album: string; play: () => void }) {

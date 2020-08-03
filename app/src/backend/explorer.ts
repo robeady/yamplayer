@@ -57,6 +57,10 @@ export class Explorer {
         return { results: searchResponse.results, tracks, albums, artists }
     }
 
+    async unsave(trackId: string): Promise<void> {
+        return this.library.unsave(trackId)
+    }
+
     async addTrack(externalTrackId: string): Promise<{ track: AddedTrack; album: AddedAlbum; artist: AddedArtist }> {
         const externalTrack = await this.deezerClient.getTrack(externalTrackId)
         const [matchingTrack = undefined] = await this.library.matchTracks([externalTrack.externalId])
