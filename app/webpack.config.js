@@ -10,7 +10,7 @@ const DEV = process.env.NODE_ENV !== "production"
 require("stylis").set({ prefix: false })
 
 const appConfig = {
-    mode: process.env.NODE_ENV || "development",
+    mode: DEV ? "development" : "production",
     entry: ["./src/frontend/index"],
     output: {
         path: path.join(__dirname, "dist"),
@@ -24,7 +24,7 @@ const appConfig = {
     module: {
         rules: [
             {
-                test: /\.(j|t)s(x)?$/,
+                test: /\.[jt]sx?$/,
                 exclude: /node_modules/,
                 use: [
                     {
