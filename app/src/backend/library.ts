@@ -71,6 +71,7 @@ export class LibraryStore {
     }
 
     async addTrack(trackPointingToInternalArtistAndAlbum: ExternalTrack): Promise<AddedTrack> {
+        const now = Date.now()
         const result = await this.qb(tables.track)
             .insert({
                 title: trackPointingToInternalArtistAndAlbum.title,
@@ -81,6 +82,8 @@ export class LibraryStore {
                 durationSecs: trackPointingToInternalArtistAndAlbum.durationSecs,
                 isrc: trackPointingToInternalArtistAndAlbum.isrc,
                 rating: trackPointingToInternalArtistAndAlbum.rating,
+                creationTimestamp: now,
+                saveTimestamp: now,
             })
             .execute()
         const libraryId = result.lastInsertedId.toString()

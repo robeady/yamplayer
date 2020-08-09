@@ -11,6 +11,8 @@ export const track = table("track", {
     isrc: string.orNull(),
     durationSecs: number,
     rating: number.orNull(),
+    creationTimestamp: number,
+    saveTimestamp: number.orNull(),
 })
 
 export const album = table("album", {

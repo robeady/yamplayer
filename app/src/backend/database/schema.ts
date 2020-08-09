@@ -18,7 +18,9 @@ create table track (
     isrc char(12),
     durationSecs double precision not null,
     saved boolean not null,
-    rating double precision
+    rating double precision,
+    creationTimestamp bigint not null,
+    saveTimestamp bigint
 );
 
 create table album (
@@ -26,6 +28,7 @@ create table album (
     externalId varchar(50) not null,
     title varchar(255) not null,
     coverImageUrl varchar(2000),
+    coverImageId varchar(100),
     releaseDate varchar(10)
 );
 
