@@ -1,8 +1,8 @@
 import { LibraryStore } from "./library"
-import { DeezerApiClient } from "./deezer/gateway"
 import { Dict } from "../util/types"
 import { Album, AddedTrack, Artist, MatchedSearchResults, Track, AddedAlbum, AddedArtist } from "../model"
 import { forEach } from "lodash"
+import { TrackResolver, Service } from "../services"
 
 export interface LibraryContents {
     tracks: Dict<AddedTrack>
@@ -11,10 +11,10 @@ export interface LibraryContents {
 }
 
 export class Explorer {
-    constructor(private library: LibraryStore, private deezerClient: DeezerApiClient) {}
+    constructor(private library: LibraryStore, private service: Service, private resolver: TrackResolver) {}
 
-    async getTrackUrl(trackId: string): Promise<string> {
-        return this.deezerClient.getTrackUrl(trackId)
+    async resolveTrackUrl(trackId: string): Promise<string> {
+        return this.resolver.resolveTrackUrl(trackId)
     }
 
     async getLibrary(): Promise<LibraryContents> {
@@ -22,7 +22,7 @@ export class Explorer {
     }
 
     async searchTracks(query: string): Promise<MatchedSearchResults> {
-        const searchResponse = await this.deezerClient.searchTracks(query)
+        const searchResponse = await this.service.searchTracks(query)
         const [matchedTracks, matchedAlbums, matchedArtists] = await Promise.all([
             this.library.matchTracks(Object.keys(searchResponse.tracks)),
             this.library.matchAlbums(Object.keys(searchResponse.albums)),
@@ -66,7 +66,7 @@ export class Explorer {
     }
 
     async addTrack(externalTrackId: string): Promise<{ track: AddedTrack; album: AddedAlbum; artist: AddedArtist }> {
-        const externalTrack = await this.deezerClient.getTrack(externalTrackId)
+        const externalTrack = await this.service.lookupTrack(externalTrackId)
         const [matchingTrack = undefined] = await this.library.matchTracks([externalTrack.externalId])
         if (matchingTrack !== undefined) {
             // already in library, just ensure it's marked as saved
@@ -93,7 +93,7 @@ export class Explorer {
     private async addAlbumForTrack(externalAlbumId: string) {
         const [matchingAlbum = undefined] = await this.library.matchAlbums([externalAlbumId])
         if (matchingAlbum === undefined) {
-            const externalAlbum = await this.deezerClient.getAlbum(externalAlbumId)
+            const externalAlbum = await this.service.lookupAlbum(externalAlbumId)
             return this.library.addAlbum(externalAlbum)
         } else {
             return matchingAlbum
@@ -103,14 +103,10 @@ export class Explorer {
     private async addArtistForTrack(externalArtistId: string) {
         const [matchingArtist = undefined] = await this.library.matchArtists([externalArtistId])
         if (matchingArtist === undefined) {
-            const externalArtist = await this.deezerClient.getArtist(externalArtistId)
+            const externalArtist = await this.service.lookupArtist(externalArtistId)
             return this.library.addArtist(externalArtist)
         } else {
             return matchingArtist
         }
     }
-}
-
-function isIdExternal(id: string) {
-    return id.startsWith("dz:")
 }

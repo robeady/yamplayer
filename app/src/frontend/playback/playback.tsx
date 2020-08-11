@@ -4,8 +4,8 @@ import { AudioPlayer } from "./AudioPlayer"
 import { useExplorerDispatch } from "../library/library"
 import { Explorer } from "../../backend/explorer"
 import { Remote } from "../../backend/rpc/client"
-import { DeezerCodec } from "../../backend/deezer/DeezerCodec"
-import { AddedTrack, Track } from "../../model"
+import { Track } from "../../model"
+import { defaultDecoder } from "../../services"
 
 type TrackBuffer = Uint8Array
 
@@ -20,12 +20,12 @@ export interface QueueEntry {
 }
 
 async function loadTrackData(explorerClient: Remote<Explorer>, track: Track) {
-    const url = await explorerClient.getTrackUrl(track.externalId)
+    const url = await explorerClient.resolveTrackUrl(track.externalId)
     const response = await fetch(url)
     const buffer = await response.arrayBuffer()
-    // TODO: call on some generic thing to decode the data given a track ID
-    const sngId = track.externalId.split(":")[1]
-    return new DeezerCodec().decodeTrack(new Uint8Array(buffer), sngId)
+    const array = new Uint8Array(buffer)
+    defaultDecoder.decodeTrackInPlace(track.externalId, array)
+    return array
 }
 
 function usePlayerStateInternal(props: { player: AudioPlayer }) {
