@@ -35,18 +35,20 @@ See https://www.figma.com/file/UL3IcZhYuqSxL31gvCydxl/Yamplayer-app
 1. Clone the repo with its submodules: `git clone --recurse-submodules https://github.com/robeady/yamplayer.git`  
 2. Change to the app directory: `cd app`
 3. Install dependencies: `yarn install --frozen-lockfile`
+4. Create a database: `create_db.cmd` will use the mariadb docker image to do this.
 
 ### Running locally
 
-`yarn run develop`
+1. Ensure the database is started: `docker start yamplayerdb`
+2. `yarn run develop`
 
-This starts 3 things concurrently:
+    This starts 3 things concurrently:
 
-1. The backend, using ts-node-dev for automatic reloading
-2. An electron app, which pulls from:
-3. A webpack server, which compiles the frontend bundle in hot-reload mode. Typescript compilation occurs in the background.
+    1. The backend, using ts-node-dev for automatic reloading
+    2. An electron app, which pulls from:
+    3. A webpack server, which compiles the frontend bundle in hot-reload mode. Typescript compilation occurs in the background.
 
-Press ctrl-c or close the electron window to exit and it should clean up all the processes.
+    Press ctrl-c or close the electron window to exit and it should clean up all the processes.
 
 ### Running tests
 
