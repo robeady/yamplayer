@@ -83,11 +83,16 @@ export class LibraryStore {
                 isrc: trackPointingToInternalArtistAndAlbum.isrc,
                 rating: trackPointingToInternalArtistAndAlbum.rating,
                 creationTimestamp: now,
-                saveTimestamp: now,
             })
             .execute()
         const libraryId = result.lastInsertedId.toString()
-        return { ...trackPointingToInternalArtistAndAlbum, libraryId, saved: true, rating: null }
+        return {
+            ...trackPointingToInternalArtistAndAlbum,
+            libraryId,
+            saved: true,
+            rating: null,
+            creationTimestamp: now,
+        }
     }
 
     async addAlbum(externalAlbum: ExternalAlbum): Promise<AddedAlbum> {
@@ -177,6 +182,7 @@ function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): AddedTrack 
         isrc: trackFromDb.isrc,
         saved: trackFromDb.saved,
         rating: trackFromDb.rating,
+        creationTimestamp: trackFromDb.creationTimestamp,
     }
 }
 

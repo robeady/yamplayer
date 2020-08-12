@@ -9,6 +9,7 @@ export type AlbumId = number & { readonly [NEWTYPE]: unique symbol }
 export interface AddedTrack extends Track {
     libraryId: string
     saved: boolean
+    creationTimestamp: number
 }
 
 export interface Track extends ExternalTrack {
