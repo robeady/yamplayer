@@ -7,7 +7,7 @@ import { RowTypeFrom } from "./database/dsl/stages"
 
 export class LibraryStore {
     qb: QueryBuilder
-    constructor(database: MariaDB) {
+    constructor(database: MariaDB, private now: () => number = Date.now) {
         this.qb = queryBuilder(database)
     }
 
@@ -71,7 +71,7 @@ export class LibraryStore {
     }
 
     async addTrack(trackPointingToInternalArtistAndAlbum: ExternalTrack): Promise<AddedTrack> {
-        const now = Date.now()
+        const now = this.now()
         const result = await this.qb(tables.track)
             .insert({
                 title: trackPointingToInternalArtistAndAlbum.title,

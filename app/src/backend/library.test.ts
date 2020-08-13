@@ -25,7 +25,7 @@ describe("library store tests", () => {
             .withWaitStrategy(Wait.forHealthCheck())
             .start()
         db = await MariaDB.connect(container.getMappedPort(3306))
-        library = new LibraryStore(db)
+        library = new LibraryStore(db, () => 0)
     })
 
     afterEach(async () => {
@@ -67,6 +67,7 @@ describe("library store tests", () => {
                     isrc: null,
                     saved: true,
                     rating: 2,
+                    creationTimestamp: 0,
                 },
             },
             albums: {
