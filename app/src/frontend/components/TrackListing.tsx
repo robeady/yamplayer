@@ -199,30 +199,3 @@ function SaveButton(props: { trackId: string }) {
         return <button onClick={() => addToLibrary(track.externalId)}>Add</button>
     }
 }
-
-function TrackAndAlbumTitle(props: { track: string; album: string; play: () => void }) {
-    return (
-        <div
-            className={css`
-                display: flex;
-                flex-direction: column;
-            `}>
-            <span
-                onClick={props.play}
-                className={css`
-                    cursor: pointer;
-                    &:hover {
-                        color: hsl(270, 100%, 40%);
-                    }
-                `}>
-                {props.track}
-            </span>
-            <span
-                className={css`
-                    color: SlateGray;
-                `}>
-                {props.album}
-            </span>
-        </div>
-    )
-}

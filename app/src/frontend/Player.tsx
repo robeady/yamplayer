@@ -160,7 +160,7 @@ function ProgressBar() {
                     flex: 1;
                     padding: 16px 12px;
                 `}>
-                <Slider value={sliderValue} onChange={v => /* TODO seek */ {}} />
+                <Slider value={sliderValue} onChange={v => v /* TODO implement seeking */} />
             </div>
             <TrackTime time={songDuration} />
         </div>
