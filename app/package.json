@@ -8,7 +8,9 @@
         "electron:start": "cross-env NODE_ENV=development electron src/main.js",
         "backend:start": "ts-node-dev --type-check --no-notify src/backend/index.ts",
         "test": "jest",
-        "lint": "eslint \"./src/**/*.{ts,tsx}\"",
+        "lint": "eslint \"src/**/*.{ts,tsx}\"",
+        "format": "prettier --write --ignore-path .gitignore \"**/*.{js,ts,tsx,json}\"",
+        "format:check": "prettier --check --ignore-path .gitignore \"**/*.{js,ts,tsx,json}\"",
         "typecheck": "tsc --noEmit",
         "develop": "concurrently -k \"yarn:backend:start\" \"yarn:electron:serve-hot\" \"yarn:electron:start\"",
         "frontend:build": "cross-env NODE_ENV=production webpack"
