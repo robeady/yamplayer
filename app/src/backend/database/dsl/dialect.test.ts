@@ -17,7 +17,7 @@ test("escape literals escapes quotes", () => {
     expect(dialect.escape("don't won't")).toBe("'don\\'t won\\'t'")
 })
 
-test("escape identifer wraps in backticks", () => {
+test("escape identifier wraps in backticks", () => {
     expect(dialect.escapeId("foo")).toBe("`foo`")
     expect(dialect.escapeId("foo1")).toBe("`foo1`")
     expect(dialect.escapeId("foo_bar")).toBe("`foo_bar`")
