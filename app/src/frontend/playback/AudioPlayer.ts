@@ -126,7 +126,7 @@ export class AudioPlayer {
             onend: () => {
                 this.playNextFromQueue()
                 // TODO: why does it think the callback can be undefined
-                forEach(this.eventSubscribers, cb => cb!({ type: "trackEnded" }))
+                forEach(this.eventSubscribers, cb => cb({ type: "trackEnded" }))
             },
         })
         return howl

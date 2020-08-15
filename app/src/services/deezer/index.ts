@@ -5,21 +5,22 @@ import { Service } from "../index"
 
 type SearchResponse = typeof import("./searchResponse.json")
 
-type TrackResponse = typeof import("./trackResponse.json")
-type AlbumResponse = typeof import("./albumResponse.json")
-type ArtistResponse = typeof import("./artistResponse.json")
-type EntityNotFoundResponse = typeof import("./entityNotFoundResponse.json")
+type MaybeEntityNotFoundResponse = Partial<typeof import("./entityNotFoundResponse.json")>
+
+type TrackResponse = typeof import("./trackResponse.json") & MaybeEntityNotFoundResponse
+type AlbumResponse = typeof import("./albumResponse.json") & MaybeEntityNotFoundResponse
+type ArtistResponse = typeof import("./artistResponse.json") & MaybeEntityNotFoundResponse
 
 export class DeezerApiClient implements Service {
     constructor(private axios: AxiosInstance = globalAxios, private apiBaseUrl = "https://api.deezer.com") {}
 
     async lookupTrack(id: string): Promise<ExternalTrack> {
         const rawId = stripDeezerPrefix(id)
-        const response = await this.axios.get(`${this.apiBaseUrl}/track/${rawId}`)
-        if ((response.data as EntityNotFoundResponse).error) {
+        const response = await this.axios.get<TrackResponse>(`${this.apiBaseUrl}/track/${rawId}`)
+        if (response.data.error) {
             throw Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
         }
-        const track = response.data as TrackResponse
+        const track = response.data
         return {
             externalId: id,
             albumId: "dz:" + track.album.id,
@@ -33,11 +34,11 @@ export class DeezerApiClient implements Service {
 
     async lookupAlbum(id: string): Promise<ExternalAlbum> {
         const rawId = stripDeezerPrefix(id)
-        const response = await this.axios.get(`${this.apiBaseUrl}/album/${rawId}`)
-        if ((response.data as EntityNotFoundResponse).error) {
+        const response = await this.axios.get<AlbumResponse>(`${this.apiBaseUrl}/album/${rawId}`)
+        if (response.data.error) {
             throw Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
         }
-        const album = response.data as AlbumResponse
+        const album = response.data
         return {
             externalId: id,
             title: album.title,
@@ -48,11 +49,11 @@ export class DeezerApiClient implements Service {
 
     async lookupArtist(id: string): Promise<ExternalArtist> {
         const rawId = stripDeezerPrefix(id)
-        const response = await this.axios.get(`${this.apiBaseUrl}/artist/${rawId}`)
-        if ((response.data as EntityNotFoundResponse).error) {
+        const response = await this.axios.get<ArtistResponse>(`${this.apiBaseUrl}/artist/${rawId}`)
+        if (response.data.error) {
             throw Error(`artist ${id} not found: ${JSON.stringify(response.data.error)}`)
         }
-        const artist = response.data as ArtistResponse
+        const artist = response.data
         return {
             externalId: id,
             name: artist.name,
