@@ -1,4 +1,5 @@
 {
     "testEnvironment": "node",
-    "reporters": [["jest-silent-reporter", { "showPaths": true, "useDots": true }]]
+    "reporters": [["jest-silent-reporter", { "showPaths": true, "useDots": true }]],
+    "setupFiles": ["<rootDir>/jest.setup.js"]
 }
