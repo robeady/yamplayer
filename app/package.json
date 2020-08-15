@@ -8,7 +8,7 @@
         "electron:start": "cross-env NODE_ENV=development electron src/main.js",
         "backend:start": "ts-node-dev --type-check --no-notify src/backend/index.ts",
         "test": "jest",
-        "lint": "eslint \"./src/**/*.ts\"",
+        "lint": "eslint \"./src/**/*.{ts,tsx}\"",
         "develop": "concurrently -k \"yarn:backend:start\" \"yarn:electron:serve-hot\" \"yarn:electron:start\"",
         "frontend:build": "cross-env NODE_ENV=production webpack"
     },
