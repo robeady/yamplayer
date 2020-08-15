@@ -16,6 +16,7 @@ import {
 import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, RealTableOrigin } from "./definitions"
 import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
 import { size, mapValues } from "lodash"
+import { SqlDialect } from "./dialect"
 
 export interface QueryBuilder {
     <T extends TableDefinition>(table: T): InsertStage<T>
@@ -38,42 +39,22 @@ export function queryBuilder(databaseHandle: DatabaseHandle): QueryBuilder {
     }
 }
 
-export const noDatabaseHandle: DatabaseHandle = {
-    execute: () => {
-        throw Error("no database")
-    },
-    query: () => {
-        throw Error("no database")
-    },
+export function noDatabaseHandle(dialect: SqlDialect): DatabaseHandle {
+    return {
+        dialect,
+        execute: () => {
+            throw Error("no database")
+        },
+        query: () => {
+            throw Error("no database")
+        },
+    }
 }
 
 export interface DatabaseHandle {
+    dialect: SqlDialect
     execute(sql: string): Promise<ExecResult>
     query(sql: string): Promise<unknown[][]>
-}
-
-export function renderIdentifier(identifier: string): string {
-    if (identifier.includes("`")) {
-        throw Error("identifiers may not contain backticks")
-    }
-    return "`" + identifier + "`"
-}
-
-export function renderLiteral(literalValue: unknown): string {
-    // TODO
-    if (literalValue === null) {
-        return "NULL"
-    } else if (typeof literalValue === "boolean") {
-        return literalValue ? "TRUE" : "FALSE"
-    } else if (typeof literalValue === "number" || typeof literalValue === "bigint") {
-        return literalValue.toString()
-    } else if (typeof literalValue === "string") {
-        return "'" + literalValue.replace(/'/g, "''") + "'"
-    } else if (literalValue instanceof Array) {
-        return "(" + literalValue.map(renderLiteral).join(", ") + ")"
-    } else {
-        throw Error("invalid literal " + literalValue)
-    }
 }
 
 interface OrderLimitOffset {
@@ -122,6 +103,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
     selection: Selection
     primaryTableAlias: string
     primaryTableName: string[]
+
     constructor(public state: StageState, selection: Selection | null) {
         // TODO: create "unsafe" constructor for use when copying this class to make the builder cheaper
         const primaryTableDetails = tableDetails(state.primaryTable)
@@ -139,6 +121,8 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
                       ...mapValues(state.joinedTablesByAlias, v => v[1]),
                   }) as unknown) as Selection)
     }
+
+    renderer = new Renderer(this.state.databaseHandle.dialect)
 
     where = (...args: {}[]) => {
         return this.withWhereFilter(f => {
@@ -209,7 +193,6 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
 
     join = (_otherTable: TableDefinition) => {
         throw new Error("TODO: support auto joins")
-        return new StageBackend(this.state, this.selection)
     }
 
     innerJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) => {
@@ -266,8 +249,10 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
     }
 
     render = () => {
+        const dialect = this.state.databaseHandle.dialect
+
         const selectionsSql = traverseSelection(this.selection, (keyPath, col) =>
-            columnDefinitionSql(col, keyPath.length === 1 ? keyPath[0] : undefined),
+            this.renderer.columnDefinitionSql(col, keyPath.length === 1 ? keyPath[0] : undefined),
         ).join(", ")
 
         const selectionDestinations = traverseSelection(this.selection, keyPath => keyPath)
@@ -278,12 +263,12 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         if (columnsInPrimaryTable.length === 0) throw Error("Primary table has no columns")
         const { tableOrigin, tableAlias } = Object.values(this.state.primaryTable)[0]
         const tableOriginSql =
-            tableOrigin.type === "table" ? realTableSql(tableOrigin) : `(${tableOrigin.render().sql})`
-        const fromSql = `${tableOriginSql} AS ${renderIdentifier(tableAlias)}`
+            tableOrigin.type === "table" ? this.renderer.realTableSql(tableOrigin) : `(${tableOrigin.render().sql})`
+        const fromSql = `${tableOriginSql} AS ${dialect.escapeId(tableAlias)}`
 
-        const sql = `SELECT ${selectionsSql} FROM ${fromSql}${joinSql(this.state)}${whereSql(
-            this.state.filter,
-        )}${orderLimitOffsetSql(this.state.orderLimitOffset)}`
+        const sql = `SELECT ${selectionsSql} FROM ${fromSql}${this.renderer.joinSql(
+            this.state,
+        )}${this.renderer.whereSql(this.state.filter)}${this.renderer.orderLimitOffsetSql(this.state.orderLimitOffset)}`
 
         const mapRow = (row: unknown[]) => {
             let rowObject: any = {}
@@ -402,6 +387,8 @@ class MultiTableStageImpl<QueriedTables extends TableDefinitions> implements OnS
 class SingleTableStageImpl<QueriedTable extends TableDefinition> implements InsertStage<QueriedTable> {
     constructor(private backend: StageBackend<QueriedTablesFromSingle<QueriedTable>, QueriedTable>) {}
 
+    renderer = new Renderer(this.backend.state.databaseHandle.dialect)
+
     map = <R>(f: undefined | null | false | ((stage: this) => R)) => (typeof f === "function" ? f(this) : this)
 
     private attach = <T extends unknown[]>(
@@ -429,13 +416,17 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
     render = this.backend.render
 
     truncate = () => {
-        const tableNameSql = this.backend.primaryTableName.map(renderIdentifier).join(".")
+        const dialect = this.backend.state.databaseHandle.dialect
+        const tableNameSql = this.backend.primaryTableName.map(part => dialect.escapeId(part)).join(".")
         return this.executeStage(`TRUNCATE TABLE ${tableNameSql}`)
     }
 
     insert = (row: InsertTypeFor<QueriedTable>) => {
         const {
-            state: { primaryTable },
+            state: {
+                primaryTable,
+                databaseHandle: { dialect },
+            },
             primaryTableName,
         } = this.backend
         const columns = Object.entries(row).map(([columnName, value]) => {
@@ -445,23 +436,29 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
             }
             return { columnName, columnDefinition, value }
         })
-        const tableNameSql = primaryTableName.map(renderIdentifier).join(".")
+        const tableNameSql = primaryTableName.map(part => dialect.escapeId(part)).join(".")
         if (columns.length === 0) {
             return this.executeStage(`INSERT INTO ${tableNameSql} DEFAULT VALUES`)
         } else {
-            const columnsSql = columns.map(c => renderIdentifier(c.columnName)).join(", ")
-            const valuesSql = columns.map(c => renderLiteral(c.columnDefinition.typeMapper.jsToSql(c.value))).join(", ")
+            const columnsSql = columns.map(c => dialect.escapeId(c.columnName)).join(", ")
+            const valuesSql = columns
+                .map(c => dialect.escape(c.columnDefinition.typeMapper.jsToSql(c.value)))
+                .join(", ")
             return this.executeStage(`INSERT INTO ${tableNameSql} (${columnsSql}) VALUES (${valuesSql})`)
         }
     }
 
     update = (row: Partial<RowTypeFrom<QueriedTable>>) => {
         const {
-            state: { filter, primaryTable },
+            state: {
+                filter,
+                primaryTable,
+                databaseHandle: { dialect },
+            },
             primaryTableName,
         } = this.backend
 
-        const tableNameSql = primaryTableName.map(renderIdentifier).join(".")
+        const tableNameSql = primaryTableName.map(part => dialect.escapeId(part)).join(".")
 
         const updateSql = Object.entries(row)
             .map(([columnName, value]) => {
@@ -473,20 +470,23 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
             })
             .map(
                 ({ columnName, columnDefinition, value }) =>
-                    `${renderIdentifier(columnName)} = ${renderLiteral(columnDefinition.typeMapper.jsToSql(value))}`,
+                    `${dialect.escapeId(columnName)} = ${dialect.escape(columnDefinition.typeMapper.jsToSql(value))}`,
             )
             .join(", ")
-        const sql = `UPDATE ${tableNameSql} SET ${updateSql}${whereSql(filter)}`
+        const sql = `UPDATE ${tableNameSql} SET ${updateSql}${this.renderer.whereSql(filter)}`
         return this.executeStage(sql)
     }
 
     delete = () => {
         const {
-            state: { filter },
+            state: {
+                filter,
+                databaseHandle: { dialect },
+            },
             primaryTableName,
         } = this.backend
-        const tableNameSql = primaryTableName.map(renderIdentifier).join(".")
-        const sql = `DELETE FROM ${tableNameSql}${whereSql(filter)}`
+        const tableNameSql = primaryTableName.map(part => dialect.escapeId(part)).join(".")
+        const sql = `DELETE FROM ${tableNameSql}${this.renderer.whereSql(filter)}`
         return this.executeStage(sql)
     }
 
@@ -593,134 +593,146 @@ function traverseSelection<T>(
     }
 }
 
-function columnDefinitionSql(columnDef: ColumnDefinition<Origin, unknown>, alias?: string) {
-    //  is render identifier correct for aliases?
-    const aliasSql = alias === undefined ? "" : ` AS ${renderIdentifier(alias)}`
-    return `${renderIdentifier(columnDef.tableAlias)}.${renderIdentifier(columnDef.columnName)}${aliasSql}`
-}
+class Renderer {
+    constructor(private dialect: SqlDialect) {}
 
-function joinSql(joinInfo: JoinInfo): string {
-    const { joinedTablesByAlias, joinFiltersByAlias } = joinInfo
-    const tables = Object.values(joinedTablesByAlias)
-    if (tables.length === 0) {
-        return ""
+    escapeId(identifier: string) {
+        return this.dialect.escapeId(identifier)
     }
-    let sql = ""
-    for (const [joinType, tableDefinition] of tables) {
-        const { tableAlias, tableOrigin } = tableDetails(tableDefinition)
 
-        if (tableOrigin.type !== "table") {
-            throw Error(`table ${tableAlias} is not a real table`)
-        }
+    escape(value: unknown) {
+        return this.dialect.escape(value)
+    }
 
-        sql += ` ${joinTypeSql(joinType)} ${realTableSql(tableOrigin)} AS ${renderIdentifier(tableAlias)}`
-        const filter: Filter | undefined = joinFiltersByAlias[tableAlias]
-        if (filter !== undefined) {
-            sql += ` ON (${filterSql(filter)})`
-        }
+    columnDefinitionSql(columnDef: ColumnDefinition<Origin, unknown>, alias?: string) {
+        //  is render identifier correct for aliases?
+        const aliasSql = alias === undefined ? "" : ` AS ${this.escapeId(alias)}`
+        return `${this.escapeId(columnDef.tableAlias)}.${this.escapeId(columnDef.columnName)}${aliasSql}`
     }
-    return sql
-}
 
-function orderLimitOffsetSql(olo?: OrderLimitOffset) {
-    if (olo === undefined) return ""
-    const { orderBy, limit, offset } = olo
-    let sql = ""
-    if (orderBy.length > 0) {
-        const orderBySql = orderBy
-            .map(entry =>
-                typeof entry.column === "string"
-                    ? renderIdentifier(entry.column) + orderDirectionSql(entry.direction)
-                    : columnDefinitionSql(entry.column) + orderDirectionSql(entry.direction),
-            )
-            .join(", ")
-        sql += ` ORDER BY ${orderBySql}`
-    }
-    if (limit !== undefined) {
-        sql += ` LIMIT ${renderLiteral(limit)}`
-    }
-    if (offset !== undefined) {
-        sql += ` OFFSET ${renderLiteral(offset)}`
-    }
-    return sql
-}
-
-function orderDirectionSql(direction: undefined | "ASC" | "DESC") {
-    switch (direction) {
-        case undefined:
+    joinSql(joinInfo: JoinInfo): string {
+        const { joinedTablesByAlias, joinFiltersByAlias } = joinInfo
+        const tables = Object.values(joinedTablesByAlias)
+        if (tables.length === 0) {
             return ""
-        case "ASC":
-            return " ASC"
-        case "DESC":
-            return " DESC"
-        default:
-            unreachable(direction)
-    }
-}
+        }
+        let sql = ""
+        for (const [joinType, tableDefinition] of tables) {
+            const { tableAlias, tableOrigin } = tableDetails(tableDefinition)
 
-function whereSql(filter: Filter | undefined) {
-    if (filter === undefined) {
-        return ""
-    } else {
-        return ` WHERE ${filterSql(filter)}`
-    }
-}
+            if (tableOrigin.type !== "table") {
+                throw Error(`table ${tableAlias} is not a real table`)
+            }
 
-function filterSql(filter: Filter) {
-    let sql = filterComponentSql(filter.first)
-    for (const [connective, filterComponent] of filter.rest) {
-        sql += connective === "and" ? " AND " : " OR "
-        sql += `(${filterComponentSql(filterComponent)})`
+            sql += ` ${this.joinTypeSql(joinType)} ${this.realTableSql(tableOrigin)} AS ${this.escapeId(tableAlias)}`
+            const filter: Filter | undefined = joinFiltersByAlias[tableAlias]
+            if (filter !== undefined) {
+                sql += ` ON (${this.filterSql(filter)})`
+            }
+        }
+        return sql
     }
-    return sql
-}
 
-function filterComponentSql(filterComponent: boolean | Filter | FilterElement): string {
-    if (typeof filterComponent === "boolean") {
-        return renderLiteral(filterComponent)
-    } else if (filterComponent.type === "element") {
-        const opSql = filterOperatorSql(filterComponent.op)
-        const leftSql = expressionSql(filterComponent.left)
-        const rightSql = expressionSql(filterComponent.right)
-        return `${leftSql} ${opSql} ${rightSql}`
-    } else {
-        return `(${filterSql(filterComponent)})`
+    orderLimitOffsetSql(olo?: OrderLimitOffset) {
+        if (olo === undefined) return ""
+        const { orderBy, limit, offset } = olo
+        let sql = ""
+        if (orderBy.length > 0) {
+            const orderBySql = orderBy
+                .map(entry =>
+                    typeof entry.column === "string"
+                        ? this.escapeId(entry.column) + this.orderDirectionSql(entry.direction)
+                        : this.columnDefinitionSql(entry.column) + this.orderDirectionSql(entry.direction),
+                )
+                .join(", ")
+            sql += ` ORDER BY ${orderBySql}`
+        }
+        if (limit !== undefined) {
+            sql += ` LIMIT ${this.escape(limit)}`
+        }
+        if (offset !== undefined) {
+            sql += ` OFFSET ${this.escape(offset)}`
+        }
+        return sql
     }
-}
 
-function filterOperatorSql(op: SqlOperator): string {
-    switch (op) {
-        case "=":
-            return "="
-        case "<>":
-            return "<>"
-        case "IN":
-            return "IN"
-        default:
-            unreachable(op)
+    orderDirectionSql(direction: undefined | "ASC" | "DESC") {
+        switch (direction) {
+            case undefined:
+                return ""
+            case "ASC":
+                return " ASC"
+            case "DESC":
+                return " DESC"
+            default:
+                unreachable(direction)
+        }
     }
-}
 
-function expressionSql(expr: Expression): string {
-    switch (expr.type) {
-        case "column":
-            return columnDefinitionSql(expr.definition)
-        case "literal":
-            return renderLiteral(expr.literal)
+    whereSql(filter: Filter | undefined) {
+        if (filter === undefined) {
+            return ""
+        } else {
+            return ` WHERE ${this.filterSql(filter)}`
+        }
     }
-}
 
-function joinTypeSql(joinType: JoinType): string {
-    switch (joinType) {
-        case "inner":
-            return "INNER JOIN"
-        default:
-            unreachable(joinType)
+    filterSql(filter: Filter) {
+        let sql = this.filterComponentSql(filter.first)
+        for (const [connective, filterComponent] of filter.rest) {
+            sql += connective === "and" ? " AND " : " OR "
+            sql += `(${this.filterComponentSql(filterComponent)})`
+        }
+        return sql
     }
-}
 
-function realTableSql(tableOrigin: RealTableOrigin) {
-    return tableOrigin.name.map(renderIdentifier).join(".")
+    filterComponentSql(filterComponent: boolean | Filter | FilterElement): string {
+        if (typeof filterComponent === "boolean") {
+            return this.escape(filterComponent)
+        } else if (filterComponent.type === "element") {
+            const opSql = this.filterOperatorSql(filterComponent.op)
+            const leftSql = this.expressionSql(filterComponent.left)
+            const rightSql = this.expressionSql(filterComponent.right)
+            return `${leftSql} ${opSql} ${rightSql}`
+        } else {
+            return `(${this.filterSql(filterComponent)})`
+        }
+    }
+
+    filterOperatorSql(op: SqlOperator): string {
+        switch (op) {
+            case "=":
+                return "="
+            case "<>":
+                return "<>"
+            case "IN":
+                return "IN"
+            default:
+                unreachable(op)
+        }
+    }
+
+    expressionSql(expr: Expression): string {
+        switch (expr.type) {
+            case "column":
+                return this.columnDefinitionSql(expr.definition)
+            case "literal":
+                return this.escape(expr.literal)
+        }
+    }
+
+    joinTypeSql(joinType: JoinType): string {
+        switch (joinType) {
+            case "inner":
+                return "INNER JOIN"
+            default:
+                unreachable(joinType)
+        }
+    }
+
+    realTableSql(tableOrigin: RealTableOrigin) {
+        return tableOrigin.name.map(part => this.escapeId(part)).join(".")
+    }
 }
 
 function tableDetails(definition: TableDefinition): { tableAlias: string; tableOrigin: Origin } {

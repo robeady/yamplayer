@@ -1,7 +1,8 @@
-import mariadb, { Connection, Pool, UpsertResult } from "mariadb"
+import mariadb, { Pool, UpsertResult } from "mariadb"
 import schemaSql from "./schema"
 import { DatabaseHandle } from "./dsl/impl"
 import { ExecResult } from "./dsl/stages"
+import { MySqlDialect } from "./dsl/dialect"
 
 export class MariaDB implements DatabaseHandle {
     private constructor(private connection: Pool) {}
@@ -38,6 +39,8 @@ export class MariaDB implements DatabaseHandle {
         console.log(result)
         return { rowsAffected: result.affectedRows, lastInsertedId: result.insertId }
     }
+
+    dialect = new MySqlDialect()
 
     async closeConnection(): Promise<void> {
         return this.connection.end()

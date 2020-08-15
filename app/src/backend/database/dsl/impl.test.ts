@@ -1,6 +1,7 @@
 import { table } from "./definitions"
-import { queryBuilder, noDatabaseHandle, renderIdentifier, renderLiteral } from "./impl"
+import { queryBuilder, noDatabaseHandle } from "./impl"
 import { string, number, intAsJsString, boolean } from "./types"
+import { MySqlDialect } from "./dialect"
 
 const exampleTable = table("foo", {
     col1: string,
@@ -16,7 +17,7 @@ const mappyTable = table("baz", {
     enabled: boolean,
 })
 
-const qb = queryBuilder(noDatabaseHandle)
+const qb = queryBuilder(noDatabaseHandle(new MySqlDialect()))
 
 interface Renderable {
     render: () => { sql: string }
@@ -28,36 +29,6 @@ function expectExtraSql<T extends Renderable>(initial: T, delta: (initial: T) =>
     expect(b.indexOf(a)).toBe(0)
     expect(b.slice(a.length)).toBe(expectedExtraSql)
 }
-
-describe("rendering literals and identifiers", () => {
-    test("render literal produces correct SQL", () => {
-        expect(renderLiteral("foo")).toBe("'foo'")
-        expect(renderLiteral(42)).toBe("42")
-        expect(renderLiteral(3.14)).toBe("3.14")
-        expect(renderLiteral(BigInt("999999"))).toBe("999999")
-        expect(renderLiteral(null)).toBe("NULL")
-        expect(renderLiteral(true)).toBe("TRUE")
-        expect(renderLiteral(false)).toBe("FALSE")
-        expect(renderLiteral(["foo", 42, true])).toBe("('foo', 42, TRUE)")
-    })
-
-    test("render literals escapes quotes", () => {
-        expect(renderLiteral("don't")).toBe("'don''t'")
-        expect(renderLiteral("don't won't")).toBe("'don''t won''t'")
-    })
-
-    test("render identifer wraps in backticks", () => {
-        expect(renderIdentifier("foo")).toBe("`foo`")
-        expect(renderIdentifier("foo1")).toBe("`foo1`")
-        expect(renderIdentifier("foo_bar")).toBe("`foo_bar`")
-        expect(renderIdentifier("a b c")).toBe("`a b c`")
-        expect(renderIdentifier("221b")).toBe("`221b`")
-    })
-
-    test("throw on identifier containing backquote", () => {
-        expect(() => renderIdentifier("I`ve got backtick")).toThrow()
-    })
-})
 
 test("truncate", () => {
     expect(qb(exampleTable).truncate().render().sql).toBe("TRUNCATE TABLE `foo`")
@@ -80,7 +51,7 @@ describe("where clause", () => {
         // remark: we allow the wrong type to appear after IN (but not every option can be of the wrong type)
         // seems harmless enough
         expect(qb(exampleTable).where(exampleTable.col1, "IN", ["foo", "bar", true]).render().sql).toBe(
-            "SELECT `foo`.`col1` AS `col1`, `foo`.`col2` AS `col2` FROM `foo` AS `foo` WHERE `foo`.`col1` IN ('foo', 'bar', TRUE)",
+            "SELECT `foo`.`col1` AS `col1`, `foo`.`col2` AS `col2` FROM `foo` AS `foo` WHERE `foo`.`col1` IN ('foo', 'bar', true)",
         )
     })
 })
@@ -170,15 +141,19 @@ test("offset", () => {
 })
 
 describe("fetching", () => {
-    test("fetchOne throws on 0 rows", () => {
-        expect(queryBuilder({ query: () => Promise.resolve([]) } as any)(exampleTable).fetchOne()).rejects.toThrow(
-            "Expected 1 row, got 0",
-        )
+    test("fetchOne throws on 0 rows", async () => {
+        const queryBuilderReturningNoRows = queryBuilder({
+            dialect: new MySqlDialect(),
+            query: () => Promise.resolve([]),
+        } as any)
+        await expect(queryBuilderReturningNoRows(exampleTable).fetchOne()).rejects.toThrow("Expected 1 row, got 0")
     })
     test("fetchOne throws on >1 row", () => {
-        expect(
-            queryBuilder({ query: () => Promise.resolve([{}, {}, {}]) } as any)(exampleTable).fetchOne(),
-        ).rejects.toThrow("Expected 1 row, got 3")
+        const queryBuilderReturningMultipleRows = queryBuilder({
+            dialect: new MySqlDialect(),
+            query: () => Promise.resolve([{}, {}, {}]),
+        } as any)
+        expect(queryBuilderReturningMultipleRows(exampleTable).fetchOne()).rejects.toThrow("Expected 1 row, got 3")
     })
 })
 
