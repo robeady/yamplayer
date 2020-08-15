@@ -19,3 +19,5 @@ jobs:
         node-version: '14'
     - run: yarn --cwd app install --frozen-lockfile
     - run: yarn --cwd app test
+    - run: yarn --cwd app run lint
+    - run: yarn --cwd app run typecheck
