@@ -15,7 +15,7 @@ export class FilesystemAxiosCache {
         return new FilesystemAxiosCache(cacheDirectory)
     }
 
-    async getItem(key: string): Promise<unknown> {
+    async getItem(key: string): Promise<object | null> {
         try {
             const filePath = this.getFilePath(key)
             const contents = await fs.readFile(filePath)
