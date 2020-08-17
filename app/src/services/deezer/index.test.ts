@@ -25,8 +25,10 @@ beforeAll(done => {
     mockDeezerServer = app.listen(0, "127.0.0.1", () => {
         const { address, port } = mockDeezerServer.address() as AddressInfo
         const baseUrl = `http://${address}:${port}`
-        deezerClient = new DeezerApiClient(globalAxios, baseUrl)
-        done()
+        DeezerApiClient.create({ apiBaseUrl: baseUrl }).then(client => {
+            deezerClient = client
+            done()
+        })
     })
 })
 

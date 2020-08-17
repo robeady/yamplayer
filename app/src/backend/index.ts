@@ -7,15 +7,32 @@ import { MariaDB } from "./database"
 import { Explorer } from "./explorer"
 import { Resolver } from "../services/plugins"
 
-const app = express()
-app.use(express.json())
+type Server = import("http").Server
 
-const db = MariaDB.connect()
+async function main(): Promise<AddressInfo> {
+    const app = express()
+    app.use(express.json())
 
-app.use("/library", serve(db.then(db => new LibraryStore(db))))
-app.use("/explorer", serve(db.then(db => new Explorer(new LibraryStore(db), new DeezerApiClient(), new Resolver()))))
+    const db = await MariaDB.connect()
+    const deezerApiClient = await DeezerApiClient.create({ cacheDirectory: "cache/deezer" })
+    const library = new LibraryStore(db)
+    const explorer = Explorer.seeded(library, deezerApiClient, new Resolver(), ["dz:702608072"])
 
-const server = app.listen(8280, "127.0.0.1", () => {
-    const { address, port } = server.address() as AddressInfo
-    console.log(`backend listening on ${address}:${port}`)
-})
+    app.use("/library", serve(library))
+    app.use("/explorer", serve(explorer))
+
+    return new Promise((resolve, reject) => {
+        const server: Server = app.listen(8280, "127.0.0.1", err => {
+            if (err) {
+                return reject(err)
+            }
+            return resolve(server.address() as AddressInfo)
+        })
+    })
+}
+
+main()
+    .then(({ address, port }) => {
+        console.log(`backend listening on ${address}:${port}`)
+    })
+    .catch(e => console.error(e))
