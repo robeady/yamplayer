@@ -13,8 +13,6 @@ type TrackResponse = typeof import("./trackResponse.json") & MaybeEntityNotFound
 type AlbumResponse = typeof import("./albumResponse.json") & MaybeEntityNotFoundResponse
 type ArtistResponse = typeof import("./artistResponse.json") & MaybeEntityNotFoundResponse
 
-const ONE_YEAR_IN_MILLIS = 1000 * 60 * 60 * 24 * 365
-
 export class DeezerApiClient implements Service {
     private constructor(private apiBaseUrl: string, private axios: AxiosInstance) {}
 
@@ -27,7 +25,7 @@ export class DeezerApiClient implements Service {
                     cacheDirectory === null
                         ? undefined
                         : setupCache({
-                              maxAge: ONE_YEAR_IN_MILLIS,
+                              maxAge: Number.POSITIVE_INFINITY,
                               store: await FilesystemAxiosCache.open(cacheDirectory),
                           }).adapter,
             }),
