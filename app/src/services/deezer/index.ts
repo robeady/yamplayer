@@ -1,7 +1,9 @@
-import globalAxios, { AxiosInstance } from "axios"
+import axios, { AxiosInstance } from "axios"
 import { SearchResults, ExternalTrack, ExternalArtist, ExternalAlbum } from "../../model"
 import { Dict } from "../../util/types"
 import { Service } from "../index"
+import { setupCache } from "axios-cache-adapter"
+import { FilesystemAxiosCache } from "./FilesystemAxiosCache"
 
 type SearchResponse = typeof import("./searchResponse.json")
 
@@ -12,7 +14,23 @@ type AlbumResponse = typeof import("./albumResponse.json") & MaybeEntityNotFound
 type ArtistResponse = typeof import("./artistResponse.json") & MaybeEntityNotFoundResponse
 
 export class DeezerApiClient implements Service {
-    constructor(private axios: AxiosInstance = globalAxios, private apiBaseUrl = "https://api.deezer.com") {}
+    private constructor(private apiBaseUrl: string, private axios: AxiosInstance) {}
+
+    static async create({ apiBaseUrl = "https://api.deezer.com", cacheDirectory = null as string | null } = {}) {
+        console.log("cache dir " + cacheDirectory)
+        return new DeezerApiClient(
+            apiBaseUrl,
+            axios.create({
+                adapter:
+                    cacheDirectory === null
+                        ? undefined
+                        : setupCache({
+                              maxAge: Number.POSITIVE_INFINITY,
+                              store: await FilesystemAxiosCache.open(cacheDirectory),
+                          }).adapter,
+            }),
+        )
+    }
 
     async lookupTrack(id: string): Promise<ExternalTrack> {
         const rawId = stripDeezerPrefix(id)
@@ -62,8 +80,8 @@ export class DeezerApiClient implements Service {
     }
 
     async searchTracks(query: string): Promise<SearchResults> {
-        const response = await this.axios.get(`${this.apiBaseUrl}/search?q=${query}`)
-        const payload = response.data as SearchResponse
+        const response = await this.axios.get<SearchResponse>(`${this.apiBaseUrl}/search?q=${query}`)
+        const payload = response.data
 
         const resultExternalTrackIds = [] as string[]
         const tracks = {} as Dict<ExternalTrack>

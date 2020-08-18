@@ -6,11 +6,10 @@ import express from "express"
  * Expected usage: `app.use(basePath, serve(object))`. The object may also be a promise.
  * Assumes that the express instance has json middleware.
  */
-export function serve<T>(object: T | Promise<T>) {
+export function serve<T>(object: T) {
     return express.Router().post("/:method", async (req, res) => {
         try {
-            // TODO: `object` might not be a promise. is this a performance issue?
-            const target = (await object) as any
+            const target = object as any
             const method = req.params.method
             const args = req.body as unknown[]
             if (method in target) {

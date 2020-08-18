@@ -13,6 +13,39 @@ export interface LibraryContents {
 export class Explorer {
     constructor(private library: LibraryStore, private service: Service, private resolver: TrackResolver) {}
 
+    static async seeded(
+        library: LibraryStore,
+        service: Service,
+        resolver: TrackResolver,
+        externalTrackIds: string[],
+    ): Promise<Explorer> {
+        library.clear()
+
+        const explorer = new Explorer(library, service, resolver)
+
+        const externalTracks = await Promise.all(externalTrackIds.map(tid => explorer.service.lookupTrack(tid)))
+        const externalAlbumIds = new Set(externalTracks.map(t => t.albumId))
+        const externalArtistIds = new Set(externalTracks.map(t => t.artistId))
+        const externalAlbums = await Promise.all([...externalAlbumIds].map(aid => explorer.service.lookupAlbum(aid)))
+        const externalArtists = await Promise.all([...externalArtistIds].map(aid => explorer.service.lookupArtist(aid)))
+
+        const addedArtists = await Promise.all(externalArtists.map(a => explorer.library.addArtist(a)))
+        const addedAlbums = await Promise.all(externalAlbums.map(a => explorer.library.addAlbum(a)))
+        const artistIdsByExternalId = Object.fromEntries(addedArtists.map(a => [a.externalId, a.libraryId]))
+        const albumIdsByExternalId = Object.fromEntries(addedAlbums.map(a => [a.externalId, a.libraryId]))
+        await Promise.all(
+            externalTracks.map(t =>
+                explorer.library.addTrack({
+                    ...t,
+                    albumId: albumIdsByExternalId[t.albumId],
+                    artistId: artistIdsByExternalId[t.artistId],
+                }),
+            ),
+        )
+
+        return explorer
+    }
+
     async resolveTrackUrl(trackId: string): Promise<string> {
         return this.resolver.resolveTrackUrl(trackId)
     }
