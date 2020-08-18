@@ -60,6 +60,14 @@ export const { Provider: ExplorerProvider, useState: useExplorerState, useDispat
             return { update, addToLibrary, unsave, setTrackRating, explorerClient }
         }, [props.backendUrl])
 
+        useEffect(() => {
+            dispatch.explorerClient.getLibrary().then(r => {
+                console.log(JSON.stringify(r))
+                // TODO: should we be populating external ID pointers too?
+                setState(s => ({ ...s, ...r }))
+            })
+        }, [dispatch])
+
         return [state, dispatch]
     },
 )
