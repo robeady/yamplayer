@@ -6,8 +6,27 @@ import { LibraryStore } from "./library"
 import { MariaDB } from "./database"
 import { Explorer } from "./explorer"
 import { Resolver } from "../services/plugins"
+import { promises as fs } from "fs"
 
 type Server = import("http").Server
+
+interface LibrarySeedFile {
+    externalTrackIds: string[]
+}
+
+async function loadLibrarySeed(): Promise<LibrarySeedFile> {
+    const seedFileName = "librarySeed.json"
+    try {
+        const seedFile = await fs.readFile(seedFileName)
+        return JSON.parse(seedFile.toString())
+    } catch (e) {
+        if (e.code === "ENOENT") {
+            console.log(`no ${seedFileName} file present`)
+            return { externalTrackIds: [] }
+        }
+        throw e
+    }
+}
 
 async function main(): Promise<AddressInfo> {
     const app = express()
@@ -16,7 +35,8 @@ async function main(): Promise<AddressInfo> {
     const db = await MariaDB.connect()
     const deezerApiClient = await DeezerApiClient.create({ cacheDirectory: "cache/deezer" })
     const library = new LibraryStore(db)
-    const explorer = Explorer.seeded(library, deezerApiClient, new Resolver(), ["dz:702608072"])
+    const librarySeed = await loadLibrarySeed()
+    const explorer = Explorer.seeded(library, deezerApiClient, new Resolver(), librarySeed.externalTrackIds)
 
     app.use("/library", serve(library))
     app.use("/explorer", serve(explorer))
