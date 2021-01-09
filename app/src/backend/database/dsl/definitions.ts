@@ -2,8 +2,18 @@ import { mapValues } from "lodash"
 import { PHANTOM_INSTANCE, COLUMN_DEFINITION } from "./symbols"
 
 interface ColumnType<T, HasDefault, References> extends ColumnDetails<T, HasDefault, References> {
+    /**
+     * Indicates that a column is nullable in the database.
+     *
+     * Although SQL lets you omit NULL column values from INSERT statements, using NULL as the default value even if you
+     * didn't specify this when creating the table, this library requires you to opt in to this behaviour by calling
+     * hasDefault(), because it may be desirable to require code to explicitly set nullable fields to null.
+     */
     orNull: () => ColumnType<T | null, HasDefault, References>
+
+    /** Indicates that a column has a default value in the database and therefore can be omitted from INSERT statements */
     withDefault: () => ColumnType<T, true, References>
+
     whichReferences: <C extends ColumnDefinition<RealTableOrigin, Exclude<T, null>>>(
         otherColumn: C,
     ) => ColumnType<T, HasDefault, C>

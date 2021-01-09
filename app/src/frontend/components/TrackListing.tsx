@@ -40,8 +40,8 @@ export function TrackListing(props: { trackIds: string[] }) {
                     <CoverAndTrackTitle {...t} />
                     <TrackRating
                         rating={t.track.rating}
-                        enabled={t.track.libraryId !== null}
-                        onRate={newRating => setTrackRating(t.track.libraryId!, newRating)}
+                        enabled={t.track.catalogueId !== null}
+                        onRate={newRating => setTrackRating(t.track.catalogueId!, newRating)}
                     />
                     <span
                         className={css`
@@ -193,7 +193,7 @@ function SaveButton(props: { trackId: string }) {
     const track = useExplorerState(s => resolveCanonical(s.tracks, props.trackId))
     const { addToLibrary, unsave } = useExplorerDispatch()
     if (track.saved) {
-        return <button onClick={() => unsave(track.libraryId!)}>-</button>
+        return <button onClick={() => unsave(track.catalogueId!)}>-</button>
     } else {
         // TODO: support re-saving
         return <button onClick={() => addToLibrary(track.externalId)}>Add</button>

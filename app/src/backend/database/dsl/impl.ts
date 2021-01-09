@@ -79,7 +79,7 @@ interface FilterElement {
     right: Expression
 }
 
-const sqlOperators = ["=", "<>", "IN"] as const
+const sqlOperators = ["=", "<>", "IN", "IS", "IS NOT"] as const
 type SqlOperator = typeof sqlOperators[number]
 
 type Expression = { type: "literal"; literal: unknown } | { type: "column"; definition: ColumnDefinition }

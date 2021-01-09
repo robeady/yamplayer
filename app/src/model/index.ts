@@ -1,4 +1,4 @@
-import { Dict } from "../util/types"
+import { Dict, Timestamp, Fraction, Int } from "../util/types"
 
 declare const NEWTYPE: unique symbol
 
@@ -6,15 +6,23 @@ export type TrackId = number & { readonly [NEWTYPE]: unique symbol }
 export type ArtistId = number & { readonly [NEWTYPE]: unique symbol }
 export type AlbumId = number & { readonly [NEWTYPE]: unique symbol }
 
-export interface AddedTrack extends Track {
-    libraryId: string
-    saved: boolean
-    creationTimestamp: number
+// A track can be in various states:
+// - it can be external only, e.g. when returned in search results
+// - it can be in saved in the catalogue
+// - it can be in the catalogue but not saved, because the user subsequently unsaved it
+
+export interface CataloguedTrack extends Track {
+    catalogueId: string
+    cataloguedTimestamp: Timestamp
+    /** When the track was (last) marked saved, or null if the track is not saved */
+    savedTimestamp: Timestamp | null
 }
 
 export interface Track extends ExternalTrack {
-    libraryId: string | null
-    saved: boolean
+    catalogueId: string | null
+    cataloguedTimestamp: Timestamp | null
+    /** When the track was (last) marked saved, or null if the track is not saved */
+    savedTimestamp: Timestamp | null
 }
 
 export interface ExternalTrack {
@@ -22,17 +30,21 @@ export interface ExternalTrack {
     albumId: string
     artistId: string
     title: string
+    trackNumber: Int | null
+    discNumber: Int | null
     isrc: string | null
     durationSecs: number
-    rating: number | null
+    rating: Fraction | null
 }
 
-export interface AddedAlbum extends Album {
-    libraryId: string
+export interface CataloguedAlbum extends Album {
+    catalogueId: string
+    cataloguedTimestamp: Timestamp
 }
 
 export interface Album extends ExternalAlbum {
-    libraryId: string | null
+    catalogueId: string | null
+    cataloguedTimestamp: Timestamp | null
 }
 
 export interface ExternalAlbum {
@@ -42,12 +54,14 @@ export interface ExternalAlbum {
     releaseDate: string | null
 }
 
-export interface AddedArtist extends Artist {
-    libraryId: string
+export interface CataloguedArtist extends Artist {
+    catalogueId: string
+    cataloguedTimestamp: Timestamp
 }
 
 export interface Artist extends ExternalArtist {
-    libraryId: string | null
+    catalogueId: string | null
+    cataloguedTimestamp: Timestamp | null
 }
 
 export interface ExternalArtist {

@@ -27,12 +27,12 @@ export const { Provider: ExplorerProvider, useState: useExplorerState, useDispat
             const addToLibrary = async (externalTrackId: string) => {
                 const { track, album, artist } = await explorerClient.addTrack(externalTrackId)
                 update(s => {
-                    s.tracks[track.libraryId] = track
-                    s.tracks[track.externalId] = track.libraryId
-                    s.albums[album.libraryId] = album
-                    s.albums[album.externalId] = album.libraryId
-                    s.artists[artist.libraryId] = artist
-                    s.artists[artist.externalId] = artist.libraryId
+                    s.tracks[track.catalogueId] = track
+                    s.tracks[track.externalId] = track.catalogueId
+                    s.albums[album.catalogueId] = album
+                    s.albums[album.externalId] = album.catalogueId
+                    s.artists[artist.catalogueId] = artist
+                    s.artists[artist.externalId] = artist.catalogueId
                 })
             }
 

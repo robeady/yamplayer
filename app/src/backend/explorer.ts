@@ -1,13 +1,21 @@
 import { LibraryStore } from "./library"
 import { Dict } from "../util/types"
-import { Album, AddedTrack, Artist, MatchedSearchResults, Track, AddedAlbum, AddedArtist } from "../model"
+import {
+    Album,
+    CataloguedTrack,
+    Artist,
+    MatchedSearchResults,
+    Track,
+    CataloguedAlbum,
+    CataloguedArtist,
+} from "../model"
 import { forEach } from "lodash"
 import { TrackResolver, Service } from "../services"
 
 export interface LibraryContents {
-    tracks: Dict<AddedTrack>
-    albums: Dict<AddedAlbum>
-    artists: Dict<AddedArtist>
+    tracks: Dict<CataloguedTrack>
+    albums: Dict<CataloguedAlbum>
+    artists: Dict<CataloguedArtist>
 }
 
 export class Explorer {
@@ -31,8 +39,8 @@ export class Explorer {
 
         const addedArtists = await Promise.all(externalArtists.map(a => explorer.library.addArtist(a)))
         const addedAlbums = await Promise.all(externalAlbums.map(a => explorer.library.addAlbum(a)))
-        const artistIdsByExternalId = Object.fromEntries(addedArtists.map(a => [a.externalId, a.libraryId]))
-        const albumIdsByExternalId = Object.fromEntries(addedAlbums.map(a => [a.externalId, a.libraryId]))
+        const artistIdsByExternalId = Object.fromEntries(addedArtists.map(a => [a.externalId, a.catalogueId]))
+        const albumIdsByExternalId = Object.fromEntries(addedAlbums.map(a => [a.externalId, a.catalogueId]))
         await Promise.all(
             externalTracks.map(t =>
                 explorer.library.addTrack({
@@ -64,27 +72,27 @@ export class Explorer {
 
         const tracks: Dict<Track | string> = {}
         forEach(searchResponse.tracks, (track, id) => {
-            tracks[id] = { ...track, libraryId: null, saved: false }
+            tracks[id] = { ...track, catalogueId: null, cataloguedTimestamp: null, savedTimestamp: null }
         })
         const albums: Dict<Album | string> = {}
         forEach(searchResponse.albums, (album, id) => {
-            albums[id] = { ...album, libraryId: null }
+            albums[id] = { ...album, catalogueId: null, cataloguedTimestamp: null }
         })
         const artists: Dict<Artist | string> = {}
         forEach(searchResponse.artists, (artist, id) => {
-            artists[id] = { ...artist, libraryId: null }
+            artists[id] = { ...artist, catalogueId: null, cataloguedTimestamp: null }
         })
         for (const t of matchedTracks) {
-            tracks[t.externalId] = t.libraryId
-            tracks[t.libraryId] = t
+            tracks[t.externalId] = t.catalogueId
+            tracks[t.catalogueId] = t
         }
         for (const a of matchedAlbums) {
-            albums[a.externalId] = a.libraryId
-            albums[a.libraryId] = a
+            albums[a.externalId] = a.catalogueId
+            albums[a.catalogueId] = a
         }
         for (const a of matchedArtists) {
-            artists[a.externalId] = a.libraryId
-            artists[a.libraryId] = a
+            artists[a.externalId] = a.catalogueId
+            artists[a.catalogueId] = a
         }
 
         return { results: searchResponse.results, tracks, albums, artists }
@@ -98,13 +106,15 @@ export class Explorer {
         return this.library.setRating(trackId, newRating)
     }
 
-    async addTrack(externalTrackId: string): Promise<{ track: AddedTrack; album: AddedAlbum; artist: AddedArtist }> {
+    async addTrack(
+        externalTrackId: string,
+    ): Promise<{ track: CataloguedTrack; album: CataloguedAlbum; artist: CataloguedArtist }> {
         const externalTrack = await this.service.lookupTrack(externalTrackId)
         const [matchingTrack = undefined] = await this.library.matchTracks([externalTrack.externalId])
         if (matchingTrack !== undefined) {
             // already in library, just ensure it's marked as saved
             const [track, artist, album] = await Promise.all([
-                this.library.save(matchingTrack.libraryId).then(_ => matchingTrack),
+                this.library.save(matchingTrack.catalogueId).then(_ => matchingTrack),
                 this.library.getArtist(matchingTrack.artistId),
                 this.library.getAlbum(matchingTrack.albumId),
             ])
@@ -116,8 +126,8 @@ export class Explorer {
             ])
             const track = await this.library.addTrack({
                 ...externalTrack,
-                albumId: album.libraryId,
-                artistId: artist.libraryId,
+                albumId: album.catalogueId,
+                artistId: artist.catalogueId,
             })
             return { track, album, artist }
         }

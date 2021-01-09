@@ -58,7 +58,7 @@ function usePlayerStateInternal(props: { player: AudioPlayer }) {
                 props.player.enqueue(trackData)
                 const timestamp = performance.now()
                 update(s => {
-                    s.queue.push({ trackId: track.libraryId ?? track.externalId, buffer: trackData })
+                    s.queue.push({ trackId: track.catalogueId ?? track.externalId, buffer: trackData })
                     if (s.status.state === "stopped") {
                         s.status = { state: "playing", sinceTimestampMillis: timestamp, positionAtTimestamp: 0 }
                     }

@@ -2,7 +2,14 @@ import { MariaDB } from "./database"
 import { Dict } from "../util/types"
 import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
 import * as tables from "./database/tables"
-import { AddedTrack, ExternalTrack, AddedAlbum, ExternalAlbum, AddedArtist, ExternalArtist } from "../model"
+import {
+    CataloguedTrack,
+    ExternalTrack,
+    CataloguedAlbum,
+    ExternalAlbum,
+    CataloguedArtist,
+    ExternalArtist,
+} from "../model"
 import { RowTypeFrom } from "./database/dsl/stages"
 
 export class LibraryStore {
@@ -16,9 +23,9 @@ export class LibraryStore {
     }
 
     async list(): Promise<{
-        tracks: Dict<AddedTrack>
-        albums: Dict<AddedAlbum>
-        artists: Dict<AddedArtist>
+        tracks: Dict<CataloguedTrack>
+        albums: Dict<CataloguedAlbum>
+        artists: Dict<CataloguedArtist>
     }> {
         const { track, artist, album } = tables
         const rows = await this.qb(track)
@@ -26,12 +33,12 @@ export class LibraryStore {
             .on(album.albumId, "=", track.albumId)
             .innerJoin(artist)
             .on(artist.artistId, "=", track.artistId)
-            .where({ track: { saved: true } })
+            .where(track.savedTimestamp, "IS NOT", null)
             .fetch()
 
-        const tracks = {} as Dict<AddedTrack>
-        const artists = {} as Dict<AddedArtist>
-        const albums = {} as Dict<AddedAlbum>
+        const tracks = {} as Dict<CataloguedTrack>
+        const artists = {} as Dict<CataloguedArtist>
+        const albums = {} as Dict<CataloguedAlbum>
         for (const row of rows) {
             tracks[row.track.trackId] = mapTrack(row.track)
             albums[row.album.albumId] = mapAlbum(row.album)
@@ -40,84 +47,90 @@ export class LibraryStore {
         return { tracks, artists, albums }
     }
 
-    async getAlbum(libraryId: string) {
+    async getAlbum(catalogueId: string) {
         return mapAlbum(
             await this.qb(tables.album)
-                .where({ albumId: parseId(libraryId) })
+                .where({ albumId: parseId(catalogueId) })
                 .fetchOne(),
         )
     }
 
-    async getArtist(libraryId: string) {
+    async getArtist(catalogueId: string) {
         return mapArtist(
             await this.qb(tables.artist)
-                .where({ artistId: parseId(libraryId) })
+                .where({ artistId: parseId(catalogueId) })
                 .fetchOne(),
         )
     }
 
-    async save(trackLibraryId: string) {
+    async save(trackcatalogueId: string) {
         await this.qb(tables.track)
-            .where({ trackId: parseId(trackLibraryId) })
-            .update({ saved: true })
+            .where({ trackId: parseId(trackcatalogueId) })
+            .update({ savedTimestamp: this.now() })
             .execute()
     }
 
-    async unsave(trackLibraryId: string) {
+    async unsave(trackcatalogueId: string) {
         await this.qb(tables.track)
-            .where({ trackId: parseId(trackLibraryId) })
-            .update({ saved: false })
+            .where({ trackId: parseId(trackcatalogueId) })
+            .update({ savedTimestamp: null })
             .execute()
     }
 
-    async addTrack(trackPointingToInternalArtistAndAlbum: ExternalTrack): Promise<AddedTrack> {
+    async addTrack(trackPointingToInternalArtistAndAlbum: ExternalTrack): Promise<CataloguedTrack> {
         const now = this.now()
         const result = await this.qb(tables.track)
             .insert({
                 title: trackPointingToInternalArtistAndAlbum.title,
+                trackNumber: trackPointingToInternalArtistAndAlbum.trackNumber,
+                discNumber: trackPointingToInternalArtistAndAlbum.discNumber,
                 externalId: trackPointingToInternalArtistAndAlbum.externalId,
                 albumId: parseId(trackPointingToInternalArtistAndAlbum.albumId),
                 artistId: parseId(trackPointingToInternalArtistAndAlbum.artistId),
-                saved: true,
+                savedTimestamp: now,
                 durationSecs: trackPointingToInternalArtistAndAlbum.durationSecs,
                 isrc: trackPointingToInternalArtistAndAlbum.isrc,
                 rating: trackPointingToInternalArtistAndAlbum.rating,
-                creationTimestamp: now,
+                cataloguedTimestamp: now,
             })
             .execute()
-        const libraryId = result.lastInsertedId.toString()
+        const catalogueId = result.lastInsertedId.toString()
         return {
             ...trackPointingToInternalArtistAndAlbum,
-            libraryId,
-            saved: true,
+            catalogueId,
+            cataloguedTimestamp: now,
+            savedTimestamp: now,
             rating: null,
-            creationTimestamp: now,
         }
     }
 
-    async addAlbum(externalAlbum: ExternalAlbum): Promise<AddedAlbum> {
+    async addAlbum(externalAlbum: ExternalAlbum): Promise<CataloguedAlbum> {
+        const now = this.now()
         const result = await this.qb(tables.album)
             .insert({
                 title: externalAlbum.title,
                 coverImageUrl: externalAlbum.coverImageUrl,
                 releaseDate: externalAlbum.releaseDate,
                 externalId: externalAlbum.externalId,
+                cataloguedTimestamp: now,
             })
             .execute()
-        const libraryId = result.lastInsertedId.toString()
-        return { ...externalAlbum, libraryId }
+        const catalogueId = result.lastInsertedId.toString()
+        return { ...externalAlbum, catalogueId, cataloguedTimestamp: now }
     }
 
-    async addArtist(externalArtist: ExternalArtist): Promise<AddedArtist> {
+    async addArtist(externalArtist: ExternalArtist): Promise<CataloguedArtist> {
+        const now = this.now()
         const result = await this.qb(tables.artist)
             .insert({
                 name: externalArtist.name,
                 imageUrl: externalArtist.imageUrl,
                 externalId: externalArtist.externalId,
+                cataloguedTimestamp: now,
             })
             .execute()
-        const libraryId = result.lastInsertedId.toString()
-        return { ...externalArtist, libraryId }
+        const catalogueId = result.lastInsertedId.toString()
+        return { ...externalArtist, catalogueId, cataloguedTimestamp: now }
     }
 
     async matchTracks(externalTrackIds: string[]) {
@@ -152,37 +165,41 @@ export class LibraryStore {
     }
 }
 
-function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): AddedAlbum {
+function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): CataloguedAlbum {
     return {
-        libraryId: albumFromDb.albumId.toString(),
+        catalogueId: albumFromDb.albumId.toString(),
         externalId: albumFromDb.externalId,
         title: albumFromDb.title,
         coverImageUrl: albumFromDb.coverImageUrl,
         releaseDate: albumFromDb.releaseDate,
+        cataloguedTimestamp: albumFromDb.cataloguedTimestamp,
     }
 }
 
-function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): AddedArtist {
+function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): CataloguedArtist {
     return {
-        libraryId: artistFromDb.artistId.toString(),
+        catalogueId: artistFromDb.artistId.toString(),
         externalId: artistFromDb.externalId,
         name: artistFromDb.name,
         imageUrl: artistFromDb.imageUrl,
+        cataloguedTimestamp: artistFromDb.cataloguedTimestamp,
     }
 }
 
-function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): AddedTrack {
+function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): CataloguedTrack {
     return {
-        libraryId: trackFromDb.trackId.toString(),
+        catalogueId: trackFromDb.trackId.toString(),
         albumId: trackFromDb.albumId.toString(),
         artistId: trackFromDb.artistId.toString(),
         externalId: trackFromDb.externalId,
         title: trackFromDb.title,
+        trackNumber: trackFromDb.trackNumber,
+        discNumber: trackFromDb.discNumber,
         durationSecs: trackFromDb.durationSecs,
         isrc: trackFromDb.isrc,
-        saved: trackFromDb.saved,
         rating: trackFromDb.rating,
-        creationTimestamp: trackFromDb.creationTimestamp,
+        cataloguedTimestamp: trackFromDb.cataloguedTimestamp,
+        savedTimestamp: trackFromDb.savedTimestamp,
     }
 }
 

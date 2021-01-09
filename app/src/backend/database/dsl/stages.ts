@@ -36,7 +36,7 @@ export interface FilterFunction<QueriedTables extends TableDefinitions, ReturnTy
             [TableAlias in keyof QueriedTables]?: Partial<RowTypeFrom<QueriedTables[TableAlias]>>
         },
     ): ReturnType
-    <T>(column: ColumnIn<QueriedTables>, operator: "=", value: T): ReturnType
+    <T>(column: ColumnIn<QueriedTables>, operator: "=" | "IS" | "IS NOT", value: T): ReturnType
 }
 
 // export interface GeneralJoinStage<QueriedTables extends TableDefinitions> {

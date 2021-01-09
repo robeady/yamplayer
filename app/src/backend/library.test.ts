@@ -46,22 +46,22 @@ describe("library store tests", () => {
         const album = await library.addAlbum({ externalId: "2", title: "2", coverImageUrl: "2", releaseDate: "2" })
         const track = await library.addTrack({
             externalId: "1",
-            albumId: album.libraryId,
-            artistId: artist.libraryId,
+            albumId: album.catalogueId,
+            artistId: artist.catalogueId,
             title: "1",
             durationSecs: 0,
             isrc: null,
             rating: 2,
         })
-        expect(track.albumId).toBe(album.libraryId)
-        expect(track.artistId).toBe(artist.libraryId)
+        expect(track.albumId).toBe(album.catalogueId)
+        expect(track.artistId).toBe(artist.catalogueId)
         expect(await library.list()).toStrictEqual({
             tracks: {
-                [track.libraryId]: {
-                    libraryId: track.libraryId,
+                [track.catalogueId]: {
+                    catalogueId: track.catalogueId,
                     externalId: "1",
-                    albumId: album.libraryId,
-                    artistId: artist.libraryId,
+                    albumId: album.catalogueId,
+                    artistId: artist.catalogueId,
                     title: "1",
                     durationSecs: 0,
                     isrc: null,
@@ -71,8 +71,8 @@ describe("library store tests", () => {
                 },
             },
             albums: {
-                [album.libraryId]: {
-                    libraryId: album.libraryId,
+                [album.catalogueId]: {
+                    catalogueId: album.catalogueId,
                     externalId: "2",
                     title: "2",
                     coverImageUrl: "2",
@@ -80,7 +80,7 @@ describe("library store tests", () => {
                 },
             },
             artists: {
-                [artist.libraryId]: { libraryId: artist.libraryId, externalId: "3", name: "3", imageUrl: "3" },
+                [artist.catalogueId]: { catalogueId: artist.catalogueId, externalId: "3", name: "3", imageUrl: "3" },
             },
         })
     })
@@ -93,7 +93,7 @@ describe("library store tests", () => {
     //     )
     //     // TODO there will be a dedicated function for removing from library
     //     await queryBuilder(db)(tables.track).update({ saved: false }).execute()
-    //     await library.add(inserted.track.libraryId, inserted.album.libraryId, inserted.artist.libraryId)
+    //     await library.add(inserted.track.catalogueId, inserted.album.catalogueId, inserted.artist.catalogueId)
     //     // TODO there will be a way to get tracks not saved
     //     const saved = await queryBuilder(db)(tables.track).select(tables.track.saved).fetchOne()
     //     expect(saved).toStrictEqual(true)
@@ -122,9 +122,9 @@ describe("library store tests", () => {
     //         }),
     //     ).toStrictEqual({
     //         results,
-    //         tracks: { [track.externalId]: existing.track.libraryId },
-    //         albums: { [album.externalId]: existing.album.libraryId },
-    //         artists: { [artist.externalId]: existing.artist.libraryId },
+    //         tracks: { [track.externalId]: existing.track.catalogueId },
+    //         albums: { [album.externalId]: existing.album.catalogueId },
+    //         artists: { [artist.externalId]: existing.artist.catalogueId },
     //     })
     // })
 })
