@@ -7,7 +7,9 @@ const identity = <T extends unknown>(t: T) => t
 type ImmerUpdater<State> = (recipe: (draft: Draft<State>) => void) => void
 
 /** Create a state container, given a custom state hook */
-export function createState<Props, State, Dispatch>(useCustomState: (props: Props) => readonly [State, Dispatch]) {
+export function createState<Props, State, Dispatch>(
+    useCustomState: (props: Props) => readonly [State, Dispatch],
+) {
     const StateContext = createSelectableContext<State>(undefined!)
     // TODO: is it safe for this context to be an ordinary context, or are we worried about inconsistencies?
     const DispatchContext = createContext<Dispatch>(undefined!)

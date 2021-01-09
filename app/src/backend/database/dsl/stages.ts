@@ -27,7 +27,11 @@ export interface FilterTableFunction<QueriedTable extends TableDefinition, Retur
         operator: "=" | "<>",
         value: T,
     ): ReturnType
-    <T, C extends PropOf<QueriedTable> & ColumnDefinition<Origin, T>>(column: C, operator: "IN", value: T[]): ReturnType
+    <T, C extends PropOf<QueriedTable> & ColumnDefinition<Origin, T>>(
+        column: C,
+        operator: "IN",
+        value: T[],
+    ): ReturnType
 }
 
 export interface FilterFunction<QueriedTables extends TableDefinitions, ReturnType> {
@@ -86,7 +90,10 @@ export type DefaultSelectionFromSingle<QueriedTable extends TableDefinition> = {
     [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["typeMapper"]
 }
 
-export type KeyByAlias<QueriedTable extends TableDefinition> = Record<PropOf<QueriedTable>["tableAlias"], QueriedTable>
+export type KeyByAlias<QueriedTable extends TableDefinition> = Record<
+    PropOf<QueriedTable>["tableAlias"],
+    QueriedTable
+>
 
 export type AliasIn<Selection> = {
     [K in keyof Selection]: Selection[K] extends ColumnDefinition ? K : never
@@ -135,7 +142,11 @@ export interface JoinedStage<QueriedTables extends TableDefinitions>
 export interface JoinStage<QueriedTables extends TableDefinitions> {
     innerJoin<
         OtherTableOrigin extends Origin,
-        OtherTable extends TableDefinition<OtherTableOrigin, string, Record<string, ColumnDefinition<OtherTableOrigin>>>
+        OtherTable extends TableDefinition<
+            OtherTableOrigin,
+            string,
+            Record<string, ColumnDefinition<OtherTableOrigin>>
+        >
     >(
         otherTable: OtherTable,
     ): OnStage<QueriedTables & KeyByAlias<OtherTable>>
@@ -174,7 +185,9 @@ export interface UpdateDeleteStage<QueriedTable extends TableDefinition>
 }
 
 export interface SelectStage<QueriedTables extends TableDefinitions> {
-    select<Selection extends SelectionFrom<QueriedTables>>(selection: Selection): OrderStage<QueriedTables, Selection>
+    select<Selection extends SelectionFrom<QueriedTables>>(
+        selection: Selection,
+    ): OrderStage<QueriedTables, Selection>
 }
 
 export interface OrderStage<QueriedTables extends TableDefinitions, Selection> extends LimitStage<Selection> {
@@ -184,7 +197,8 @@ export interface OrderStage<QueriedTables extends TableDefinitions, Selection> e
     ): OrderedStage<QueriedTables, Selection>
 }
 
-export interface OrderedStage<QueriedTables extends TableDefinitions, Selection> extends LimitStage<Selection> {
+export interface OrderedStage<QueriedTables extends TableDefinitions, Selection>
+    extends LimitStage<Selection> {
     thenBy(
         column: ColumnIn<QueriedTables> | AliasIn<Selection>,
         direction?: "ASC" | "DESC",

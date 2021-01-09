@@ -5,9 +5,10 @@ interface ColumnType<T, HasDefault, References> extends ColumnDetails<T, HasDefa
     /**
      * Indicates that a column is nullable in the database.
      *
-     * Although SQL lets you omit NULL column values from INSERT statements, using NULL as the default value even if you
-     * didn't specify this when creating the table, this library requires you to opt in to this behaviour by calling
-     * hasDefault(), because it may be desirable to require code to explicitly set nullable fields to null.
+     * Although SQL lets you omit NULL column values from INSERT statements, using NULL as the default value
+     * even if you didn't specify this when creating the table, this library requires you to opt in to this
+     * behaviour by calling hasDefault(), because it may be desirable to require code to explicitly set
+     * nullable fields to null.
      */
     orNull: () => ColumnType<T | null, HasDefault, References>
 
@@ -49,17 +50,21 @@ function nullableTypeMapper<T>(oldMapper: TypeMapper<T>): TypeMapper<T | null> {
     }
 }
 
-export function columnType<T, HasDefault, C extends ColumnDefinition<RealTableOrigin, Exclude<T, null>> | undefined>(
-    typeMapper: TypeMapper<T>,
-    hasDefault: HasDefault,
-    referencingColumn: C,
-): ColumnType<T, HasDefault, C> {
+export function columnType<
+    T,
+    HasDefault,
+    C extends ColumnDefinition<RealTableOrigin, Exclude<T, null>> | undefined
+>(typeMapper: TypeMapper<T>, hasDefault: HasDefault, referencingColumn: C): ColumnType<T, HasDefault, C> {
     return {
         typeMapper,
         hasDefault,
         references: referencingColumn,
         orNull: () =>
-            columnType<T | null, HasDefault, C>(nullableTypeMapper(typeMapper), hasDefault, referencingColumn),
+            columnType<T | null, HasDefault, C>(
+                nullableTypeMapper(typeMapper),
+                hasDefault,
+                referencingColumn,
+            ),
         withDefault: () => columnType<T, true, C>(typeMapper, true, referencingColumn),
         whichReferences: otherColumn =>
             columnType<T, HasDefault, typeof otherColumn>(typeMapper, hasDefault, otherColumn),
@@ -79,9 +84,23 @@ export type TableDefinition<
     TableOrigin extends Origin = Origin,
     TableAlias extends string = string,
     Columns extends {
-        [ColumnName in string]: ColumnDefinition<TableOrigin, unknown, boolean, TableAlias, ColumnName, unknown>
+        [ColumnName in string]: ColumnDefinition<
+            TableOrigin,
+            unknown,
+            boolean,
+            TableAlias,
+            ColumnName,
+            unknown
+        >
     } = {
-        [ColumnName in string]: ColumnDefinition<TableOrigin, unknown, boolean, TableAlias, ColumnName, unknown>
+        [ColumnName in string]: ColumnDefinition<
+            TableOrigin,
+            unknown,
+            boolean,
+            TableAlias,
+            ColumnName,
+            unknown
+        >
     }
 > = Columns
 

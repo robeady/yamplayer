@@ -11,7 +11,14 @@
     "cover_xl": "https://e-cdns-images.dzcdn.net/images/cover/2e018122cb56986277102d2041a592c8/1000x1000-000000-80-0-0.jpg",
     "genre_id": 113,
     "genres": {
-        "data": [{ "id": 113, "name": "Dance", "picture": "https://api.deezer.com/genre/113/image", "type": "genre" }]
+        "data": [
+            {
+                "id": 113,
+                "name": "Dance",
+                "picture": "https://api.deezer.com/genre/113/image",
+                "type": "genre"
+            }
+        ]
     },
     "label": "Parlophone (France)",
     "nb_tracks": 14,

@@ -1,6 +1,6 @@
 const defaultAlphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-/** Create an ID sequence,  */
+/** Create an ID sequence, */
 export function idSequence({ alphabet = defaultAlphabet } = {}) {
     const digits: number[] = []
     const maxDigit = alphabet.length - 1

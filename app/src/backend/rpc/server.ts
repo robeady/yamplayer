@@ -3,8 +3,8 @@ import express from "express"
 /**
  * Creates an express handler for serving a remote object.
  *
- * Expected usage: `app.use(basePath, serve(object))`. The object may also be a promise.
- * Assumes that the express instance has json middleware.
+ * Expected usage: `app.use(basePath, serve(object))`. The object may also be a promise. Assumes that the
+ * express instance has json middleware.
  */
 export function serve<T>(object: T) {
     return express.Router().post("/:method", async (req, res) => {

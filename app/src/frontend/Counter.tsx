@@ -9,7 +9,10 @@ class Counter extends React.Component<{}, { count: number }> {
     }
 
     componentDidMount() {
-        this.interval = window.setInterval(() => this.setState(prevState => ({ count: prevState.count + 1 })), 2000)
+        this.interval = window.setInterval(
+            () => this.setState(prevState => ({ count: prevState.count + 1 })),
+            2000,
+        )
     }
 
     generateString1() {

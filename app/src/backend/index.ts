@@ -36,7 +36,12 @@ async function main(): Promise<AddressInfo> {
     const deezerApiClient = await DeezerApiClient.create({ cacheDirectory: "cache/deezer" })
     const library = new LibraryStore(db)
     const librarySeed = await loadLibrarySeed()
-    const explorer = await Explorer.seeded(library, deezerApiClient, new Resolver(), librarySeed.externalTrackIds)
+    const explorer = await Explorer.seeded(
+        library,
+        deezerApiClient,
+        new Resolver(),
+        librarySeed.externalTrackIds,
+    )
 
     app.use("/library", serve(library))
     app.use("/explorer", serve(explorer))

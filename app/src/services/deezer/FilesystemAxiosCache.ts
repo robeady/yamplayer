@@ -73,7 +73,8 @@ export class FilesystemAxiosCache {
     private getFilePath(key: string): string {
         // bijective sanitization function to avoid erroneous collisions
         // TODO: may need expansion as I hit more URLs
-        const sanitised = key.replace(/_/g, "__").replace(/=/g, "==").replace(/\//g, "_").replace(/:/g, "=") + ".json"
+        const sanitised =
+            key.replace(/_/g, "__").replace(/=/g, "==").replace(/\//g, "_").replace(/:/g, "=") + ".json"
         return path.join(this.cacheDirectory, sanitised)
     }
 }

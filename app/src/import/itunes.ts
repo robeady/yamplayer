@@ -13,8 +13,8 @@ interface ItunesTrack {
 }
 
 /**
- * Takes an itunes XML file and produces a list of tracks etc from it.
- * These will need to be looked up in some music service to actually play the tracks.
+ * Takes an itunes XML file and produces a list of tracks etc from it. These will need to be looked up in
+ * some music service to actually play the tracks.
  */
 function parseItunesXml(xmlContents: string): ItunesLibraryContents {
     const parsed = parse(xmlContents) as any

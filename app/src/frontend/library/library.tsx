@@ -12,65 +12,67 @@ interface ExplorerState {
     artists: Dict<Artist | string>
 }
 
-export const { Provider: ExplorerProvider, useState: useExplorerState, useDispatch: useExplorerDispatch } = createState(
-    (props: { backendUrl: string }) => {
-        const [state, setState] = useState<ExplorerState>({
-            searchResultsByQuery: {},
-            tracks: {},
-            albums: {},
-            artists: {},
-        })
-        const dispatch = useMemo(() => {
-            const update = immerise(setState)
-            const explorerClient = remote<Explorer>(`${props.backendUrl}/explorer`)
+export const {
+    Provider: ExplorerProvider,
+    useState: useExplorerState,
+    useDispatch: useExplorerDispatch,
+} = createState((props: { backendUrl: string }) => {
+    const [state, setState] = useState<ExplorerState>({
+        searchResultsByQuery: {},
+        tracks: {},
+        albums: {},
+        artists: {},
+    })
+    const dispatch = useMemo(() => {
+        const update = immerise(setState)
+        const explorerClient = remote<Explorer>(`${props.backendUrl}/explorer`)
 
-            const addToLibrary = async (externalTrackId: string) => {
-                const { track, album, artist } = await explorerClient.addTrack(externalTrackId)
-                update(s => {
-                    s.tracks[track.catalogueId] = track
-                    s.tracks[track.externalId] = track.catalogueId
-                    s.albums[album.catalogueId] = album
-                    s.albums[album.externalId] = album.catalogueId
-                    s.artists[artist.catalogueId] = artist
-                    s.artists[artist.externalId] = artist.catalogueId
-                })
-            }
-
-            const unsave = async (trackId: string) => {
-                await explorerClient.unsave(trackId)
-                update(s => {
-                    const track = s.tracks[trackId]
-                    if (typeof track !== "string") {
-                        track.saved = false
-                    }
-                })
-            }
-
-            const setTrackRating = async (trackId: string, newRating: number | null) => {
-                console.log(`setting rating of track ${trackId} to ${newRating}`)
-                await explorerClient.setTrackRating(trackId, newRating)
-                update(s => {
-                    const track = s.tracks[trackId]
-                    if (typeof track !== "string") {
-                        track.rating = newRating
-                    }
-                })
-            }
-
-            return { update, addToLibrary, unsave, setTrackRating, explorerClient }
-        }, [props.backendUrl])
-
-        useEffect(() => {
-            dispatch.explorerClient.getLibrary().then(r => {
-                console.log(JSON.stringify(r))
-                // TODO: should we be populating external ID pointers too?
-                setState(s => ({ ...s, ...r }))
+        const addToLibrary = async (externalTrackId: string) => {
+            const { track, album, artist } = await explorerClient.addTrack(externalTrackId)
+            update(s => {
+                s.tracks[track.catalogueId] = track
+                s.tracks[track.externalId] = track.catalogueId
+                s.albums[album.catalogueId] = album
+                s.albums[album.externalId] = album.catalogueId
+                s.artists[artist.catalogueId] = artist
+                s.artists[artist.externalId] = artist.catalogueId
             })
-        }, [dispatch])
+        }
 
-        return [state, dispatch]
-    },
-)
+        const unsave = async (trackId: string) => {
+            await explorerClient.unsave(trackId)
+            update(s => {
+                const track = s.tracks[trackId]
+                if (typeof track !== "string") {
+                    track.saved = false
+                }
+            })
+        }
+
+        const setTrackRating = async (trackId: string, newRating: number | null) => {
+            console.log(`setting rating of track ${trackId} to ${newRating}`)
+            await explorerClient.setTrackRating(trackId, newRating)
+            update(s => {
+                const track = s.tracks[trackId]
+                if (typeof track !== "string") {
+                    track.rating = newRating
+                }
+            })
+        }
+
+        return { update, addToLibrary, unsave, setTrackRating, explorerClient }
+    }, [props.backendUrl])
+
+    useEffect(() => {
+        dispatch.explorerClient.getLibrary().then(r => {
+            console.log(JSON.stringify(r))
+            // TODO: should we be populating external ID pointers too?
+            setState(s => ({ ...s, ...r }))
+        })
+    }, [dispatch])
+
+    return [state, dispatch]
+})
 
 export function resolveCanonical<T>(dict: Dict<T | string>, id: string): T {
     let r: string | T = id

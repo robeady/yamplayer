@@ -2,7 +2,7 @@ export type Dict<T = unknown> = {
     [key: string]: T
 }
 
-/** a floating point number between 0 and 1 inclusive */
+/** A floating point number between 0 and 1 inclusive */
 export type Fraction = number
 
 /** A unix timestamp, in seconds since the Unix epoch */

@@ -136,21 +136,27 @@ export class LibraryStore {
     async matchTracks(externalTrackIds: string[]) {
         return externalTrackIds.length === 0
             ? []
-            : (await this.qb(tables.track).where(tables.track.externalId, "IN", externalTrackIds).fetch()).map(mapTrack)
+            : (
+                  await this.qb(tables.track).where(tables.track.externalId, "IN", externalTrackIds).fetch()
+              ).map(mapTrack)
     }
 
     async matchAlbums(externalAlbumIds: string[]) {
         return externalAlbumIds.length === 0
             ? []
-            : (await this.qb(tables.album).where(tables.album.externalId, "IN", externalAlbumIds).fetch()).map(mapAlbum)
+            : (
+                  await this.qb(tables.album).where(tables.album.externalId, "IN", externalAlbumIds).fetch()
+              ).map(mapAlbum)
     }
 
     async matchArtists(externalArtistIds: string[]) {
         return externalArtistIds.length === 0
             ? []
-            : (await this.qb(tables.artist).where(tables.artist.externalId, "IN", externalArtistIds).fetch()).map(
-                  mapArtist,
-              )
+            : (
+                  await this.qb(tables.artist)
+                      .where(tables.artist.externalId, "IN", externalArtistIds)
+                      .fetch()
+              ).map(mapArtist)
     }
 
     async setRating(trackId: string, rating: number | null): Promise<void> {

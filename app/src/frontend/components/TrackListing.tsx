@@ -74,7 +74,11 @@ function CroppedStar(props: { className: string }) {
     return <Star className={props.className} viewBox={"4 4 16 16"} width={16} height={16} />
 }
 
-function TrackRating(props: { enabled: boolean; rating: number | null; onRate: (newRating: number) => void }) {
+function TrackRating(props: {
+    enabled: boolean
+    rating: number | null
+    onRate: (newRating: number) => void
+}) {
     return (
         <div className={ratingClass}>
             {props.enabled && (

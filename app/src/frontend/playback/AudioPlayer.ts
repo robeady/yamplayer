@@ -47,8 +47,10 @@ export class AudioPlayer {
         }
     }
 
-    /** Pauses playback and returns the position in secs at which playback is paused,
-     * or if nothing is playing does nothing and returns null */
+    /**
+     * Pauses playback and returns the position in secs at which playback is paused, or if nothing is playing
+     * does nothing and returns null
+     */
     pause(): number | null {
         if (this.howl) {
             this.howl.pause()
@@ -58,8 +60,10 @@ export class AudioPlayer {
         }
     }
 
-    /** Resumes playback and returns the position in secs at which playback resumed from,
-     * or if nothing is playing does nothing and returns false */
+    /**
+     * Resumes playback and returns the position in secs at which playback resumed from, or if nothing is
+     * playing does nothing and returns false
+     */
     unpause() {
         if (this.howl) {
             const position = this.howl.seek() as number
@@ -84,8 +88,10 @@ export class AudioPlayer {
         }
     }
 
-    /** Seeks the playing track to the given offset in seconds and returns true,
-     * or if nothing is playing does nothing and returns false */
+    /**
+     * Seeks the playing track to the given offset in seconds and returns true, or if nothing is playing does
+     * nothing and returns false
+     */
     seekTo(offsetSecs: number) {
         if (this.howl) {
             this.howl.seek(offsetSecs)
@@ -95,7 +101,7 @@ export class AudioPlayer {
         }
     }
 
-    /** get the current volume */
+    /** Get the current volume */
     volume() {
         return this._volume
     }

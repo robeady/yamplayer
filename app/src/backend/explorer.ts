@@ -31,11 +31,17 @@ export class Explorer {
 
         const explorer = new Explorer(library, service, resolver)
 
-        const externalTracks = await Promise.all(externalTrackIds.map(tid => explorer.service.lookupTrack(tid)))
+        const externalTracks = await Promise.all(
+            externalTrackIds.map(tid => explorer.service.lookupTrack(tid)),
+        )
         const externalAlbumIds = new Set(externalTracks.map(t => t.albumId))
         const externalArtistIds = new Set(externalTracks.map(t => t.artistId))
-        const externalAlbums = await Promise.all([...externalAlbumIds].map(aid => explorer.service.lookupAlbum(aid)))
-        const externalArtists = await Promise.all([...externalArtistIds].map(aid => explorer.service.lookupArtist(aid)))
+        const externalAlbums = await Promise.all(
+            [...externalAlbumIds].map(aid => explorer.service.lookupAlbum(aid)),
+        )
+        const externalArtists = await Promise.all(
+            [...externalArtistIds].map(aid => explorer.service.lookupArtist(aid)),
+        )
 
         const addedArtists = await Promise.all(externalArtists.map(a => explorer.library.addArtist(a)))
         const addedAlbums = await Promise.all(externalAlbums.map(a => explorer.library.addAlbum(a)))

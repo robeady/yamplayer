@@ -23,7 +23,11 @@ interface Renderable {
     render: () => { sql: string }
 }
 
-function expectExtraSql<T extends Renderable>(initial: T, delta: (initial: T) => Renderable, expectedExtraSql: string) {
+function expectExtraSql<T extends Renderable>(
+    initial: T,
+    delta: (initial: T) => Renderable,
+    expectedExtraSql: string,
+) {
     const a = initial.render().sql
     const b = delta(initial).render().sql
     expect(b.indexOf(a)).toBe(0)
@@ -41,7 +45,9 @@ test("query table with default selection", () => {
 })
 
 test("join", () => {
-    expect(qb(exampleTable).innerJoin(exampleTable2).on(exampleTable.col1, "=", exampleTable2.col3).render().sql).toBe(
+    expect(
+        qb(exampleTable).innerJoin(exampleTable2).on(exampleTable.col1, "=", exampleTable2.col3).render().sql,
+    ).toBe(
         "SELECT `foo`.`col1`, `foo`.`col2`, `bar`.`col3` FROM `foo` AS `foo` INNER JOIN `bar` AS `bar` ON (`foo`.`col1` = `bar`.`col3`)",
     )
 })
@@ -111,7 +117,10 @@ describe("select", () => {
             .select({ c1: exampleTable.col1, foo: { bar: { baz: exampleTable } } })
             .render()
         expect(r.sql).toBe("SELECT `foo`.`col1` AS `c1`, `foo`.`col1`, `foo`.`col2` FROM `foo` AS `foo`")
-        expect(r.mapRow(["a", "b", 42])).toStrictEqual({ c1: "a", foo: { bar: { baz: { col1: "b", col2: 42 } } } })
+        expect(r.mapRow(["a", "b", 42])).toStrictEqual({
+            c1: "a",
+            foo: { bar: { baz: { col1: "b", col2: 42 } } },
+        })
     })
 })
 
@@ -146,14 +155,18 @@ describe("fetching", () => {
             dialect: new MySqlDialect(),
             query: () => Promise.resolve([]),
         } as any)
-        await expect(queryBuilderReturningNoRows(exampleTable).fetchOne()).rejects.toThrow("Expected 1 row, got 0")
+        await expect(queryBuilderReturningNoRows(exampleTable).fetchOne()).rejects.toThrow(
+            "Expected 1 row, got 0",
+        )
     })
     test("fetchOne throws on >1 row", () => {
         const queryBuilderReturningMultipleRows = queryBuilder({
             dialect: new MySqlDialect(),
             query: () => Promise.resolve([{}, {}, {}]),
         } as any)
-        expect(queryBuilderReturningMultipleRows(exampleTable).fetchOne()).rejects.toThrow("Expected 1 row, got 3")
+        expect(queryBuilderReturningMultipleRows(exampleTable).fetchOne()).rejects.toThrow(
+            "Expected 1 row, got 3",
+        )
     })
 })
 

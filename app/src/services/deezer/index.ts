@@ -16,7 +16,10 @@ type ArtistResponse = typeof import("./artistResponse.json") & MaybeEntityNotFou
 export class DeezerApiClient implements Service {
     private constructor(private apiBaseUrl: string, private axios: AxiosInstance) {}
 
-    static async create({ apiBaseUrl = "https://api.deezer.com", cacheDirectory = null as string | null } = {}) {
+    static async create({
+        apiBaseUrl = "https://api.deezer.com",
+        cacheDirectory = null as string | null,
+    } = {}) {
         console.log("cache dir " + cacheDirectory)
         return new DeezerApiClient(
             apiBaseUrl,
@@ -115,7 +118,11 @@ export class DeezerApiClient implements Service {
             }
         }
         return {
-            results: { externalTrackIds: resultExternalTrackIds, externalAlbumIds: [], externalArtistIds: [] },
+            results: {
+                externalTrackIds: resultExternalTrackIds,
+                externalAlbumIds: [],
+                externalArtistIds: [],
+            },
             tracks,
             albums,
             artists,

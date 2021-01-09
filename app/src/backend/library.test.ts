@@ -43,7 +43,12 @@ describe("library store tests", () => {
 
     test("can list added tracks", async () => {
         const artist = await library.addArtist({ externalId: "3", name: "3", imageUrl: "3" })
-        const album = await library.addAlbum({ externalId: "2", title: "2", coverImageUrl: "2", releaseDate: "2" })
+        const album = await library.addAlbum({
+            externalId: "2",
+            title: "2",
+            coverImageUrl: "2",
+            releaseDate: "2",
+        })
         const track = await library.addTrack({
             externalId: "1",
             albumId: album.catalogueId,
@@ -80,7 +85,12 @@ describe("library store tests", () => {
                 },
             },
             artists: {
-                [artist.catalogueId]: { catalogueId: artist.catalogueId, externalId: "3", name: "3", imageUrl: "3" },
+                [artist.catalogueId]: {
+                    catalogueId: artist.catalogueId,
+                    externalId: "3",
+                    name: "3",
+                    imageUrl: "3",
+                },
             },
         })
     })

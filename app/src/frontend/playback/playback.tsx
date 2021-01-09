@@ -60,7 +60,11 @@ function usePlayerStateInternal(props: { player: AudioPlayer }) {
                 update(s => {
                     s.queue.push({ trackId: track.catalogueId ?? track.externalId, buffer: trackData })
                     if (s.status.state === "stopped") {
-                        s.status = { state: "playing", sinceTimestampMillis: timestamp, positionAtTimestamp: 0 }
+                        s.status = {
+                            state: "playing",
+                            sinceTimestampMillis: timestamp,
+                            positionAtTimestamp: 0,
+                        }
                     }
                 })
             },
@@ -92,7 +96,11 @@ function usePlayerStateInternal(props: { player: AudioPlayer }) {
                     if (s.queue.length === 0) {
                         s.status = { state: "stopped" }
                     } else {
-                        s.status = { state: "playing", sinceTimestampMillis: timestamp, positionAtTimestamp: 0 }
+                        s.status = {
+                            state: "playing",
+                            sinceTimestampMillis: timestamp,
+                            positionAtTimestamp: 0,
+                        }
                     }
                 })
             },
@@ -110,6 +118,8 @@ function usePlayerStateInternal(props: { player: AudioPlayer }) {
     return [state, actions] as const
 }
 
-export const { useState: usePlayerState, useDispatch: usePlayerDispatch, Provider: PlaybackProvider } = createState(
-    usePlayerStateInternal,
-)
+export const {
+    useState: usePlayerState,
+    useDispatch: usePlayerDispatch,
+    Provider: PlaybackProvider,
+} = createState(usePlayerStateInternal)

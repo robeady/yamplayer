@@ -30,8 +30,12 @@ function PlayingTrack() {
     const playingTrack = useExplorerState(s =>
         nowPlayingTrackId === undefined ? undefined : resolveCanonical(s.tracks, nowPlayingTrackId),
     )
-    const playingAlbum = useExplorerState(s => playingTrack && resolveCanonical(s.albums, playingTrack.albumId))
-    const playingArtist = useExplorerState(s => playingTrack && resolveCanonical(s.artists, playingTrack.artistId))
+    const playingAlbum = useExplorerState(
+        s => playingTrack && resolveCanonical(s.albums, playingTrack.albumId),
+    )
+    const playingArtist = useExplorerState(
+        s => playingTrack && resolveCanonical(s.artists, playingTrack.artistId),
+    )
 
     if (nowPlayingTrackId === undefined) {
         return <span>We are {status.state}</span>
