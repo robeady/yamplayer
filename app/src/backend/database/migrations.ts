@@ -6,8 +6,8 @@ const migrationTablesSetup = sql`
     CREATE TABLE IF NOT EXISTS migrations (
         schemaVersion INT NOT NULL,
         executionTimestamp BIGINT NOT NULL,
-        sqlForwards MEDIUMTEXT,
-        sqlBackwards MEDIUMTEXT
+        sqlForwards MEDIUMTEXT NOT NULL,
+        sqlBackwards MEDIUMTEXT NOT NULL
     );
 `
 
@@ -18,7 +18,7 @@ export interface DatabaseMigration {
 
 export async function applyMigrations(migrations: DatabaseMigration[], db: DatabaseHandle): Promise<void> {
     return db.inTransaction(async conn => {
-        await conn.query(migrationTablesSetup)
+        await conn.execute(migrationTablesSetup)
         // take an exclusive lock,
         // preventing other instances from performing schema migrations at the same time as we are
         const r = await conn.query(sql`SELECT MAX(schemaVersion) FROM migrations FOR UPDATE`)
