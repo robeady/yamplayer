@@ -32,9 +32,9 @@ async function main(): Promise<AddressInfo> {
     const app = express()
     app.use(express.json())
 
-    const db = await MariaDB.connect()
+    const db = MariaDB.connect()
     const deezerApiClient = await DeezerApiClient.create({ cacheDirectory: "cache/deezer" })
-    const library = new LibraryStore(db)
+    const library = await LibraryStore.setup(db)
     const librarySeed = await loadLibrarySeed()
     const explorer = await Explorer.seeded(
         library,

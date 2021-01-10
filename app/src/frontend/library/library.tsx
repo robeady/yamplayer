@@ -44,7 +44,7 @@ export const {
             update(s => {
                 const track = s.tracks[trackId]
                 if (typeof track !== "string") {
-                    track.saved = false
+                    track.savedTimestamp = null
                 }
             })
         }

@@ -196,7 +196,7 @@ function PlayCircle(props: { displayed: boolean; size: number }) {
 function SaveButton(props: { trackId: string }) {
     const track = useExplorerState(s => resolveCanonical(s.tracks, props.trackId))
     const { addToLibrary, unsave } = useExplorerDispatch()
-    if (track.saved) {
+    if (track.savedTimestamp !== null) {
         return <button onClick={() => unsave(track.catalogueId!)}>-</button>
     } else {
         // TODO: support re-saving

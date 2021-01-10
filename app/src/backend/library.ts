@@ -11,11 +11,18 @@ import {
     ExternalArtist,
 } from "../model"
 import { RowTypeFrom } from "./database/dsl/stages"
+import { applyMigrations } from "./database/migrations"
+import { yamplayerMigrations } from "./database/schema"
 
 export class LibraryStore {
     qb: QueryBuilder
     constructor(database: MariaDB, private now: () => number = Date.now) {
         this.qb = queryBuilder(database)
+    }
+
+    static async setup(database: MariaDB): Promise<LibraryStore> {
+        await applyMigrations(yamplayerMigrations, database)
+        return new LibraryStore(database)
     }
 
     async clear(): Promise<void> {

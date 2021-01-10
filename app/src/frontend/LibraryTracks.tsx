@@ -5,7 +5,7 @@ import { useExplorerState } from "./library/library"
 export function LibraryTracks() {
     const allTracks = useExplorerState(s => s.tracks)
     const libraryTrackIds = Object.entries(allTracks)
-        .filter(([_, track]) => typeof track !== "string" && track.saved)
+        .filter(([_, track]) => typeof track !== "string" && track.savedTimestamp !== null)
         .map(([id]) => id)
     return (
         <div>

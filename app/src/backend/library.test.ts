@@ -24,7 +24,7 @@ describe("library store tests", () => {
             })
             .withWaitStrategy(Wait.forHealthCheck())
             .start()
-        db = await MariaDB.connect(container.getMappedPort(3306))
+        db = MariaDB.connect(container.getMappedPort(3306))
         library = new LibraryStore(db, () => 0)
     })
 
@@ -54,6 +54,8 @@ describe("library store tests", () => {
             albumId: album.catalogueId,
             artistId: artist.catalogueId,
             title: "1",
+            trackNumber: 1,
+            discNumber: 1,
             durationSecs: 0,
             isrc: null,
             rating: 2,
@@ -68,6 +70,8 @@ describe("library store tests", () => {
                     albumId: album.catalogueId,
                     artistId: artist.catalogueId,
                     title: "1",
+                    trackNumber: 1,
+                    discNumber: 1,
                     durationSecs: 0,
                     isrc: null,
                     saved: true,

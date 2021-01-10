@@ -39,22 +39,27 @@ export function queryBuilder(databaseHandle: DatabaseHandle): QueryBuilder {
     }
 }
 
+const errorNoDatabase = () => {
+    throw Error("no database")
+}
+
 export function noDatabaseHandle(dialect: SqlDialect): DatabaseHandle {
     return {
         dialect,
-        execute: () => {
-            throw Error("no database")
-        },
-        query: () => {
-            throw Error("no database")
-        },
+        execute: errorNoDatabase,
+        query: errorNoDatabase,
+        inTransaction: errorNoDatabase,
     }
 }
 
-export interface DatabaseHandle {
+export interface DatabaseConnectionHandle {
+    execute(sql: string, values?: unknown[]): Promise<ExecResult>
+    query(sql: string, values?: unknown[]): Promise<unknown[][]>
+}
+
+export interface DatabaseHandle extends DatabaseConnectionHandle {
     dialect: SqlDialect
-    execute(sql: string): Promise<ExecResult>
-    query(sql: string): Promise<unknown[][]>
+    inTransaction<T>(f: (connection: DatabaseConnectionHandle) => Promise<T>): Promise<T>
 }
 
 interface OrderLimitOffset {
@@ -541,17 +546,17 @@ function parseFilterArgs(defaultSelection: any, args: {}[]): Filter {
     }
 }
 
-function parseWhereClause(left: {}, operator: {}, right: {}): FilterElement {
+function parseWhereClause(left: unknown, operator: unknown, right: unknown): FilterElement {
     if (!sqlOperators.includes(operator as any)) throw Error("unsupported operator " + operator)
     return {
         type: "element",
         left:
-            COLUMN_DEFINITION in left
+            typeof left === "object" && left !== null && COLUMN_DEFINITION in left
                 ? { type: "column", definition: left as ColumnDefinition }
                 : { type: "literal", literal: left },
         op: operator as SqlOperator,
         right:
-            COLUMN_DEFINITION in right
+            typeof right === "object" && right !== null && COLUMN_DEFINITION in right
                 ? { type: "column", definition: right as ColumnDefinition }
                 : { type: "literal", literal: right },
     }
@@ -737,6 +742,10 @@ class Renderer {
                 return "<>"
             case "IN":
                 return "IN"
+            case "IS":
+                return "IS"
+            case "IS NOT":
+                return "IS NOT"
             default:
                 unreachable(op)
         }

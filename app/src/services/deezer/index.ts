@@ -47,6 +47,8 @@ export class DeezerApiClient implements Service {
             albumId: "dz:" + track.album.id,
             artistId: "dz:" + track.artist.id,
             title: track.title,
+            trackNumber: track.track_position,
+            discNumber: track.disk_number,
             durationSecs: track.duration,
             isrc: track.isrc || null, // never observed this to be absent but this seems a safe approach
             rating: null,
@@ -102,6 +104,8 @@ export class DeezerApiClient implements Service {
                 artistId: externalArtistId,
                 durationSecs: item.duration,
                 title: item.title,
+                trackNumber: null,
+                discNumber: null,
                 isrc: null,
                 rating: null,
             }
