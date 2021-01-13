@@ -18,7 +18,7 @@ export interface ItunesTrack {
  */
 export function parseItunesLibraryXml(xmlContents: string): ItunesLibraryContents {
     const parsed = parse(xmlContents) as any
-    const tracks = Object.entries(parsed["Tracks"]).map(([id, data]: [string, any]) => {
+    const tracks = Object.entries(parsed["Tracks"]).map(([_id, data]: [string, any]) => {
         return {
             title: data["Name"],
             artistName: data["Artist"],

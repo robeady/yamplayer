@@ -1,12 +1,11 @@
 import express from "express"
-import searchResponse from "./searchResponse.json"
-import trackResponse from "./trackResponse.json"
-import albumResponse from "./albumResponse.json"
-import artistResponse from "./artistResponse.json"
 import { Server } from "http"
 import { AddressInfo } from "net"
-import globalAxios from "axios"
+import albumResponse from "./albumResponse.json"
+import artistResponse from "./artistResponse.json"
 import { DeezerApiClient } from "./index"
+import searchResponse from "./searchResponse.json"
+import trackResponse from "./trackResponse.json"
 
 let mockDeezerServer: Server
 let deezerClient: DeezerApiClient
@@ -43,6 +42,8 @@ test("fetch search results", async () => {
         albumId: "dz:127270232",
         artistId: "dz:13",
         title: "Darkness",
+        discNumber: null,
+        trackNumber: null,
         isrc: null,
         durationSecs: 337,
         rating: null,
@@ -72,6 +73,8 @@ test("fetch track", async () => {
         durationSecs: 320,
         isrc: "GBDUW0000053",
         rating: null,
+        discNumber: 1,
+        trackNumber: 1,
     })
 })
 

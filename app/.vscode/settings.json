@@ -15,6 +15,7 @@
         "activityBar.background": "#ECD",
         "titleBar.activeBackground": "#ECD",
         "titleBar.inactiveBackground": "#ECD",
-        "statusBar.background": "#ECD",
-    }
+        "statusBar.background": "#ECD"
+    },
+    "files.eol": "\n"
 }

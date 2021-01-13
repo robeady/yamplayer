@@ -14,7 +14,7 @@ interface LibrarySeedFile {
     externalTrackIds: string[]
 }
 
-async function loadLibrarySeed(): Promise<LibrarySeedFile> {
+async function _loadLibrarySeed(): Promise<LibrarySeedFile> {
     const seedFileName = "librarySeed.json"
     try {
         const seedFile = await fs.readFile(seedFileName)

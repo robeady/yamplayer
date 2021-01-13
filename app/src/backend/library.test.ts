@@ -1,7 +1,7 @@
-import { GenericContainer, StartedTestContainer, Wait } from "testcontainers"
 import { Duration, TemporalUnit } from "node-duration"
-import { LibraryStore } from "./library"
+import { GenericContainer, StartedTestContainer, Wait } from "testcontainers"
 import { MariaDB } from "./database"
+import { LibraryStore } from "./library"
 
 jest.setTimeout(30000)
 
@@ -25,7 +25,7 @@ describe("library store tests", () => {
             .withWaitStrategy(Wait.forHealthCheck())
             .start()
         db = MariaDB.connect(container.getMappedPort(3306))
-        library = new LibraryStore(db, () => 0)
+        library = await LibraryStore.setup(db, () => 0)
     })
 
     afterEach(async () => {
@@ -74,14 +74,15 @@ describe("library store tests", () => {
                     discNumber: 1,
                     durationSecs: 0,
                     isrc: null,
-                    saved: true,
+                    savedTimestamp: 0,
                     rating: 2,
-                    creationTimestamp: 0,
+                    cataloguedTimestamp: 0,
                 },
             },
             albums: {
                 [album.catalogueId]: {
                     catalogueId: album.catalogueId,
+                    cataloguedTimestamp: 0,
                     externalId: "2",
                     title: "2",
                     coverImageUrl: "2",
@@ -91,6 +92,7 @@ describe("library store tests", () => {
             artists: {
                 [artist.catalogueId]: {
                     catalogueId: artist.catalogueId,
+                    cataloguedTimestamp: 0,
                     externalId: "3",
                     name: "3",
                     imageUrl: "3",

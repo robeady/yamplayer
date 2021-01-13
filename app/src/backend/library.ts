@@ -1,28 +1,28 @@
-import { MariaDB } from "./database"
-import { Dict } from "../util/types"
-import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
-import * as tables from "./database/tables"
 import {
-    CataloguedTrack,
-    ExternalTrack,
     CataloguedAlbum,
-    ExternalAlbum,
     CataloguedArtist,
+    CataloguedTrack,
+    ExternalAlbum,
     ExternalArtist,
+    ExternalTrack,
 } from "../model"
+import { Dict } from "../util/types"
+import { MariaDB } from "./database"
+import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
 import { RowTypeFrom } from "./database/dsl/stages"
 import { applyMigrations } from "./database/migrations"
 import { yamplayerMigrations } from "./database/schema"
+import * as tables from "./database/tables"
 
 export class LibraryStore {
     qb: QueryBuilder
-    constructor(database: MariaDB, private now: () => number = Date.now) {
+    private constructor(database: MariaDB, private now: () => number = Date.now) {
         this.qb = queryBuilder(database)
     }
 
-    static async setup(database: MariaDB): Promise<LibraryStore> {
+    static async setup(database: MariaDB, now: () => number = Date.now): Promise<LibraryStore> {
         await applyMigrations(yamplayerMigrations, database)
-        return new LibraryStore(database)
+        return new LibraryStore(database, now)
     }
 
     async clear(): Promise<void> {
