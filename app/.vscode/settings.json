@@ -1,12 +1,20 @@
 {
     "editor.formatOnSave": true,
+    "[typescript]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        }
+    },
+    "[typescriptreact]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        }
+    },
     "typescript.tsdk": "node_modules\\typescript\\lib",
     "workbench.colorCustomizations": {
-        "activityBar.background": "#F4C2DB",
-        "activityBar.foreground": "#490829",
-        "titleBar.activeBackground": "#F4C2DB",
-        "titleBar.activeForeground": "#490829",
-        "statusBar.background": "#F4C2DB",
-        "statusBar.foreground": "#490829"
+        "activityBar.background": "#ECD",
+        "titleBar.activeBackground": "#ECD",
+        "titleBar.inactiveBackground": "#ECD",
+        "statusBar.background": "#ECD",
     }
 }

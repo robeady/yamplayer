@@ -1,8 +1,9 @@
-import axios, { AxiosInstance } from "axios"
-import { SearchResults, ExternalTrack, ExternalArtist, ExternalAlbum } from "../../model"
-import { Dict } from "../../util/types"
-import { Service } from "../index"
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios"
 import { setupCache } from "axios-cache-adapter"
+import Bottleneck from "bottleneck"
+import { ExternalAlbum, ExternalArtist, ExternalTrack, SearchResults } from "../../model"
+import { Dict } from "../../util/types"
+import { Service, TrackSearchQuery } from "../index"
 import { FilesystemAxiosCache } from "./FilesystemAxiosCache"
 
 type SearchResponse = typeof import("./searchResponse.json")
@@ -14,7 +15,24 @@ type AlbumResponse = typeof import("./albumResponse.json") & MaybeEntityNotFound
 type ArtistResponse = typeof import("./artistResponse.json") & MaybeEntityNotFoundResponse
 
 export class DeezerApiClient implements Service {
-    private constructor(private apiBaseUrl: string, private axios: AxiosInstance) {}
+    private httpGet: <T>(path: string, config?: AxiosRequestConfig) => Promise<AxiosResponse<T>>
+
+    private constructor(apiBaseUrl: string, axios: AxiosInstance) {
+        const rateLimiter = new Bottleneck({
+            reservoir: 9,
+            reservoirRefreshAmount: 9,
+            reservoirIncreaseMaximum: 9,
+            reservoirRefreshInterval: 1000, // 10 requests per second is deezer's limit
+            maxConcurrent: 3,
+            minTime: 100, // at least 100ms between requests after 3 concurrent requests are launched
+        })
+        this.httpGet = <T>(path: string, config?: AxiosRequestConfig) =>
+            rateLimiter.schedule(() => {
+                const url = `${apiBaseUrl}/${path}`
+                console.log("sending GET request " + JSON.stringify({ ...config, path }))
+                return axios.get<T>(url, config)
+            })
+    }
 
     static async create({
         apiBaseUrl = "https://api.deezer.com",
@@ -30,6 +48,9 @@ export class DeezerApiClient implements Service {
                         : setupCache({
                               maxAge: Number.POSITIVE_INFINITY,
                               store: await FilesystemAxiosCache.open(cacheDirectory),
+                              // debug: true,
+                              clearOnError: false,
+                              exclude: { query: false },
                           }).adapter,
             }),
         )
@@ -37,7 +58,7 @@ export class DeezerApiClient implements Service {
 
     async lookupTrack(id: string): Promise<ExternalTrack> {
         const rawId = stripDeezerPrefix(id)
-        const response = await this.axios.get<TrackResponse>(`${this.apiBaseUrl}/track/${rawId}`)
+        const response = await this.httpGet<TrackResponse>(`track/${rawId}`)
         if (response.data.error) {
             throw Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
         }
@@ -57,7 +78,7 @@ export class DeezerApiClient implements Service {
 
     async lookupAlbum(id: string): Promise<ExternalAlbum> {
         const rawId = stripDeezerPrefix(id)
-        const response = await this.axios.get<AlbumResponse>(`${this.apiBaseUrl}/album/${rawId}`)
+        const response = await this.httpGet<AlbumResponse>(`album/${rawId}`)
         if (response.data.error) {
             throw Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
         }
@@ -72,7 +93,7 @@ export class DeezerApiClient implements Service {
 
     async lookupArtist(id: string): Promise<ExternalArtist> {
         const rawId = stripDeezerPrefix(id)
-        const response = await this.axios.get<ArtistResponse>(`${this.apiBaseUrl}/artist/${rawId}`)
+        const response = await this.httpGet<ArtistResponse>(`artist/${rawId}`)
         if (response.data.error) {
             throw Error(`artist ${id} not found: ${JSON.stringify(response.data.error)}`)
         }
@@ -84,8 +105,18 @@ export class DeezerApiClient implements Service {
         }
     }
 
-    async searchTracks(query: string): Promise<SearchResults> {
-        const response = await this.axios.get<SearchResponse>(`${this.apiBaseUrl}/search?q=${query}`)
+    /**
+     * Some information is not returned: track number and disc number, isrc, album release date. use the
+     * lookup functions to get this information.
+     *
+     * TODO: consider adding some fields to SearchResults that specify whether track, artist and album objects
+     * are complete or whether they should be looked up individually
+     */
+    async searchTracks(query: string | TrackSearchQuery): Promise<SearchResults> {
+        const response =
+            typeof query === "string"
+                ? await this.httpGet<SearchResponse>("search", { params: { q: query } })
+                : await this.httpGet<SearchResponse>("search", { params: { q: buildSearchQuery(query) } })
         const payload = response.data
 
         const resultExternalTrackIds = [] as string[]
@@ -132,6 +163,20 @@ export class DeezerApiClient implements Service {
             artists,
         }
     }
+}
+
+const deezerSearchQueryNameMap: Record<keyof TrackSearchQuery, string> = {
+    title: "track",
+    albumName: "album",
+    artistName: "artist",
+    minDurationSecs: "dur_min",
+    maxDurationSecs: "dur_max",
+}
+
+function buildSearchQuery(query: TrackSearchQuery): string {
+    return Object.entries(query)
+        .map(([k, v]) => `${(deezerSearchQueryNameMap as any)[k]}:${JSON.stringify(v)}`)
+        .join(" ")
 }
 
 function stripDeezerPrefix(id: string) {

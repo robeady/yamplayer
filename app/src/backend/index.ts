@@ -1,12 +1,12 @@
 import express from "express"
+import { promises as fs } from "fs"
 import { AddressInfo } from "net"
-import { serve } from "./rpc/server"
 import { DeezerApiClient } from "../services/deezer"
-import { LibraryStore } from "./library"
+import { Resolver } from "../services/plugins"
 import { MariaDB } from "./database"
 import { Explorer } from "./explorer"
-import { Resolver } from "../services/plugins"
-import { promises as fs } from "fs"
+import { LibraryStore } from "./library"
+import { serve } from "./rpc/server"
 
 type Server = import("http").Server
 
@@ -30,18 +30,19 @@ async function loadLibrarySeed(): Promise<LibrarySeedFile> {
 
 async function main(): Promise<AddressInfo> {
     const app = express()
-    app.use(express.json())
+    app.use(express.json({ limit: "10mb" }))
 
     const db = MariaDB.connect()
     const deezerApiClient = await DeezerApiClient.create({ cacheDirectory: "cache/deezer" })
     const library = await LibraryStore.setup(db)
-    const librarySeed = await loadLibrarySeed()
-    const explorer = await Explorer.seeded(
-        library,
-        deezerApiClient,
-        new Resolver(),
-        librarySeed.externalTrackIds,
-    )
+    // const librarySeed = await loadLibrarySeed()
+    // const explorer = await Explorer.seeded(
+    //     library,
+    //     deezerApiClient,
+    //     new Resolver(),
+    //     librarySeed.externalTrackIds,
+    // )
+    const explorer = new Explorer(library, deezerApiClient, new Resolver())
 
     app.use("/library", serve(library))
     app.use("/explorer", serve(explorer))

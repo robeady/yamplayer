@@ -1,16 +1,17 @@
-import { LibraryStore } from "./library"
-import { Dict } from "../util/types"
+import { forEach } from "lodash"
 import {
     Album,
-    CataloguedTrack,
     Artist,
-    MatchedSearchResults,
-    Track,
     CataloguedAlbum,
     CataloguedArtist,
+    CataloguedTrack,
+    MatchedSearchResults,
+    Track,
 } from "../model"
-import { forEach } from "lodash"
-import { TrackResolver, Service } from "../services"
+import { Service, TrackResolver } from "../services"
+import { ItunesTrack, parseItunesLibraryXml } from "../services/apple/itunes"
+import { Dict, Int } from "../util/types"
+import { LibraryStore } from "./library"
 
 export interface LibraryContents {
     tracks: Dict<CataloguedTrack>
@@ -158,4 +159,122 @@ export class Explorer {
             return matchingArtist
         }
     }
+
+    async importItunesLibrary(itunesLibraryXml: string): Promise<ImportItunesResult> {
+        // TODO: some error handling
+        const itunesLibraryContents = parseItunesLibraryXml(itunesLibraryXml)
+        // hmm, we really shouldn't be seeing duplicates here, maybe that should produce a warning
+        const externalTrackIds = new Set<string>()
+        for (const track of itunesLibraryContents.tracks.slice(0, 200)) {
+            const matches = await this.searchForItunesTrack(track)
+            if (matches.results.externalTrackIds.length === 0) {
+                // TODO: inform the user that we failed to match this track
+
+                continue
+            } else {
+                const externalTrackId = matches.results.externalTrackIds[0]
+                externalTrackIds.add(externalTrackId)
+            }
+        }
+
+        for (const track of await this.library.matchTracks([...externalTrackIds])) {
+            externalTrackIds.delete(track.externalId)
+        }
+        // now externalTrackIds only contains IDs of new tracks to catalogue
+
+        const externalTracks = await Promise.all(
+            [...externalTrackIds].map(tid => this.service.lookupTrack(tid)),
+        )
+
+        const externalAlbumIds = new Set(externalTracks.map(t => t.albumId))
+        const externalArtistIds = new Set(externalTracks.map(t => t.artistId))
+
+        const albumIdsByExternalId = new Map<string, string>()
+        const artistIdsByExternalId = new Map<string, string>()
+
+        for (const album of await this.library.matchAlbums([...externalAlbumIds])) {
+            externalAlbumIds.delete(album.externalId)
+            albumIdsByExternalId.set(album.externalId, album.catalogueId)
+        }
+        for (const artist of await this.library.matchArtists([...externalArtistIds])) {
+            externalArtistIds.delete(artist.externalId)
+            artistIdsByExternalId.set(artist.externalId, artist.catalogueId)
+        }
+
+        // now external album and artist IDs also only contain what's new and needs cataloguing
+
+        const externalAlbums = await Promise.all(
+            [...externalAlbumIds].map(id => this.service.lookupAlbum(id)),
+        )
+        const externalArtists = await Promise.all(
+            [...externalArtistIds].map(id => this.service.lookupArtist(id)),
+        )
+
+        // TODO batch-add functions
+        const addedAlbums = await Promise.all(externalAlbums.map(a => this.library.addAlbum(a)))
+        for (const album of addedAlbums) {
+            albumIdsByExternalId.set(album.externalId, album.catalogueId)
+        }
+        const addedArtists = await Promise.all(externalArtists.map(a => this.library.addArtist(a)))
+        for (const artist of addedArtists) {
+            artistIdsByExternalId.set(artist.externalId, artist.catalogueId)
+        }
+
+        const addedTracks = await Promise.all(
+            externalTracks.map(t =>
+                this.library.addTrack({
+                    ...t,
+                    albumId: albumIdsByExternalId.get(t.albumId)!,
+                    artistId: artistIdsByExternalId.get(t.artistId)!,
+                }),
+            ),
+        )
+
+        return {
+            stats: {
+                numTracksInItunes: itunesLibraryContents.tracks.length,
+                numNewTracksCatalogued: externalTracks.length,
+                numNewAlbumsCatalogued: externalAlbums.length,
+                numNewArtistsCatalogued: externalArtists.length,
+            },
+            added: { tracks: addedTracks, albums: addedAlbums, artists: addedArtists },
+        }
+    }
+
+    private async searchForItunesTrack({ title, albumName, artistName, durationSecs }: ItunesTrack) {
+        // this code was inspired by a previous effort, search_dz.py
+        const query = {
+            title,
+            albumName,
+            artistName,
+            minDurationSecs: Math.floor(durationSecs - 10),
+            maxDurationSecs: Math.ceil(durationSecs + 10),
+        }
+        const matches = await this.service.searchTracks(query)
+        if (matches.results.externalTrackIds.length !== 0) {
+            return matches
+        }
+
+        // if no match, try removing stuff in brackets in the song or album title
+        const query2 = {
+            ...query,
+            title: removeStuffInBrackets(query.title),
+            albumName: removeStuffInBrackets(query.albumName),
+        }
+        return await this.service.searchTracks(query2)
+    }
+}
+
+export interface ImportItunesResult {
+    stats: {
+        numTracksInItunes: Int
+        numNewTracksCatalogued: Int
+        numNewAlbumsCatalogued: Int
+        numNewArtistsCatalogued: Int
+    }
+    added: { tracks: CataloguedTrack[]; albums: CataloguedAlbum[]; artists: CataloguedArtist[] }
+}
+
+function removeStuffInBrackets(s: string): string {
+    return s.replace(/\[.*?\]|\(.*?\)/, "")
 }

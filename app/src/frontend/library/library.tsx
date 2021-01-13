@@ -1,9 +1,9 @@
-import { Dict } from "../../util/types"
-import { remote } from "../../backend/rpc/client"
 import { useEffect, useMemo, useState } from "react"
-import { createState, immerise } from "../state"
-import { Album, Artist, SearchResultLists, Track } from "../../model"
 import { Explorer } from "../../backend/explorer"
+import { remote } from "../../backend/rpc/client"
+import { Album, Artist, SearchResultLists, Track } from "../../model"
+import { Dict } from "../../util/types"
+import { createState, immerise } from "../state"
 
 interface ExplorerState {
     searchResultsByQuery: Dict<SearchResultLists>
@@ -60,7 +60,24 @@ export const {
             })
         }
 
-        return { update, addToLibrary, unsave, setTrackRating, explorerClient }
+        async function importItunesLibrary(file: File) {
+            const fileReader = new FileReader()
+            const fileContents = await new Promise<string>((resolve, reject) => {
+                fileReader.onerror = () => reject(fileReader.error)
+                fileReader.onload = () => resolve(fileReader.result as string)
+                fileReader.readAsText(file)
+            })
+            const result = await explorerClient.importItunesLibrary(fileContents)
+            update(s => {
+                for (const track of result.added.tracks) s.tracks[track.catalogueId] = track
+                for (const album of result.added.albums) s.albums[album.catalogueId] = album
+                for (const artist of result.added.artists) s.artists[artist.catalogueId] = artist
+                // _NoItunesPlaylistsYet_ also add playlists when we import them
+            })
+            return result.stats
+        }
+
+        return { update, addToLibrary, unsave, setTrackRating, importItunesLibrary, explorerClient }
     }, [props.backendUrl])
 
     useEffect(() => {

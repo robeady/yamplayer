@@ -1,14 +1,15 @@
+import { css } from "linaria"
+import React, { PropsWithChildren, useRef, useState } from "react"
 import { hot } from "react-hot-loader/root"
-import React, { PropsWithChildren, useRef } from "react"
+import { HashRouter, Link, Route, Switch } from "react-router-dom"
+import { ImportItunesResult } from "../backend/explorer"
 import Counter from "./Counter"
+import { ExplorerProvider, useExplorerDispatch } from "./library/library"
+import { LibraryTracks } from "./LibraryTracks"
+import { AudioPlayer } from "./playback/AudioPlayer"
+import { PlaybackProvider } from "./playback/playback"
 import Player, { NowPlaying } from "./Player"
 import { TrackSearch } from "./TrackSearch"
-import { css } from "linaria"
-import { AudioPlayer } from "./playback/AudioPlayer"
-import { ExplorerProvider } from "./library/library"
-import { Link, Switch, Route, HashRouter } from "react-router-dom"
-import { LibraryTracks } from "./LibraryTracks"
-import { PlaybackProvider } from "./playback/playback"
 
 const App = () => (
     <Providers>
@@ -52,6 +53,9 @@ function Main() {
                     <Route path="/library/tracks">
                         <LibraryTracks />
                     </Route>
+                    <Route path="/import">
+                        <Import />
+                    </Route>
                     <Route path="/">Welcome!</Route>
                 </Switch>
             </main>
@@ -76,9 +80,39 @@ function LeftNav() {
             <div>
                 <Link to="/library/tracks">Library Tracks</Link>
             </div>
+            <div>
+                <Link to="/import">Import</Link>
+            </div>
             <br />
             <Counter />
         </nav>
+    )
+}
+
+function Import() {
+    const { importItunesLibrary } = useExplorerDispatch()
+    const [uploadStats, setUploadStats] = useState<ImportItunesResult["stats"]>()
+    return (
+        <div>
+            <div>Upload your itunes library xml file</div>
+            <input
+                type="file"
+                accept=".xml"
+                onChange={e => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    importItunesLibrary(file).then(setUploadStats)
+                    e.target.value = ""
+                }}
+            />
+            {uploadStats && (
+                <div>
+                    Import suceeded! From {uploadStats.numTracksInItunes} itunes tracks, we added{" "}
+                    {uploadStats.numNewTracksCatalogued} tracks, {uploadStats.numNewAlbumsCatalogued} albums
+                    and {uploadStats.numNewArtistsCatalogued} artists to your library.
+                </div>
+            )}
+        </div>
     )
 }
 

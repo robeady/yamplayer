@@ -22,7 +22,7 @@ export class FilesystemAxiosCache {
             console.log(`cache hit for ${key}`)
             return JSON.parse(contents.toString())
         } catch (e) {
-            console.error(e)
+            console.log(`cache miss for ${key}`)
             if (e.code === "ENOENT") {
                 return null
             }
@@ -50,6 +50,7 @@ export class FilesystemAxiosCache {
     }
 
     async clear(): Promise<void> {
+        console.log("CLEARING CACHE")
         await fs.rmdir(this.cacheDirectory, { recursive: true })
         await fs.mkdir(this.cacheDirectory)
     }
@@ -73,8 +74,26 @@ export class FilesystemAxiosCache {
     private getFilePath(key: string): string {
         // bijective sanitization function to avoid erroneous collisions
         // TODO: may need expansion as I hit more URLs
+        const disallowedCharsInWindowsFileNames = [
+            /[/]/g,
+            /[:]/g,
+            /[?]/g,
+            /["]/g,
+            /[<]/g,
+            /[>]/g,
+            /[\\]/g,
+            /[|]/g,
+            /[*]/g,
+        ]
+        const replacement = "_"
+        const replacementPairings = [replacement, ...disallowedCharsInWindowsFileNames].map(
+            (original, i) => [original, replacement.repeat(i + 2)] as const,
+        )
         const sanitised =
-            key.replace(/_/g, "__").replace(/=/g, "==").replace(/\//g, "_").replace(/:/g, "=") + ".json"
+            replacementPairings.reduce(
+                (k, [original, replacement]) => k.replace(original, replacement),
+                key,
+            ) + ".json"
         return path.join(this.cacheDirectory, sanitised)
     }
 }
