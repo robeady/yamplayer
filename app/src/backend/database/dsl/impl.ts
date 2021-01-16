@@ -1,22 +1,22 @@
-import {
-    ExecResult,
-    RowTypeFrom,
-    ColumnIn,
-    SelectionFrom,
-    QueriedTablesFromSingle,
-    AliasIn,
-    TableDefinitions,
-    OrderStage,
-    InsertStage,
-    OnStage,
-    KeyByAlias,
-    ColumnsFrom,
-    InsertTypeFor,
-} from "./stages"
-import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, RealTableOrigin } from "./definitions"
-import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
-import { size, mapValues } from "lodash"
+import { mapValues, size } from "lodash"
+import { ColumnDefinition, Origin, RealTableOrigin, SubqueryOrigin, TableDefinition } from "./definitions"
 import { SqlDialect } from "./dialect"
+import {
+    AliasIn,
+    ColumnIn,
+    ColumnsFrom,
+    ExecResult,
+    InsertStage,
+    InsertTypeFor,
+    KeyByAlias,
+    OnStage,
+    OrderStage,
+    QueriedTablesFromSingle,
+    RowTypeFrom,
+    SelectionFrom,
+    TableDefinitions,
+} from "./stages"
+import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
 
 export interface QueryBuilder {
     <T extends TableDefinition>(table: T): InsertStage<T>
@@ -589,22 +589,22 @@ function parseMatcherIntoFilterElements(defaultSelection: any, matcher: {}): Fil
     }
 }
 
-function populateAtPath(object: any, path: string[], value: unknown) {
-    if (path.length === 0) {
+function populateAtPath(object: any, path: string[], value: unknown, pathStartIndex = 0) {
+    const pathLength = path.length - pathStartIndex
+    if (pathLength === 0) {
         return value
-    } else if (path.length === 1) {
-        object[path[0]] = value
+    } else if (pathLength === 1) {
+        object[path[pathStartIndex]] = value
         return object
     } else {
         let subObject: any
-        if (path[0] in object) {
-            subObject = object[path[0]]
+        if (path[pathStartIndex] in object) {
+            subObject = object[path[pathStartIndex]]
         } else {
             subObject = {}
-            object[path[0]] = subObject
+            object[path[pathStartIndex]] = subObject
         }
-        path.shift()
-        populateAtPath(subObject, path, value)
+        populateAtPath(subObject, path, value, pathStartIndex + 1)
         return object
     }
 }
