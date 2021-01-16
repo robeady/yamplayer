@@ -1,4 +1,5 @@
 import { parse } from "plist"
+import { Fraction } from "../../util/types"
 
 export interface ItunesLibraryContents {
     tracks: ItunesTrack[]
@@ -9,7 +10,7 @@ export interface ItunesTrack {
     artistName: string
     albumName: string
     durationSecs: number
-    rating: number
+    rating: Fraction | null
 }
 
 /**
@@ -24,7 +25,7 @@ export function parseItunesLibraryXml(xmlContents: string): ItunesLibraryContent
             artistName: data["Artist"],
             albumName: data["Album"],
             durationSecs: data["Total Time"] / 1000,
-            rating: data["Rating"] / 100,
+            rating: "Rating" in data ? data["Rating"] / 100 : null,
         }
     })
     const _playlists = Object.entries(parsed["Playlists"]).map(([_id, _data]) => {

@@ -164,26 +164,27 @@ export class Explorer {
         // TODO: some error handling
         const itunesLibraryContents = parseItunesLibraryXml(itunesLibraryXml)
         // hmm, we really shouldn't be seeing duplicates here, maybe that should produce a warning
-        const externalTrackIds = new Set<string>()
+        const itunesTracksByExternalTrackId = new Map<string, ItunesTrack>()
+        // TODO: for now we limit import to 200 tracks
         for (const track of itunesLibraryContents.tracks.slice(0, 200)) {
             const matches = await this.searchForItunesTrack(track)
             if (matches.results.externalTrackIds.length === 0) {
                 // TODO: inform the user that we failed to match this track
-
                 continue
             } else {
                 const externalTrackId = matches.results.externalTrackIds[0]
-                externalTrackIds.add(externalTrackId)
+                itunesTracksByExternalTrackId.set(externalTrackId, track)
             }
         }
 
-        for (const track of await this.library.matchTracks([...externalTrackIds])) {
-            externalTrackIds.delete(track.externalId)
+        for (const track of await this.library.matchTracks([...itunesTracksByExternalTrackId.keys()])) {
+            // TODO: could we update metadata and stuff? rating? added timestamp?
+            itunesTracksByExternalTrackId.delete(track.externalId)
         }
         // now externalTrackIds only contains IDs of new tracks to catalogue
 
         const externalTracks = await Promise.all(
-            [...externalTrackIds].map(tid => this.service.lookupTrack(tid)),
+            [...itunesTracksByExternalTrackId.keys()].map(tid => this.service.lookupTrack(tid)),
         )
 
         const externalAlbumIds = new Set(externalTracks.map(t => t.albumId))
@@ -224,6 +225,7 @@ export class Explorer {
             externalTracks.map(t =>
                 this.library.addTrack({
                     ...t,
+                    rating: itunesTracksByExternalTrackId.get(t.externalId)!.rating,
                     albumId: albumIdsByExternalId.get(t.albumId)!,
                     artistId: artistIdsByExternalId.get(t.artistId)!,
                 }),
