@@ -1,12 +1,12 @@
-import React from "react"
-import { styled } from "linaria/react"
 import { css } from "linaria"
-import PlayArrow from "../icons/play_arrow.svg"
-import { useExplorerState, resolveCanonical, useExplorerDispatch } from "../library/library"
-import { usePlayerDispatch } from "../playback/playback"
-import { Album, Track } from "../../model"
+import { styled } from "linaria/react"
+import React from "react"
 import Rating from "react-rating"
+import { Album, Track } from "../../model"
+import PlayArrow from "../icons/play_arrow.svg"
 import Star from "../icons/star_rate.svg"
+import { resolveCanonical, useExplorerDispatch, useExplorerState } from "../library/library"
+import { usePlayerDispatch } from "../playback/playback"
 
 export function TrackListing(props: { trackIds: string[] }) {
     const allTracks = useExplorerState(s => s.tracks)
@@ -23,10 +23,7 @@ export function TrackListing(props: { trackIds: string[] }) {
     const { enqueueTrack } = usePlayerDispatch()
 
     return (
-        <div
-            className={css`
-                font-size: 14px;
-            `}>
+        <div className={css`font-size: 14px;`}>
             {tracksToList.map(t => (
                 <TrackRow
                     key={t.trackId}
@@ -43,22 +40,10 @@ export function TrackListing(props: { trackIds: string[] }) {
                         enabled={t.track.catalogueId !== null}
                         onRate={newRating => setTrackRating(t.track.catalogueId!, newRating)}
                     />
-                    <span
-                        className={css`
-                            color: rgb(90, 90, 90);
-                            &:hover {
-                                text-decoration: underline;
-                            }
-                        `}>
+                    <span className={css`color: rgb(90, 90, 90); &:hover { text-decoration: underline; }`}>
                         {t.album.title}
                     </span>
-                    <span
-                        className={css`
-                            color: rgb(90, 90, 90);
-                            &:hover {
-                                text-decoration: underline;
-                            }
-                        `}>
+                    <span className={css`color: rgb(90, 90, 90); &:hover { text-decoration: underline; }`}>
                         {t.artist.name}
                     </span>
                     <SaveButton trackId={t.trackId} />
@@ -86,13 +71,7 @@ function TrackRating(props: {
                     // TODO: rounding
                     initialRating={(props.rating ?? 0) * 5}
                     onChange={newRating => props.onRate(newRating / 5)}
-                    emptySymbol={
-                        <CroppedStar
-                            className={css`
-                                fill: hsl(0, 0%, 92%);
-                            `}
-                        />
-                    }
+                    emptySymbol={<CroppedStar className={css`fill: hsl(0, 0%, 92%);`} />}
                     fullSymbol={
                         <CroppedStar
                             className={css`
@@ -109,45 +88,39 @@ function TrackRating(props: {
     )
 }
 
-function CoverAndTrackTitle(props: { track: Track; album: Album }) {
+function tests() {
     return (
         <div
             className={css`
                 display: flex;
-                align-items: center;
+                flex-direction: column;
+                background-color: blue;
+                padding-bottom: 5px;
             `}>
+            ...
+        </div>
+    )
+}
+
+function CoverAndTrackTitle(props: { track: Track; album: Album }) {
+    return (
+        <div className={css`display: flex; align-items: center;`}>
             <CoverImage url={props.album.coverImageUrl ?? ""} size={36} />
-            <span
-                className={css`
-                    padding-left: 12px;
-                `}>
-                {props.track.title}
-            </span>
+            <span className={css`padding-left: 12px;`}>{props.track.title}</span>
         </div>
     )
 }
 
 function CoverImage(props: { url: string; size: number }) {
     return (
-        <div
-            className={css`
-                position: relative;
-            `}>
+        <div className={css`position: relative;`}>
             <img
-                className={css`
-                    border-radius: 2px;
-                    // border: 1px solid gainsboro;
-                `}
+                className={css`border-radius: 2px; /* border: 1px solid gainsboro; */`}
                 src={props.url}
                 height={props.size}
                 width={props.size}
             />
-            <div
-                className={css`
-                    position: absolute;
-                    top: 2px;
-                    left: 2px;
-                `}>
+            <div className={css`position: absolute; top: 2px; left: 2px;`}>
                 <PlayCircle displayed size={props.size - 4} />
             </div>
         </div>
