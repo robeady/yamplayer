@@ -24,6 +24,7 @@
         "egoroof-blowfish": "^2.2.1",
         "express": "^4.17.1",
         "howler": "^2.1.3",
+        "id128": "^1.6.3",
         "immer": "^6.0.3",
         "linaria": "2.0.2",
         "lodash": "^4.17.15",

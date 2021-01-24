@@ -1,4 +1,26 @@
-import { symmetricTypeMapper, columnType, typeMapper } from "./definitions"
+import { UlidMonotonic } from "id128"
+import { columnType, symmetricTypeMapper, typeMapper } from "./definitions"
+
+export const binaryUlid = columnType<UlidMonotonic, false, undefined>(
+    typeMapper({
+        sqlToJs: value => {
+            if (Buffer.isBuffer(value)) {
+                return UlidMonotonic.construct(value)
+            } else {
+                throwError("Buffer", value)
+            }
+        },
+        jsToSql: value => {
+            if (value instanceof UlidMonotonic.type) {
+                return value.bytes
+            } else {
+                throwError("UlidMonotonic", value)
+            }
+        },
+    }),
+    false,
+    undefined,
+)
 
 export const number = columnType<number, false, undefined>(
     symmetricTypeMapper(value => {
@@ -37,7 +59,7 @@ export const intAsJsString = columnType<string, false, undefined>(
         },
         jsToSql: value => {
             if (typeof value === "string") {
-                return parseInt(value)
+                return parseInt(value, 10)
             } else {
                 throwError("string", value)
             }

@@ -1,32 +1,33 @@
 import { table } from "./dsl/definitions"
-import { string, number } from "./dsl/types"
+import { binaryUlid, number, string } from "./dsl/types"
 
 export const track = table("track", {
-    trackId: number.withDefault(),
+    id: binaryUlid,
+    cataloguedTimestamp: number,
     externalId: string,
-    albumId: number,
-    artistId: number,
+    albumId: binaryUlid,
+    artistId: binaryUlid,
     title: string,
     trackNumber: number.orNull(),
     discNumber: number.orNull(),
     isrc: string.orNull(),
     durationSecs: number,
+    listenCount: number,
     rating: number.orNull(),
-    cataloguedTimestamp: number,
     savedTimestamp: number.orNull(),
 })
 
 export const album = table("album", {
-    albumId: number.withDefault(),
+    id: binaryUlid,
+    cataloguedTimestamp: number,
     externalId: string,
     title: string,
     coverImageUrl: string.orNull(),
     releaseDate: string.orNull(),
-    cataloguedTimestamp: number,
 })
 
 export const artist = table("artist", {
-    artistId: number.withDefault(),
+    id: binaryUlid,
     externalId: string,
     name: string,
     imageUrl: string.orNull(),
@@ -34,12 +35,11 @@ export const artist = table("artist", {
 })
 
 export const playlist = table("playlist", {
-    playlistId: number,
+    id: binaryUlid,
     name: string,
 })
 
 export const playlistEntry = table("playlistEntry", {
-    playlistEntryId: number.withDefault(),
-    playlistId: number,
-    trackId: number,
+    playlistId: binaryUlid,
+    trackId: binaryUlid,
 })

@@ -1,3 +1,4 @@
+import { Ulid, UlidMonotonic } from "id128"
 import {
     CataloguedAlbum,
     CataloguedArtist,
@@ -37,9 +38,9 @@ export class LibraryStore {
         const { track, artist, album } = tables
         const rows = await this.query(track)
             .innerJoin(album)
-            .on(album.albumId, "=", track.albumId)
+            .on(album.id, "=", track.albumId)
             .innerJoin(artist)
-            .on(artist.artistId, "=", track.artistId)
+            .on(artist.id, "=", track.artistId)
             .where(track.savedTimestamp, "IS NOT", null)
             .fetch()
 
@@ -47,9 +48,12 @@ export class LibraryStore {
         const artists = {} as Dict<CataloguedArtist>
         const albums = {} as Dict<CataloguedAlbum>
         for (const row of rows) {
-            tracks[row.track.trackId] = mapTrack(row.track)
-            albums[row.album.albumId] = mapAlbum(row.album)
-            artists[row.artist.artistId] = mapArtist(row.artist)
+            const mappedTrack = mapTrack(row.track)
+            const mappedAlbum = mapAlbum(row.album)
+            const mappedArtist = mapArtist(row.artist)
+            tracks[mappedTrack.catalogueId] = mappedTrack
+            albums[mappedAlbum.catalogueId] = mappedAlbum
+            artists[mappedArtist.catalogueId] = mappedArtist
         }
         return { tracks, artists, albums }
     }
@@ -57,7 +61,7 @@ export class LibraryStore {
     async getAlbum(catalogueId: string) {
         return mapAlbum(
             await this.query(tables.album)
-                .where({ albumId: parseId(catalogueId) })
+                .where({ id: UlidMonotonic.fromCanonical(catalogueId) })
                 .fetchOne(),
         )
     }
@@ -65,38 +69,41 @@ export class LibraryStore {
     async getArtist(catalogueId: string) {
         return mapArtist(
             await this.query(tables.artist)
-                .where({ artistId: parseId(catalogueId) })
+                .where({ id: UlidMonotonic.fromCanonical(catalogueId) })
                 .fetchOne(),
         )
     }
 
     async save(trackcatalogueId: string) {
         await this.query(tables.track)
-            .where({ trackId: parseId(trackcatalogueId) })
+            .where({ id: UlidMonotonic.fromCanonical(trackcatalogueId) })
             .update({ savedTimestamp: this.now() })
             .execute()
     }
 
     async unsave(trackcatalogueId: string) {
         await this.query(tables.track)
-            .where({ trackId: parseId(trackcatalogueId) })
+            .where({ id: UlidMonotonic.fromCanonical(trackcatalogueId) })
             .update({ savedTimestamp: null })
             .execute()
     }
 
     async addTrack(trackPointingToInternalArtistAndAlbum: ExternalTrack): Promise<CataloguedTrack> {
         const now = this.now()
+        const id = UlidMonotonic.generate()
         const result = await this.query(tables.track)
             .insert({
+                id,
                 title: trackPointingToInternalArtistAndAlbum.title,
                 trackNumber: trackPointingToInternalArtistAndAlbum.trackNumber,
                 discNumber: trackPointingToInternalArtistAndAlbum.discNumber,
                 externalId: trackPointingToInternalArtistAndAlbum.externalId,
-                albumId: parseId(trackPointingToInternalArtistAndAlbum.albumId),
-                artistId: parseId(trackPointingToInternalArtistAndAlbum.artistId),
+                albumId: Ulid.fromCanonical(trackPointingToInternalArtistAndAlbum.albumId),
+                artistId: Ulid.fromCanonical(trackPointingToInternalArtistAndAlbum.artistId),
                 savedTimestamp: now,
                 durationSecs: trackPointingToInternalArtistAndAlbum.durationSecs,
                 isrc: trackPointingToInternalArtistAndAlbum.isrc,
+                listenCount: 0,
                 rating: trackPointingToInternalArtistAndAlbum.rating,
                 cataloguedTimestamp: now,
             })
@@ -113,8 +120,10 @@ export class LibraryStore {
 
     async addAlbum(externalAlbum: ExternalAlbum): Promise<CataloguedAlbum> {
         const now = this.now()
-        const result = await this.query(tables.album)
+        const id = UlidMonotonic.generate()
+        await this.query(tables.album)
             .insert({
+                id,
                 title: externalAlbum.title,
                 coverImageUrl: externalAlbum.coverImageUrl,
                 releaseDate: externalAlbum.releaseDate,
@@ -122,22 +131,23 @@ export class LibraryStore {
                 cataloguedTimestamp: now,
             })
             .execute()
-        const catalogueId = result.lastInsertedId.toString()
-        return { ...externalAlbum, catalogueId, cataloguedTimestamp: now }
+
+        return { ...externalAlbum, catalogueId: id.toCanonical(), cataloguedTimestamp: now }
     }
 
     async addArtist(externalArtist: ExternalArtist): Promise<CataloguedArtist> {
         const now = this.now()
-        const result = await this.query(tables.artist)
+        const id = UlidMonotonic.generate()
+        await this.query(tables.artist)
             .insert({
+                id,
                 name: externalArtist.name,
                 imageUrl: externalArtist.imageUrl,
                 externalId: externalArtist.externalId,
                 cataloguedTimestamp: now,
             })
             .execute()
-        const catalogueId = result.lastInsertedId.toString()
-        return { ...externalArtist, catalogueId, cataloguedTimestamp: now }
+        return { ...externalArtist, catalogueId: id.toCanonical(), cataloguedTimestamp: now }
     }
 
     async matchTracks(externalTrackIds: string[]) {
@@ -175,7 +185,7 @@ export class LibraryStore {
             throw Error(`tried to give track ${trackId} invalid rating ${rating}`)
         }
         await this.query(tables.track)
-            .where({ trackId: parseId(trackId) })
+            .where({ id: UlidMonotonic.fromCanonical(trackId) })
             .update({ rating })
             .execute()
         // TODO: verify that the track existed (affected rows may still be 0 if the rating didn't change)
@@ -184,7 +194,7 @@ export class LibraryStore {
 
 function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): CataloguedAlbum {
     return {
-        catalogueId: albumFromDb.albumId.toString(),
+        catalogueId: albumFromDb.id.toCanonical(),
         externalId: albumFromDb.externalId,
         title: albumFromDb.title,
         coverImageUrl: albumFromDb.coverImageUrl,
@@ -195,7 +205,7 @@ function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): CataloguedA
 
 function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): CataloguedArtist {
     return {
-        catalogueId: artistFromDb.artistId.toString(),
+        catalogueId: artistFromDb.id.toCanonical(),
         externalId: artistFromDb.externalId,
         name: artistFromDb.name,
         imageUrl: artistFromDb.imageUrl,
@@ -205,7 +215,7 @@ function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): Catalogu
 
 function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): CataloguedTrack {
     return {
-        catalogueId: trackFromDb.trackId.toString(),
+        catalogueId: trackFromDb.id.toCanonical(),
         albumId: trackFromDb.albumId.toString(),
         artistId: trackFromDb.artistId.toString(),
         externalId: trackFromDb.externalId,
@@ -218,12 +228,4 @@ function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): CataloguedT
         cataloguedTimestamp: trackFromDb.cataloguedTimestamp,
         savedTimestamp: trackFromDb.savedTimestamp,
     }
-}
-
-function parseId(id: string): number {
-    const n = parseInt(id, 10)
-    if (isNaN(n)) {
-        throw Error(`${id} is not a valid library ID`)
-    }
-    return n
 }
