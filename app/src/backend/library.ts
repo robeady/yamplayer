@@ -103,7 +103,7 @@ export class LibraryStore {
                 savedTimestamp: now,
                 durationSecs: trackPointingToInternalArtistAndAlbum.durationSecs,
                 isrc: trackPointingToInternalArtistAndAlbum.isrc,
-                listenCount: 0,
+                playCount: 0,
                 rating: trackPointingToInternalArtistAndAlbum.rating,
                 cataloguedTimestamp: now,
             })

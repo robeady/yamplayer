@@ -23,7 +23,7 @@ const migration0: DatabaseMigration = {
         isrc CHAR(12),
         durationSecs DOUBLE PRECISION NOT NULL,
         savedTimestamp BIGINT NOT NULL,
-        listenCount INTEGER NOT NULL,
+        playCount INTEGER NOT NULL,
         rating DOUBLE PRECISION
     );
 

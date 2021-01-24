@@ -12,7 +12,7 @@ export const track = table("track", {
     discNumber: number.orNull(),
     isrc: string.orNull(),
     durationSecs: number,
-    listenCount: number,
+    playCount: number,
     rating: number.orNull(),
     savedTimestamp: number.orNull(),
 })
