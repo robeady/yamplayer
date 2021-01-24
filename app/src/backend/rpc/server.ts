@@ -8,10 +8,12 @@ import express from "express"
  */
 export function serve<T>(object: T) {
     return express.Router().post("/:method", async (req, res) => {
+        const target = object as any
+        const method = req.params.method
+        const args = req.body as unknown[]
+        const timerId = `/${method}#${invocationCounter++}`
+        console.time(timerId)
         try {
-            const target = object as any
-            const method = req.params.method
-            const args = req.body as unknown[]
             if (method in target) {
                 // TODO: `func` might not return a promise. is this a performance issue?
                 const result = await target[method](...args)
@@ -24,6 +26,10 @@ export function serve<T>(object: T) {
             // let's take care of it ourselves.
             console.error(e)
             res.status(500).json(`${e?.name || "Error"}: ${e?.message || JSON.stringify(e)}`)
+        } finally {
+            console.timeEnd(timerId)
         }
     })
 }
+
+let invocationCounter = 0
