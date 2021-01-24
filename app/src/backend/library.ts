@@ -6,18 +6,18 @@ import {
     ExternalArtist,
     ExternalTrack,
 } from "../model"
-import { Dict } from "../util/types"
-import { MariaDB } from "./database"
+import { Dict, Fraction } from "../util/types"
 import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
 import { RowTypeFrom } from "./database/dsl/stages"
+import { MariaDB } from "./database/handle"
 import { applyMigrations } from "./database/migrations"
 import { yamplayerMigrations } from "./database/schema"
 import * as tables from "./database/tables"
 
 export class LibraryStore {
-    qb: QueryBuilder
+    query: QueryBuilder
     private constructor(database: MariaDB, private now: () => number = Date.now) {
-        this.qb = queryBuilder(database)
+        this.query = queryBuilder(database)
     }
 
     static async setup(database: MariaDB, now: () => number = Date.now): Promise<LibraryStore> {
@@ -26,7 +26,7 @@ export class LibraryStore {
     }
 
     async clear(): Promise<void> {
-        await Promise.all(Object.values(tables).map(t => this.qb(t).truncate().execute()))
+        await Promise.all(Object.values(tables).map(table => this.query(table).truncate().execute()))
     }
 
     async list(): Promise<{
@@ -35,7 +35,7 @@ export class LibraryStore {
         artists: Dict<CataloguedArtist>
     }> {
         const { track, artist, album } = tables
-        const rows = await this.qb(track)
+        const rows = await this.query(track)
             .innerJoin(album)
             .on(album.albumId, "=", track.albumId)
             .innerJoin(artist)
@@ -56,7 +56,7 @@ export class LibraryStore {
 
     async getAlbum(catalogueId: string) {
         return mapAlbum(
-            await this.qb(tables.album)
+            await this.query(tables.album)
                 .where({ albumId: parseId(catalogueId) })
                 .fetchOne(),
         )
@@ -64,21 +64,21 @@ export class LibraryStore {
 
     async getArtist(catalogueId: string) {
         return mapArtist(
-            await this.qb(tables.artist)
+            await this.query(tables.artist)
                 .where({ artistId: parseId(catalogueId) })
                 .fetchOne(),
         )
     }
 
     async save(trackcatalogueId: string) {
-        await this.qb(tables.track)
+        await this.query(tables.track)
             .where({ trackId: parseId(trackcatalogueId) })
             .update({ savedTimestamp: this.now() })
             .execute()
     }
 
     async unsave(trackcatalogueId: string) {
-        await this.qb(tables.track)
+        await this.query(tables.track)
             .where({ trackId: parseId(trackcatalogueId) })
             .update({ savedTimestamp: null })
             .execute()
@@ -86,7 +86,7 @@ export class LibraryStore {
 
     async addTrack(trackPointingToInternalArtistAndAlbum: ExternalTrack): Promise<CataloguedTrack> {
         const now = this.now()
-        const result = await this.qb(tables.track)
+        const result = await this.query(tables.track)
             .insert({
                 title: trackPointingToInternalArtistAndAlbum.title,
                 trackNumber: trackPointingToInternalArtistAndAlbum.trackNumber,
@@ -113,7 +113,7 @@ export class LibraryStore {
 
     async addAlbum(externalAlbum: ExternalAlbum): Promise<CataloguedAlbum> {
         const now = this.now()
-        const result = await this.qb(tables.album)
+        const result = await this.query(tables.album)
             .insert({
                 title: externalAlbum.title,
                 coverImageUrl: externalAlbum.coverImageUrl,
@@ -128,7 +128,7 @@ export class LibraryStore {
 
     async addArtist(externalArtist: ExternalArtist): Promise<CataloguedArtist> {
         const now = this.now()
-        const result = await this.qb(tables.artist)
+        const result = await this.query(tables.artist)
             .insert({
                 name: externalArtist.name,
                 imageUrl: externalArtist.imageUrl,
@@ -144,7 +144,9 @@ export class LibraryStore {
         return externalTrackIds.length === 0
             ? []
             : (
-                  await this.qb(tables.track).where(tables.track.externalId, "IN", externalTrackIds).fetch()
+                  await this.query(tables.track)
+                      .where(tables.track.externalId, "IN", externalTrackIds)
+                      .fetch()
               ).map(mapTrack)
     }
 
@@ -152,7 +154,9 @@ export class LibraryStore {
         return externalAlbumIds.length === 0
             ? []
             : (
-                  await this.qb(tables.album).where(tables.album.externalId, "IN", externalAlbumIds).fetch()
+                  await this.query(tables.album)
+                      .where(tables.album.externalId, "IN", externalAlbumIds)
+                      .fetch()
               ).map(mapAlbum)
     }
 
@@ -160,17 +164,17 @@ export class LibraryStore {
         return externalArtistIds.length === 0
             ? []
             : (
-                  await this.qb(tables.artist)
+                  await this.query(tables.artist)
                       .where(tables.artist.externalId, "IN", externalArtistIds)
                       .fetch()
               ).map(mapArtist)
     }
 
-    async setRating(trackId: string, rating: number | null): Promise<void> {
+    async setRating(trackId: string, rating: Fraction | null): Promise<void> {
         if (rating !== null && (rating < 0 || rating > 1)) {
             throw Error(`tried to give track ${trackId} invalid rating ${rating}`)
         }
-        await this.qb(tables.track)
+        await this.query(tables.track)
             .where({ trackId: parseId(trackId) })
             .update({ rating })
             .execute()

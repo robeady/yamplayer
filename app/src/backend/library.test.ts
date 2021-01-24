@@ -1,6 +1,6 @@
 import { Duration, TemporalUnit } from "node-duration"
 import { GenericContainer, StartedTestContainer, Wait } from "testcontainers"
-import { MariaDB } from "./database"
+import { MariaDB } from "./database/handle"
 import { LibraryStore } from "./library"
 
 jest.setTimeout(30000)
