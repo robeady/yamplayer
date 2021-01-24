@@ -28,7 +28,6 @@
         "linaria": "2.0.2",
         "lodash": "^4.17.15",
         "mariadb": "^2.3.1",
-        "normalize.css": "^8.0.1",
         "plist": "^3.0.1",
         "react": "^16.12.0",
         "react-dom": "^16.12.0",
@@ -36,6 +35,7 @@
         "react-rating": "^2.0.5",
         "react-router-dom": "^5.1.2",
         "react-slider": "^1.0.3",
+        "sanitize.css": "^12.0.1",
         "sqlstring": "^2.3.2",
         "tough-cookie": "^2.5.0",
         "use-context-selector": "1.1.1"

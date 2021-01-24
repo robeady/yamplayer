@@ -1,13 +1,14 @@
-import * as React from "react"
-import SkipPrevious from "./icons/skip_previous.svg"
-import SkipNext from "./icons/skip_next.svg"
 import { css } from "linaria"
+import * as React from "react"
+import { useEffect, useState } from "react"
 import { PlayPauseButton } from "./components/PlayPause"
-import { useState, useEffect } from "react"
 import { Slider } from "./components/Slider"
 import { VolumeControl } from "./components/Volume"
-import { useExplorerState, resolveCanonical } from "./library/library"
-import { usePlayerState, usePlayerDispatch } from "./playback/playback"
+import { formatTime } from "./formatting"
+import SkipNext from "./icons/skip_next.svg"
+import SkipPrevious from "./icons/skip_previous.svg"
+import { resolveCanonical, useExplorerState } from "./library/library"
+import { usePlayerDispatch, usePlayerState } from "./playback/playback"
 
 const Player = () => {
     return (
@@ -181,14 +182,6 @@ function TrackTime(props: { time: number }) {
             {formatTime(props.time)}
         </span>
     )
-}
-
-function formatTime(totalSecs: number | null) {
-    if (totalSecs === null) return <span />
-    const totalSeconds = Math.round(totalSecs)
-    const mins = Math.floor(totalSeconds / 60)
-    const secs = (totalSeconds % 60).toString().padStart(2, "0")
-    return `${mins}:${secs}`
 }
 
 function SecondaryControls() {

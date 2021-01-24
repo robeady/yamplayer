@@ -1,12 +1,14 @@
-import { css, cx } from "linaria"
+import { css } from "linaria"
+import { styled } from "linaria/lib/react"
 import React from "react"
 import { Album, Artist, Track } from "../../model"
 import { Flex, FlexCol } from "../elements"
 import { formatTime } from "../formatting"
 import { resolveCanonical, useExplorerState } from "../library/library"
+import { colors, fontSizes } from "../styles"
 
 /** This component shows a table of tracks, but where consecutive tracks from the same album are grouped together. */
-export function PlaylistView(props: { trackIds: string[] }) {
+export function AlbumsListing(props: { trackIds: string[] }) {
     // let's fetch all those tracks, because we'll need to iterate over them to find which ones have the same album
     const allTracks = useExplorerState(s => s.tracks)
     let lastAlbumId = ""
@@ -34,29 +36,40 @@ export function PlaylistView(props: { trackIds: string[] }) {
 
 function Headings() {
     return (
-        <Flex className={css`text-transform: uppercase; font-size: 13px; color: #888; height: 30px;`}>
-            <div className={albumArtistCol}>Artist and Album</div>
-            <div className={trackCol}>Track</div>
+        <Flex
+            className={css`
+                text-transform: uppercase;
+                font-size: ${fontSizes.tableSecondary};
+                color: ${colors.greyText};
+                height: 30px;
+            `}>
+            <AlbumArtistCol>Artist / Album</AlbumArtistCol>
+            <TrackNumCol>#</TrackNumCol>
+            <TrackCol>Track</TrackCol>
             {/* <div>Rating</div> */}
-            <div className={lengthCol}>Length</div>
+            <LengthCol>Length</LengthCol>
         </Flex>
     )
 }
 
 function AlbumRow(props: { tracks: Track[]; albumId: string }) {
-    const fullSizeThreshold = 6
+    const fullSizeThreshold = 10
     const album = useExplorerState(s => resolveCanonical(s.albums, props.albumId))
     const artist = useExplorerState(s =>
         resolveCanonical(s.artists, props.tracks[0].artistId /* TODO: get album primary artist */),
     )
     return (
-        <Flex className={css`border-bottom: 1px solid #e6e6e6; font-size: 15px;`}>
+        <Flex
+            className={css`
+                border-bottom: 1px solid ${colors.rowBorder};
+                font-size: ${fontSizes.tableContent};
+            `}>
             {props.tracks.length > fullSizeThreshold ? (
                 <FullSizeAlbumCell album={album} artist={artist} />
             ) : (
                 <SmallAlbumCell album={album} artist={artist} />
             )}
-            <FlexCol className={css`width: 100%;`}>
+            <FlexCol className={css`width: 100%; padding: 10px 0;`}>
                 {props.tracks.map(track => (
                     <TrackRow
                         key={track.catalogueId ?? track.externalId}
@@ -72,82 +85,87 @@ function AlbumRow(props: { tracks: Track[]; albumId: string }) {
 
 function FullSizeAlbumCell(props: { album: Album; artist: Artist }) {
     return (
-        <FlexCol className={cx(css`gap: 8px; padding: 6px; overflow: hidden;`, albumArtistCol)}>
-            <img src={props.album.coverImageUrl ?? undefined} width={256} height={256} />
+        <AlbumArtistCol
+            className={css`
+                gap: 8px;
+                padding-top: 6px;
+                overflow: hidden;
+            `}>
+            <img src={props.album.coverImageUrl ?? undefined} width={250} height={250} />
             <FlexCol>
                 <AlbumTitle title={props.album.title} />
                 <ArtistName name={props.artist.name} />
             </FlexCol>
-        </FlexCol>
+        </AlbumArtistCol>
     )
 }
 
 function SmallAlbumCell(props: { album: Album; artist: Artist }) {
     return (
-        <Flex
-            className={cx(
-                css`
-                    gap: 8px;
-                    padding: 6px;
-                    height: ${rowHeight};
-                    align-items: center;
+        <AlbumArtistCol
+            className={css`
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                overflow: hidden;
+            `}>
+            <img src={props.album.coverImageUrl ?? undefined} width={36} height={36} />
+            <FlexCol
+                className={css`
                     overflow: hidden;
-                `,
-                albumArtistCol,
-            )}>
-            <img src={props.album.coverImageUrl ?? undefined} width={32} height={32} />
-            <FlexCol className={css`overflow: hidden;`}>
+                    margin-top: -1px; // shift up
+                    line-height: 1.4;
+                `}>
                 <AlbumTitle title={props.album.title} />
                 <ArtistName name={props.artist.name} />
             </FlexCol>
-        </Flex>
+        </AlbumArtistCol>
     )
 }
 
 function AlbumTitle({ title = "" }) {
-    return <div className={css`overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`}>{title}</div>
+    return <Name className={css``}>{title}</Name>
 }
 
 function ArtistName({ name = "" }) {
     return (
-        <div
-            className={css`
-                color: #555;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                font-size: 90%;
-            `}>
+        <Name className={css`color: ${colors.greyText}; font-size: ${fontSizes.tableSecondary};`}>
             {name}
-        </div>
+        </Name>
     )
 }
+
+const Name = styled.div`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+`
 
 function TrackRow(props: { track: Track; album: Album; artist: Artist }) {
     return (
         <Flex
             className={css`
-                height: ${rowHeight};
                 align-items: center;
-                border-bottom: 1px solid #e6e6e6;
-                padding: 6px;
+                padding: 4px 12px;
+                border-radius: 6px;
                 &:last-child {
                     border-bottom: 0;
                 }
+                &:hover {
+                    background: ${colors.rowHover};
+                }
             `}>
-            <div className={trackCol}>{props.track.title}</div>
+            <TrackNumCol>{props.track.trackNumber}</TrackNumCol>
+            <TrackCol>{props.track.title}</TrackCol>
             {/* <TrackRating id={track.catalogueId} rating={track.rating} /> */}
-            <TrackLength className={lengthCol} durationSecs={props.track.durationSecs} />
+            <LengthCol>{formatTime(props.track.durationSecs)}</LengthCol>
         </Flex>
     )
 }
 
-const rowHeight = "32px"
+const TableCol = styled.div`padding-right: 20px;`
 
-function TrackLength(props: { durationSecs: number; className: string }) {
-    return <div className={props.className}>{formatTime(props.durationSecs)}</div>
-}
-
-const albumArtistCol = css`flex: 0 0 264px;`
-const trackCol = css`flex: 0 0 500px;`
-const lengthCol = css`flex: 0 0 100px;`
+const AlbumArtistCol = styled(TableCol)`flex: 0 0 274px;`
+const TrackNumCol = styled(TableCol)`flex: 0 0 40px; text-align: right; color: ${colors.greyText};`
+const TrackCol = styled(TableCol)`flex: 0 0 500px;`
+const LengthCol = styled(TableCol)`flex: 0 0 100px;`

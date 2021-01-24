@@ -1,6 +1,6 @@
 import { css } from "linaria"
 import React, { useState } from "react"
-import { PlaylistView } from "./components/PlaylistView"
+import { AlbumsListing } from "./components/AlbumsListing"
 import { TrackListing } from "./components/TrackListing"
 import { Flex, FlexCol } from "./elements"
 import { useExplorerState } from "./library/library"
@@ -12,7 +12,7 @@ export function LibraryTracks() {
         .map(([id]) => id)
 
     const [view, setView] = useState("playlist" as "playlist" | "tracks")
-    const ListComponent = view === "playlist" ? PlaylistView : TrackListing
+    const ListComponent = view === "playlist" ? AlbumsListing : TrackListing
     return (
         <FlexCol>
             <Flex className={css`padding-bottom: 25px; align-items: center; gap: 10px;`}>
