@@ -53,7 +53,7 @@ function Headings() {
             <AlbumArtistCol>Artist / Album</AlbumArtistCol>
             <TrackNumCol>#</TrackNumCol>
             <TrackCol>Track</TrackCol>
-            {/* <div>Rating</div> */}
+            <RatingCol>Rating</RatingCol>
             <LengthCol>Length</LengthCol>
         </Flex>
     )
@@ -71,7 +71,7 @@ function AlbumRow(props: { tracks: Track[]; albumId: string }) {
                 border-bottom: 1px solid ${colors.rowBorder};
                 font-size: ${fontSizes.tableContent};
             `}>
-            {props.tracks.length > fullSizeThreshold ? (
+            {props.tracks.length >= fullSizeThreshold ? (
                 <FullSizeAlbumCell album={album} artist={artist} />
             ) : (
                 <SmallAlbumCell album={album} artist={artist} />
@@ -98,7 +98,12 @@ function FullSizeAlbumCell(props: { album: Album; artist: Artist }) {
                 padding-top: 6px;
                 overflow: hidden;
             `}>
-            <img src={props.album.coverImageUrl ?? undefined} width={250} height={250} />
+            <img
+                className={css`border-radius: 10px;`}
+                src={props.album.coverImageUrl ?? undefined}
+                width={250}
+                height={250}
+            />
             <FlexCol>
                 <AlbumTitle title={props.album.title} />
                 <ArtistName name={props.artist.name} />
@@ -116,7 +121,12 @@ function SmallAlbumCell(props: { album: Album; artist: Artist }) {
                 align-items: center;
                 overflow: hidden;
             `}>
-            <img src={props.album.coverImageUrl ?? undefined} width={36} height={36} />
+            <img
+                className={css`border-radius: 3px;`}
+                src={props.album.coverImageUrl ?? undefined}
+                width={36}
+                height={36}
+            />
             <FlexCol
                 className={css`
                     overflow: hidden;
@@ -168,6 +178,7 @@ function TrackRow(props: { track: Track; album: Album; artist: Artist }) {
             className={css``}>
             <TrackNumCol>{props.track.trackNumber}</TrackNumCol>
             <TrackCol>{props.track.title}</TrackCol>
+            <RatingCol>{props.track.rating && "★".repeat(Math.round(props.track.rating * 5))} </RatingCol>
             {/* <TrackRating id={track.catalogueId} rating={track.rating} /> */}
             <LengthCol>{formatTime(props.track.durationSecs)}</LengthCol>
         </TrackComponent>
@@ -188,10 +199,9 @@ const TrackFlex = styled.div`
 `
 
 const SelectedTrackFlex = styled(TrackFlex)`
-    background: ${colors.primary};
-    color: white !important;
+    background: ${colors.selected};
     &:hover {
-        background: ${colors.primaryHover};
+        background: ${colors.selectedHover};
     }
 `
 
@@ -200,4 +210,5 @@ const TableCol = styled.div`padding-right: 20px;`
 const AlbumArtistCol = styled(TableCol)`flex: 0 0 274px;`
 const TrackNumCol = styled(TableCol)`flex: 0 0 40px; text-align: right; color: ${colors.greyText};`
 const TrackCol = styled(TableCol)`flex: 0 0 500px;`
+const RatingCol = styled(TableCol)`flex: 0 0 100px;`
 const LengthCol = styled(TableCol)`flex: 0 0 100px;`
