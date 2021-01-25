@@ -217,8 +217,8 @@ function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): Catalogu
 function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): CataloguedTrack {
     return {
         catalogueId: trackFromDb.id.toCanonical(),
-        albumId: trackFromDb.albumId.toString(),
-        artistId: trackFromDb.artistId.toString(),
+        albumId: trackFromDb.albumId.toCanonical(),
+        artistId: trackFromDb.artistId.toCanonical(),
         externalId: trackFromDb.externalId,
         title: trackFromDb.title,
         trackNumber: trackFromDb.trackNumber,
