@@ -1,9 +1,9 @@
 import { css } from "linaria"
 import React, { PropsWithChildren, useRef, useState } from "react"
 import { hot } from "react-hot-loader/root"
-import { HashRouter, Link, Route, Switch } from "react-router-dom"
+import { HashRouter, Route, Switch } from "react-router-dom"
 import { ImportItunesResult } from "../backend/explorer"
-import Counter from "./Counter"
+import { LeftNav } from "./components/Navigation"
 import { ExplorerProvider, useExplorerDispatch } from "./library/library"
 import { LibraryTracks } from "./LibraryTracks"
 import { AudioPlayer } from "./playback/AudioPlayer"
@@ -60,32 +60,6 @@ function Main() {
                 </Switch>
             </main>
         </div>
-    )
-}
-
-function LeftNav() {
-    return (
-        <nav
-            className={css`
-                width: 200px;
-                padding: 16px;
-                border-right: 1px solid gainsboro;
-            `}>
-            <div>
-                <Link to="/now-playing">Now Playing</Link>
-            </div>
-            <div>
-                <Link to="/search">Search</Link>
-            </div>
-            <div>
-                <Link to="/library/tracks">Library Tracks</Link>
-            </div>
-            <div>
-                <Link to="/import">Import</Link>
-            </div>
-            <br />
-            <Counter />
-        </nav>
     )
 }
 
