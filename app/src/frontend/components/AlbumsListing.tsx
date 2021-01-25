@@ -1,11 +1,15 @@
 import { css } from "linaria"
 import { styled } from "linaria/lib/react"
-import React from "react"
+import React, { useState } from "react"
 import { Album, Artist, Track } from "../../model"
 import { Flex, FlexCol } from "../elements"
 import { formatTime } from "../formatting"
 import { resolveCanonical, useExplorerState } from "../library/library"
+import { usePlayerDispatch } from "../playback/playback"
+import { createState } from "../state"
 import { colors, fontSizes } from "../styles"
+
+const SelectedTrackId = createState((props: {}) => useState<string>())
 
 /** This component shows a table of tracks, but where consecutive tracks from the same album are grouped together. */
 export function AlbumsListing(props: { trackIds: string[] }) {
@@ -24,13 +28,16 @@ export function AlbumsListing(props: { trackIds: string[] }) {
         }
         lastAlbumId = canonicalTrack.albumId
     }
+
     return (
-        <div>
-            <Headings />
-            {rows.map((r, i) => (
-                <AlbumRow key={i} /* TODO: is index ok? */ {...r} />
-            ))}
-        </div>
+        <SelectedTrackId.Provider>
+            <div>
+                <Headings />
+                {rows.map((r, i) => (
+                    <AlbumRow key={i /* TODO: is index ok? */} {...r} />
+                ))}
+            </div>
+        </SelectedTrackId.Provider>
     )
 }
 
@@ -142,26 +149,51 @@ const Name = styled.div`
 `
 
 function TrackRow(props: { track: Track; album: Album; artist: Artist }) {
+    const { enqueueTrack } = usePlayerDispatch()
+    const selected = SelectedTrackId.useState()
+    const setSelectedTrack = SelectedTrackId.useDispatch()
+    // TODO: should I just use class names here?
+    const TrackComponent =
+        selected === (props.track.catalogueId ?? props.track.externalId) /* _FallBackToExternalId_ */
+            ? SelectedTrackFlex
+            : TrackFlex
     return (
-        <Flex
-            className={css`
-                align-items: center;
-                padding: 4px 12px;
-                border-radius: 6px;
-                &:last-child {
-                    border-bottom: 0;
-                }
-                &:hover {
-                    background: ${colors.rowHover};
-                }
-            `}>
+        <TrackComponent
+            onMouseDown={() =>
+                setSelectedTrack(
+                    props.track.catalogueId ?? props.track.externalId /* _FallBackToExternalId_ */,
+                )
+            }
+            onDoubleClick={() => enqueueTrack(props.track)}
+            className={css``}>
             <TrackNumCol>{props.track.trackNumber}</TrackNumCol>
             <TrackCol>{props.track.title}</TrackCol>
             {/* <TrackRating id={track.catalogueId} rating={track.rating} /> */}
             <LengthCol>{formatTime(props.track.durationSecs)}</LengthCol>
-        </Flex>
+        </TrackComponent>
     )
 }
+
+const TrackFlex = styled.div`
+    display: flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 6px;
+    &:last-child {
+        border-bottom: 0;
+    }
+    &:hover {
+        background: ${colors.rowHover};
+    }
+`
+
+const SelectedTrackFlex = styled(TrackFlex)`
+    background: ${colors.primary};
+    color: white !important;
+    &:hover {
+        background: ${colors.primaryHover};
+    }
+`
 
 const TableCol = styled.div`padding-right: 20px;`
 
