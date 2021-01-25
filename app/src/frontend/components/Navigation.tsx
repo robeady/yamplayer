@@ -1,9 +1,9 @@
 import { css } from "linaria"
 import React, { PropsWithChildren } from "react"
 import { NavLink } from "react-router-dom"
-import { Flex } from "../elements"
+import { Flex, Subheading } from "../elements"
 import PlayArrow from "../icons/play_arrow.svg"
-import { colors, fontSizes } from "../styles"
+import { colors } from "../styles"
 
 export function LeftNav() {
     return (
@@ -31,22 +31,19 @@ export function LeftNav() {
 function NavSection(props: PropsWithChildren<{ title: string }>) {
     return (
         <div className={css`padding-bottom: 16px;`}>
-            <div
+            <Subheading
                 className={css`
-                    text-transform: uppercase;
-                    color: ${colors.greyText};
-                    font-size: ${fontSizes.tableSecondary};
                     padding-bottom: 8px;
                 `}>
                 {props.title}
-            </div>
+            </Subheading>
             {props.children}
         </div>
     )
 }
 
 function NavItem(props: { link: string; text: string }) {
-    // TODO icon
+    // TODO icon per item
     return (
         <NavLink
             to={props.link}

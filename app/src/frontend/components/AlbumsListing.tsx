@@ -2,7 +2,7 @@ import { css } from "linaria"
 import { styled } from "linaria/lib/react"
 import React, { useState } from "react"
 import { Album, Artist, Track } from "../../model"
-import { Flex, FlexCol } from "../elements"
+import { Flex, FlexCol, Subheading } from "../elements"
 import { formatTime } from "../formatting"
 import { resolveCanonical, useExplorerState } from "../library/library"
 import { usePlayerDispatch } from "../playback/playback"
@@ -43,19 +43,18 @@ export function AlbumsListing(props: { trackIds: string[] }) {
 
 function Headings() {
     return (
-        <Flex
-            className={css`
-                text-transform: uppercase;
-                font-size: ${fontSizes.tableSecondary};
-                color: ${colors.greyText};
-                height: 30px;
-            `}>
-            <AlbumArtistCol>Artist / Album</AlbumArtistCol>
-            <TrackNumCol>#</TrackNumCol>
-            <TrackCol>Track</TrackCol>
-            <RatingCol>Rating</RatingCol>
-            <LengthCol>Length</LengthCol>
-        </Flex>
+        <Subheading>
+            <Flex
+                className={css`
+                    height: 30px;
+                `}>
+                <AlbumArtistCol> Artist / Album</AlbumArtistCol>
+                <TrackNumCol>#</TrackNumCol>
+                <TrackCol> Track</TrackCol>
+                <RatingCol> Rating</RatingCol>
+                <LengthCol> Length</LengthCol>
+            </Flex>
+        </Subheading>
     )
 }
 
