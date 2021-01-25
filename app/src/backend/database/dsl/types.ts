@@ -94,5 +94,9 @@ export const boolean = columnType<boolean, false, undefined>(
 )
 
 function throwError(expectedType: string, value: unknown): never {
-    throw Error(`expected ${expectedType}, got ${typeof value} ${JSON.stringify(value)}`)
+    throw Error(
+        `expected ${expectedType}, got ${typeof value} ${JSON.stringify(value)} instanceof ${
+            (value as any)?.constructor?.name
+        }`,
+    )
 }

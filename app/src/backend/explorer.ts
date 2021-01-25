@@ -166,7 +166,11 @@ export class Explorer {
         // hmm, we really shouldn't be seeing duplicates here, maybe that should produce a warning
         const itunesTracksByExternalTrackId = new Map<string, ItunesTrack>()
         // TODO: for now we limit import to 200 tracks
-        for (const track of itunesLibraryContents.tracks.slice(0, 200)) {
+        for (const track of itunesLibraryContents.tracks
+            // order by date added, descending
+            .sort((t1, t2) => (t2.dateAdded ?? 0) - (t1.dateAdded ?? 0))
+            // take first 200 tracks, for the time being
+            .slice(0, 200)) {
             const matches = await this.searchForItunesTrack(track)
             if (matches.results.externalTrackIds.length === 0) {
                 // TODO: inform the user that we failed to match this track
@@ -225,7 +229,7 @@ export class Explorer {
             externalTracks.map(t =>
                 this.library.addTrack({
                     ...t,
-                    rating: itunesTracksByExternalTrackId.get(t.externalId)!.rating,
+                    rating: itunesTracksByExternalTrackId.get(t.externalId)!.rating ?? null,
                     albumId: albumIdsByExternalId.get(t.albumId)!,
                     artistId: artistIdsByExternalId.get(t.artistId)!,
                 }),
@@ -249,8 +253,10 @@ export class Explorer {
             title,
             albumName,
             artistName,
-            minDurationSecs: Math.floor(durationSecs - 10),
-            maxDurationSecs: Math.ceil(durationSecs + 10),
+            ...(durationSecs && {
+                minDurationSecs: Math.floor(durationSecs - 10),
+                maxDurationSecs: Math.ceil(durationSecs + 10),
+            }),
         }
         const matches = await this.service.searchTracks(query)
         if (matches.results.externalTrackIds.length !== 0) {

@@ -1,5 +1,6 @@
 import { parse } from "plist"
-import { Fraction } from "../../util/types"
+import { isoDateTimeToUnix } from "../../util/time"
+import { Fraction, Timestamp } from "../../util/types"
 
 export interface ItunesLibraryContents {
     tracks: ItunesTrack[]
@@ -9,8 +10,10 @@ export interface ItunesTrack {
     title: string
     artistName: string
     albumName: string
-    durationSecs: number
-    rating: Fraction | null
+    durationSecs?: number
+    rating?: Fraction
+    playCount?: number
+    dateAdded?: Timestamp
 }
 
 /**
@@ -18,15 +21,27 @@ export interface ItunesTrack {
  * some music service to actually play the tracks.
  */
 export function parseItunesLibraryXml(xmlContents: string): ItunesLibraryContents {
+    // research suggests that the following fields are always present
+    // Track ID
+    // Persistent ID
+    // Track Type
+    // Name
+    // Artist
+    // Album
+    // Genre
+    // Kind
     const parsed = parse(xmlContents) as any
     const tracks = Object.entries(parsed["Tracks"]).map(([_id, data]: [string, any]) => {
-        return {
+        const result: ItunesTrack = {
             title: data["Name"],
             artistName: data["Artist"],
             albumName: data["Album"],
-            durationSecs: data["Total Time"] / 1000,
-            rating: "Rating" in data ? data["Rating"] / 100 : null,
+            durationSecs: "Total Time" in data ? data["Total Time"] / 1000 : undefined,
+            rating: "Rating" in data ? data["Rating"] / 100 : undefined,
+            playCount: data["Play Count"],
+            dateAdded: "Date Added" in data ? isoDateTimeToUnix(data["Date Added"]) : undefined,
         }
+        return result
     })
     const _playlists = Object.entries(parsed["Playlists"]).map(([_id, _data]) => {
         return null // TODO _NoItunesPlaylistsYet_

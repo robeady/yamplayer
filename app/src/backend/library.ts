@@ -1,4 +1,4 @@
-import { Ulid, UlidMonotonic } from "id128"
+import { UlidMonotonic } from "id128"
 import {
     CataloguedAlbum,
     CataloguedArtist,
@@ -7,7 +7,8 @@ import {
     ExternalArtist,
     ExternalTrack,
 } from "../model"
-import { Dict, Fraction } from "../util/types"
+import { unixNow } from "../util/time"
+import { Dict, Fraction, Timestamp } from "../util/types"
 import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
 import { RowTypeFrom } from "./database/dsl/stages"
 import { MariaDB } from "./database/handle"
@@ -17,11 +18,11 @@ import * as tables from "./database/tables"
 
 export class LibraryStore {
     query: QueryBuilder
-    private constructor(database: MariaDB, private now: () => number = Date.now) {
+    private constructor(database: MariaDB, private now: () => Timestamp = unixNow) {
         this.query = queryBuilder(database)
     }
 
-    static async setup(database: MariaDB, now: () => number = Date.now): Promise<LibraryStore> {
+    static async setup(database: MariaDB, now: () => Timestamp = unixNow): Promise<LibraryStore> {
         await applyMigrations(yamplayerMigrations, database)
         return new LibraryStore(database, now)
     }
@@ -98,8 +99,8 @@ export class LibraryStore {
                 trackNumber: trackPointingToInternalArtistAndAlbum.trackNumber,
                 discNumber: trackPointingToInternalArtistAndAlbum.discNumber,
                 externalId: trackPointingToInternalArtistAndAlbum.externalId,
-                albumId: Ulid.fromCanonical(trackPointingToInternalArtistAndAlbum.albumId),
-                artistId: Ulid.fromCanonical(trackPointingToInternalArtistAndAlbum.artistId),
+                albumId: UlidMonotonic.fromCanonical(trackPointingToInternalArtistAndAlbum.albumId),
+                artistId: UlidMonotonic.fromCanonical(trackPointingToInternalArtistAndAlbum.artistId),
                 savedTimestamp: now,
                 durationSecs: trackPointingToInternalArtistAndAlbum.durationSecs,
                 isrc: trackPointingToInternalArtistAndAlbum.isrc,
@@ -199,7 +200,7 @@ function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): CataloguedA
         title: albumFromDb.title,
         coverImageUrl: albumFromDb.coverImageUrl,
         releaseDate: albumFromDb.releaseDate,
-        cataloguedTimestamp: albumFromDb.cataloguedTimestamp,
+        cataloguedTimestamp: albumFromDb.cataloguedTimestamp as Timestamp,
     }
 }
 
@@ -209,7 +210,7 @@ function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): Catalogu
         externalId: artistFromDb.externalId,
         name: artistFromDb.name,
         imageUrl: artistFromDb.imageUrl,
-        cataloguedTimestamp: artistFromDb.cataloguedTimestamp,
+        cataloguedTimestamp: artistFromDb.cataloguedTimestamp as Timestamp,
     }
 }
 
@@ -225,7 +226,7 @@ function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): CataloguedT
         durationSecs: trackFromDb.durationSecs,
         isrc: trackFromDb.isrc,
         rating: trackFromDb.rating,
-        cataloguedTimestamp: trackFromDb.cataloguedTimestamp,
-        savedTimestamp: trackFromDb.savedTimestamp,
+        cataloguedTimestamp: trackFromDb.cataloguedTimestamp as Timestamp,
+        savedTimestamp: trackFromDb.savedTimestamp as Timestamp,
     }
 }

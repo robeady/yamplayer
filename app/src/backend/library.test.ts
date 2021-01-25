@@ -1,5 +1,6 @@
 import { Duration, TemporalUnit } from "node-duration"
 import { GenericContainer, StartedTestContainer, Wait } from "testcontainers"
+import { Timestamp } from "../util/types"
 import { MariaDB } from "./database/handle"
 import { LibraryStore } from "./library"
 
@@ -25,7 +26,7 @@ describe("library store tests", () => {
             .withWaitStrategy(Wait.forHealthCheck())
             .start()
         db = MariaDB.connect(container.getMappedPort(3306))
-        library = await LibraryStore.setup(db, () => 0)
+        library = await LibraryStore.setup(db, () => 0 as Timestamp)
     })
 
     afterEach(async () => {
