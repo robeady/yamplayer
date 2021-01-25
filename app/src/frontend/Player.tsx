@@ -50,7 +50,7 @@ function PlayingTrack() {
                     className={css`
                         display: flex;
                     `}>
-                    <img src={playingAlbum?.coverImageUrl ?? undefined} height={40} />
+                    <img src={playingAlbum?.coverImageUrl ?? undefined} height={40} width={40} />
                     <div>
                         <div>{playingTrack?.title}</div>
                         <div>
