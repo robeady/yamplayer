@@ -109,10 +109,9 @@ export class LibraryStore {
                 cataloguedTimestamp: now,
             })
             .execute()
-        const catalogueId = result.lastInsertedId.toString()
         return {
             ...trackPointingToInternalArtistAndAlbum,
-            catalogueId,
+            catalogueId: id.toCanonical(),
             cataloguedTimestamp: now,
             savedTimestamp: now,
             rating: null,
