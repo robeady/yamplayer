@@ -17,26 +17,31 @@ type ArtistResponse = typeof import("./artistResponse.json") & MaybeEntityNotFou
 export class DeezerApiClient implements Service {
     private httpGet: <T>(path: string, config?: AxiosRequestConfig) => Promise<AxiosResponse<T>>
 
-    private constructor(apiBaseUrl: string, axios: AxiosInstance) {
-        const rateLimiter = new Bottleneck({
-            reservoir: 9,
-            reservoirRefreshAmount: 9,
-            reservoirIncreaseMaximum: 9,
-            reservoirRefreshInterval: 1000, // 10 requests per second is deezer's limit
-            maxConcurrent: 3,
-            minTime: 100, // at least 100ms between requests after 3 concurrent requests are launched
-        })
-        this.httpGet = <T>(path: string, config?: AxiosRequestConfig) =>
-            rateLimiter.schedule(() => {
-                const url = `${apiBaseUrl}/${path}`
-                console.log("sending GET request " + JSON.stringify({ ...config, path }))
-                return axios.get<T>(url, config)
+    private constructor(apiBaseUrl: string, axios: AxiosInstance, rateLimit: boolean) {
+        const get = <T>(path: string, config?: AxiosRequestConfig) => {
+            const url = `${apiBaseUrl}/${path}`
+            console.log("sending GET request " + JSON.stringify({ ...config, path }))
+            return axios.get<T>(url, config)
+        }
+        if (rateLimit) {
+            const rateLimiter = new Bottleneck({
+                reservoir: 9,
+                reservoirRefreshAmount: 9,
+                reservoirIncreaseMaximum: 9,
+                reservoirRefreshInterval: 1000, // 10 requests per second is deezer's limit
+                maxConcurrent: 3,
+                minTime: 100, // at least 100ms between requests after 3 concurrent requests are launched
             })
+            this.httpGet = rateLimiter.wrap(get as any)
+        } else {
+            this.httpGet = get
+        }
     }
 
     static async create({
         apiBaseUrl = "https://api.deezer.com",
         cacheDirectory = null as string | null,
+        rateLimit = true,
     } = {}) {
         console.log("cache dir " + cacheDirectory)
         return new DeezerApiClient(
@@ -53,6 +58,7 @@ export class DeezerApiClient implements Service {
                               exclude: { query: false },
                           }).adapter,
             }),
+            rateLimit,
         )
     }
 
