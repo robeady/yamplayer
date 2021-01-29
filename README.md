@@ -54,6 +54,8 @@ See https://www.figma.com/file/UL3IcZhYuqSxL31gvCydxl/Yamplayer-app
 
 `yarn test`
 
+add `--silent` to supress stdout, `--verbose` to see a detailed breakdown of every test, `--watch` for interactive mode.
+
 ### Project structure
 
 The codebase is a single typescript module. We intend to rely on webpack tree shaking to eliminate unnecessary dependencies from the frontend and backend. Running the backend with ts-node-dev avoids any unnecessary reloads.
