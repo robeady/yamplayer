@@ -1,13 +1,20 @@
 import sqlstring from "sqlstring"
 
 export interface SqlDialect {
-    escape(literal: unknown): string
-    escapeId(identifier: string): string
+    convertSqlValueToJs(sqlValue: unknown): unknown
+    escapeJsValueToSql(literal: unknown): string
+    escapeIdentifier(identifier: string): string
 }
 
 export class MySqlDialect implements SqlDialect {
-    escape = (value: unknown) => {
+    convertSqlValueToJs = (sqlValue: unknown) => {
+        // TODO: verify that this is sensible
+        return sqlValue
+    }
+
+    escapeJsValueToSql = (value: unknown) => {
         if (value instanceof Array) {
+            // TODO: maybe we should do this on the caller side?
             return "(" + sqlstring.escape(value) + ")"
         } else if (value instanceof Uint8Array) {
             // sqlstring doesn't handle Uint8Array out of the box, it becomes a set of key-value pairs instead :(
@@ -29,5 +36,5 @@ export class MySqlDialect implements SqlDialect {
         }
     }
 
-    escapeId = (identifier: string) => sqlstring.escapeId(identifier)
+    escapeIdentifier = (identifier: string) => sqlstring.escapeId(identifier)
 }

@@ -1,7 +1,7 @@
 import { table } from "./definitions"
-import { queryBuilder, noDatabaseHandle } from "./impl"
-import { string, number, intAsJsString, boolean } from "./types"
 import { MySqlDialect } from "./dialect"
+import { noDatabaseHandle, queryBuilder } from "./impl"
+import { number, string } from "./types"
 
 const exampleTable = table("foo", {
     col1: string,
@@ -10,11 +10,6 @@ const exampleTable = table("foo", {
 
 const exampleTable2 = table("bar", {
     col3: string,
-})
-
-const mappyTable = table("baz", {
-    id: intAsJsString,
-    enabled: boolean,
 })
 
 const qb = queryBuilder(noDatabaseHandle(new MySqlDialect()))
@@ -80,9 +75,6 @@ describe("update", () => {
         expect(qb(exampleTable).where({ col1: "old" }).update({ col1: "a", col2: 42 }).render().sql).toBe(
             "UPDATE `foo` SET `col1` = 'a', `col2` = 42 WHERE `foo`.`col1` = 'old'",
         )
-    })
-    test("update applies type mapping", () => {
-        expect(qb(mappyTable).update({ id: "42" }).render().sql).toBe("UPDATE `baz` SET `id` = 42")
     })
     // TODO: update should not use aliases?
 })
@@ -167,11 +159,5 @@ describe("fetching", () => {
         expect(queryBuilderReturningMultipleRows(exampleTable).fetchOne()).rejects.toThrow(
             "Expected 1 row, got 3",
         )
-    })
-})
-
-describe("row mapping", () => {
-    test("maps types", () => {
-        expect(qb(mappyTable).render().mapRow([42, 1])).toStrictEqual({ id: "42", enabled: true })
     })
 })

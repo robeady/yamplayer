@@ -1,12 +1,12 @@
 import { table } from "./dsl/definitions"
-import { binaryUlid, number, string } from "./dsl/types"
+import { binary, number, string } from "./dsl/types"
 
 export const track = table("track", {
-    id: binaryUlid,
+    id: binary,
     cataloguedTimestamp: number,
     externalId: string,
-    albumId: binaryUlid,
-    artistId: binaryUlid,
+    albumId: binary,
+    artistId: binary,
     title: string,
     trackNumber: number.orNull(),
     discNumber: number.orNull(),
@@ -18,7 +18,7 @@ export const track = table("track", {
 })
 
 export const album = table("album", {
-    id: binaryUlid,
+    id: binary,
     cataloguedTimestamp: number,
     externalId: string,
     title: string,
@@ -27,7 +27,7 @@ export const album = table("album", {
 })
 
 export const artist = table("artist", {
-    id: binaryUlid,
+    id: binary,
     externalId: string,
     name: string,
     imageUrl: string.orNull(),
@@ -35,11 +35,11 @@ export const artist = table("artist", {
 })
 
 export const playlist = table("playlist", {
-    id: binaryUlid,
+    id: binary,
     name: string,
 })
 
 export const playlistEntry = table("playlistEntry", {
-    playlistId: binaryUlid,
-    trackId: binaryUlid,
+    playlistId: binary,
+    trackId: binary,
 })

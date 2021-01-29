@@ -1,4 +1,4 @@
-import { TableDefinition, ColumnDefinition, Origin, SubqueryOrigin, TypeMapper } from "./definitions"
+import { ColumnDefinition, Origin, SubqueryOrigin, TableDefinition, type } from "./definitions"
 import { PHANTOM_INSTANCE } from "./symbols"
 
 export interface ExecResult {
@@ -8,9 +8,9 @@ export interface ExecResult {
 
 export type PickStringProperties<T> = Pick<T, keyof T & string>
 
-type ProjectedTypeOf<Col extends { typeMapper: TypeMapper }> = Col["typeMapper"][typeof PHANTOM_INSTANCE]
+type ProjectedTypeOf<Col extends { type: type }> = Col["type"][typeof PHANTOM_INSTANCE]
 
-export type ColumnsFrom<TableAlias, SelectedColumns extends Record<string, TypeMapper>> = {
+export type ColumnsFrom<TableAlias, SelectedColumns extends Record<string, type>> = {
     [ColumnAlias in keyof SelectedColumns & string]: ColumnDefinition<
         SubqueryOrigin,
         SelectedColumns[ColumnAlias],
@@ -87,7 +87,7 @@ export type QueriedTablesFromSingle<QueriedTable extends TableDefinition> = Reco
 >
 
 export type DefaultSelectionFromSingle<QueriedTable extends TableDefinition> = {
-    [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["typeMapper"]
+    [ColumnName in keyof QueriedTable]: QueriedTable[ColumnName]["type"]
 }
 
 export type KeyByAlias<QueriedTable extends TableDefinition> = Record<
@@ -230,7 +230,7 @@ export interface FetchStage<Selection> {
               ColumnsFrom<
                   Alias,
                   {
-                      [ColumnName in keyof Selection]: Selection[ColumnName]["typeMapper"]
+                      [ColumnName in keyof Selection]: Selection[ColumnName]["type"]
                   }
               >
           >

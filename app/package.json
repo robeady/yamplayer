@@ -39,6 +39,7 @@
         "sanitize.css": "^12.0.1",
         "sqlstring": "^2.3.2",
         "tough-cookie": "^2.5.0",
+        "ts-custom-error": "^3.2.0",
         "use-context-selector": "1.1.1"
     },
     "devDependencies": {

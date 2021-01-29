@@ -1,6 +1,7 @@
 import { mapValues, size } from "lodash"
 import { ColumnDefinition, Origin, RealTableOrigin, SubqueryOrigin, TableDefinition } from "./definitions"
 import { SqlDialect } from "./dialect"
+import { DslMisuseError } from "./errors"
 import {
     AliasIn,
     ColumnIn,
@@ -134,7 +135,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
             if (f === undefined) {
                 return parseFilterArgs(this.selection, args)
             } else {
-                throw Error("DSL misuse: where called multiple times")
+                throw new DslMisuseError("where called multiple times")
             }
         })
     }
@@ -144,7 +145,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
             if (f === undefined) {
                 return parseFilterArgs(this.selection, args)
             } else {
-                throw Error("DSL misuse: on called multiple times")
+                throw new DslMisuseError("on called multiple times")
             }
         })
     }
@@ -160,7 +161,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
     private andOr = (connective: "and" | "or", ...args: {}[]) => {
         return this.withFilter(f => {
             if (f === undefined) {
-                throw Error(`DSL misuse: ${connective} called before where/join`)
+                throw new DslMisuseError(`${connective} called before where/join`)
             } else {
                 return { ...f, rest: [...f.rest, [connective, parseFilterArgs(this.selection, args)]] }
             }
@@ -182,7 +183,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
 
     private withJoinFilter = (f: (oldFilter?: Filter) => Filter) => {
         if (this.state.currentlyJoiningAgainstAlias === undefined) {
-            throw new Error("on/and/or clause used prior to join")
+            throw new DslMisuseError("on/and/or clause used prior to join")
         }
         return new StageBackend<QueriedTables, Selection>(
             {
@@ -273,8 +274,6 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
 
         const selectionDestinations = traverseSelection(this.selection, keyPath => keyPath)
 
-        const selectionTypeMappers = traverseSelection(this.selection, (_, columnDef) => columnDef.typeMapper)
-
         const columnsInPrimaryTable = Object.values(this.state.primaryTable)
         if (columnsInPrimaryTable.length === 0) throw Error("Primary table has no columns")
         const { tableOrigin, tableAlias } = Object.values(this.state.primaryTable)[0]
@@ -282,7 +281,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
             tableOrigin.type === "table"
                 ? this.renderer.realTableSql(tableOrigin)
                 : `(${tableOrigin.render().sql})`
-        const fromSql = `${tableOriginSql} AS ${dialect.escapeId(tableAlias)}`
+        const fromSql = `${tableOriginSql} AS ${dialect.escapeIdentifier(tableAlias)}`
 
         const sql = `SELECT ${selectionsSql} FROM ${fromSql}${this.renderer.joinSql(
             this.state,
@@ -296,7 +295,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
                 rowObject = populateAtPath(
                     rowObject,
                     selectionDestinations[i],
-                    selectionTypeMappers[i].sqlToJs(row[i]),
+                    dialect.convertSqlValueToJs(row[i]),
                 )
             }
             return rowObject
@@ -327,7 +326,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
               ColumnsFrom<
                   Alias,
                   {
-                      [ColumnName in keyof Selection]: Selection[ColumnName]["typeMapper"]
+                      [ColumnName in keyof Selection]: Selection[ColumnName]["type"]
                   }
               >
           >
@@ -346,7 +345,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
                 tableOrigin: { type: "subquery", render: this.render },
                 tableAlias: alias,
                 columnName: name,
-                typeMapper: oldDef.typeMapper,
+                type: oldDef.type,
                 hasDefault: false,
                 references: undefined,
             } as const
@@ -446,7 +445,9 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
 
     truncate = () => {
         const dialect = this.backend.state.databaseHandle.dialect
-        const tableNameSql = this.backend.primaryTableName.map(part => dialect.escapeId(part)).join(".")
+        const tableNameSql = this.backend.primaryTableName
+            .map(part => dialect.escapeIdentifier(part))
+            .join(".")
         return this.executeStage(`TRUNCATE TABLE ${tableNameSql}`)
     }
 
@@ -465,14 +466,12 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
             }
             return { columnName, columnDefinition, value }
         })
-        const tableNameSql = primaryTableName.map(part => dialect.escapeId(part)).join(".")
+        const tableNameSql = primaryTableName.map(part => dialect.escapeIdentifier(part)).join(".")
         if (columns.length === 0) {
             return this.executeStage(`INSERT INTO ${tableNameSql} DEFAULT VALUES`)
         } else {
-            const columnsSql = columns.map(c => dialect.escapeId(c.columnName)).join(", ")
-            const valuesSql = columns
-                .map(c => dialect.escape(c.columnDefinition.typeMapper.jsToSql(c.value)))
-                .join(", ")
+            const columnsSql = columns.map(c => dialect.escapeIdentifier(c.columnName)).join(", ")
+            const valuesSql = columns.map(c => dialect.escapeJsValueToSql(c.value)).join(", ")
             return this.executeStage(`INSERT INTO ${tableNameSql} (${columnsSql}) VALUES (${valuesSql})`)
         }
     }
@@ -481,27 +480,15 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
         const {
             state: {
                 filter,
-                primaryTable,
                 databaseHandle: { dialect },
             },
             primaryTableName,
         } = this.backend
-
-        const tableNameSql = primaryTableName.map(part => dialect.escapeId(part)).join(".")
-
+        const tableNameSql = primaryTableName.map(part => dialect.escapeIdentifier(part)).join(".")
         const updateSql = Object.entries(row)
-            .map(([columnName, value]) => {
-                const columnDefinition = primaryTable[columnName]
-                if (columnDefinition === undefined) {
-                    throw Error(`column ${columnName} not found in table with alias ${primaryTableName}`)
-                }
-                return { columnName, columnDefinition, value }
-            })
             .map(
-                ({ columnName, columnDefinition, value }) =>
-                    `${dialect.escapeId(columnName)} = ${dialect.escape(
-                        columnDefinition.typeMapper.jsToSql(value),
-                    )}`,
+                ([columnName, value]) =>
+                    `${dialect.escapeIdentifier(columnName)} = ${dialect.escapeJsValueToSql(value)}`,
             )
             .join(", ")
         const sql = `UPDATE ${tableNameSql} SET ${updateSql}${this.renderer.whereSql(filter)}`
@@ -516,7 +503,7 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
             },
             primaryTableName,
         } = this.backend
-        const tableNameSql = primaryTableName.map(part => dialect.escapeId(part)).join(".")
+        const tableNameSql = primaryTableName.map(part => dialect.escapeIdentifier(part)).join(".")
         const sql = `DELETE FROM ${tableNameSql}${this.renderer.whereSql(filter)}`
         return this.executeStage(sql)
     }
@@ -542,7 +529,7 @@ function parseFilterArgs(defaultSelection: any, args: {}[]): Filter {
     } else if (args.length === 3) {
         return { type: "filter", first: parseWhereClause(args[0], args[1], args[2]), rest: [] }
     } else {
-        throw Error("DSL misuse: invalid where clause")
+        throw new DslMisuseError("invalid where clause")
     }
 }
 
@@ -630,11 +617,11 @@ class Renderer {
     constructor(private dialect: SqlDialect) {}
 
     escapeId(identifier: string) {
-        return this.dialect.escapeId(identifier)
+        return this.dialect.escapeIdentifier(identifier)
     }
 
     escape(value: unknown) {
-        return this.dialect.escape(value)
+        return this.dialect.escapeJsValueToSql(value)
     }
 
     columnDefinitionSql(columnDef: ColumnDefinition<Origin, unknown>, alias?: string) {
@@ -756,6 +743,7 @@ class Renderer {
             case "column":
                 return this.columnDefinitionSql(expr.definition)
             case "literal":
+                // TODO: get appropriate column definition
                 return this.escape(expr.literal)
         }
     }
