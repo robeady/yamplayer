@@ -28,11 +28,11 @@ class RandomProvider {
     }
 }
 
-const UINT32_RADIX = 1 << 32 // 2^32
+const UINT32_RADIX = Math.pow(2, 32)
 const UINT8_MAX = 0b1111_1111
 
 export class CatalogueIdGenerator {
-    private lastTimestamp = -1
+    private lastTimestamp: number | undefined
     private lastId = new Uint8Array(LENGTH_BYTES)
 
     // TODO: probably simpler to make this just a module with a generate function

@@ -72,3 +72,13 @@ test("re-randomise on increment exhastion", () => {
     // since our random source is fixed this means the same ID should repeat
     expect(generator.generate()).toStrictEqual(expected)
 })
+
+test("embeds correct timestamps", () => {
+    const generator = new CatalogueIdGenerator(
+        () => 0xaa_bb_cc_dd_ee_ff as Timestamp,
+        () => new Uint8Array(10).fill(255),
+    )
+    expect(generator.generate().slice(0, 6)).toStrictEqual(
+        new Uint8Array([0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff]),
+    )
+})
