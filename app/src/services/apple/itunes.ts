@@ -1,5 +1,5 @@
 import { parse } from "plist"
-import { isoDateTimeToUnix } from "../../util/time"
+import { isoToTimestamp } from "../../util/time"
 import { Fraction, Timestamp } from "../../util/types"
 
 export interface ItunesLibraryContents {
@@ -39,7 +39,7 @@ export function parseItunesLibraryXml(xmlContents: string): ItunesLibraryContent
             durationSecs: "Total Time" in data ? data["Total Time"] / 1000 : undefined,
             rating: "Rating" in data ? data["Rating"] / 100 : undefined,
             playCount: data["Play Count"],
-            dateAdded: "Date Added" in data ? isoDateTimeToUnix(data["Date Added"]) : undefined,
+            dateAdded: "Date Added" in data ? isoToTimestamp(data["Date Added"]) : undefined,
         }
         return result
     })

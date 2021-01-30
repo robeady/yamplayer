@@ -1,4 +1,3 @@
-import { UlidMonotonic } from "id128"
 import {
     CataloguedAlbum,
     CataloguedArtist,
@@ -9,6 +8,13 @@ import {
 } from "../model"
 import { unixNow } from "../util/time"
 import { Dict, Fraction, Timestamp } from "../util/types"
+import {
+    CatalogueId,
+    CatalogueIdGenerator,
+    CatalogueIdString,
+    parseCatalogueId,
+    stringifyCatalogueId,
+} from "./database/catalogueIds"
 import { queryBuilder, QueryBuilder } from "./database/dsl/impl"
 import { RowTypeFrom } from "./database/dsl/stages"
 import { MariaDB } from "./database/handle"
@@ -18,13 +24,18 @@ import * as tables from "./database/tables"
 
 export class LibraryStore {
     query: QueryBuilder
-    private constructor(database: MariaDB, private now: () => Timestamp = unixNow) {
+    private constructor(
+        database: MariaDB,
+        private now: () => Timestamp = now,
+        // TODO: should we have one ID generator per entity?
+        private idGenerator: CatalogueIdGenerator,
+    ) {
         this.query = queryBuilder(database)
     }
 
     static async setup(database: MariaDB, now: () => Timestamp = unixNow): Promise<LibraryStore> {
         await applyMigrations(yamplayerMigrations, database)
-        return new LibraryStore(database, now)
+        return new LibraryStore(database, now, new CatalogueIdGenerator(now))
     }
 
     async clear(): Promise<void> {
@@ -62,7 +73,7 @@ export class LibraryStore {
     async getAlbum(catalogueId: string) {
         return mapAlbum(
             await this.query(tables.album)
-                .where({ id: UlidMonotonic.fromCanonical(catalogueId).bytes })
+                .where({ id: parseCatalogueId(catalogueId) })
                 .fetchOne(),
         )
     }
@@ -70,37 +81,37 @@ export class LibraryStore {
     async getArtist(catalogueId: string) {
         return mapArtist(
             await this.query(tables.artist)
-                .where({ id: UlidMonotonic.fromCanonical(catalogueId).bytes })
+                .where({ id: parseCatalogueId(catalogueId) })
                 .fetchOne(),
         )
     }
 
     async save(trackCatalogueId: string) {
         await this.query(tables.track)
-            .where({ id: UlidMonotonic.fromCanonical(trackCatalogueId).bytes })
+            .where({ id: parseCatalogueId(trackCatalogueId) })
             .update({ savedTimestamp: this.now() })
             .execute()
     }
 
     async unsave(trackCatalogueId: string) {
         await this.query(tables.track)
-            .where({ id: UlidMonotonic.fromCanonical(trackCatalogueId).bytes })
+            .where({ id: parseCatalogueId(trackCatalogueId) })
             .update({ savedTimestamp: null })
             .execute()
     }
 
     async addTrack(trackPointingToInternalArtistAndAlbum: ExternalTrack): Promise<CataloguedTrack> {
         const now = this.now()
-        const id = UlidMonotonic.generate()
+        const id = this.idGenerator.generate()
         const result = await this.query(tables.track)
             .insert({
-                id: id.bytes,
+                id,
                 title: trackPointingToInternalArtistAndAlbum.title,
                 trackNumber: trackPointingToInternalArtistAndAlbum.trackNumber,
                 discNumber: trackPointingToInternalArtistAndAlbum.discNumber,
                 externalId: trackPointingToInternalArtistAndAlbum.externalId,
-                albumId: UlidMonotonic.fromCanonical(trackPointingToInternalArtistAndAlbum.albumId).bytes,
-                artistId: UlidMonotonic.fromCanonical(trackPointingToInternalArtistAndAlbum.artistId).bytes,
+                albumId: parseCatalogueId(trackPointingToInternalArtistAndAlbum.albumId),
+                artistId: parseCatalogueId(trackPointingToInternalArtistAndAlbum.artistId),
                 savedTimestamp: now,
                 durationSecs: trackPointingToInternalArtistAndAlbum.durationSecs,
                 isrc: trackPointingToInternalArtistAndAlbum.isrc,
@@ -111,7 +122,7 @@ export class LibraryStore {
             .execute()
         return {
             ...trackPointingToInternalArtistAndAlbum,
-            catalogueId: id.toCanonical(),
+            catalogueId: stringifyCatalogueId(id),
             cataloguedTimestamp: now,
             savedTimestamp: now,
             rating: null,
@@ -120,10 +131,10 @@ export class LibraryStore {
 
     async addAlbum(externalAlbum: ExternalAlbum): Promise<CataloguedAlbum> {
         const now = this.now()
-        const id = UlidMonotonic.generate()
+        const id = this.idGenerator.generate()
         await this.query(tables.album)
             .insert({
-                id: id.bytes,
+                id,
                 title: externalAlbum.title,
                 coverImageUrl: externalAlbum.coverImageUrl,
                 releaseDate: externalAlbum.releaseDate,
@@ -132,22 +143,22 @@ export class LibraryStore {
             })
             .execute()
 
-        return { ...externalAlbum, catalogueId: id.toCanonical(), cataloguedTimestamp: now }
+        return { ...externalAlbum, catalogueId: stringifyCatalogueId(id), cataloguedTimestamp: now }
     }
 
     async addArtist(externalArtist: ExternalArtist): Promise<CataloguedArtist> {
         const now = this.now()
-        const id = UlidMonotonic.generate()
+        const id = this.idGenerator.generate()
         await this.query(tables.artist)
             .insert({
-                id: id.bytes,
+                id,
                 name: externalArtist.name,
                 imageUrl: externalArtist.imageUrl,
                 externalId: externalArtist.externalId,
                 cataloguedTimestamp: now,
             })
             .execute()
-        return { ...externalArtist, catalogueId: id.toCanonical(), cataloguedTimestamp: now }
+        return { ...externalArtist, catalogueId: stringifyCatalogueId(id), cataloguedTimestamp: now }
     }
 
     async matchTracks(externalTrackIds: string[]) {
@@ -180,12 +191,12 @@ export class LibraryStore {
               ).map(mapArtist)
     }
 
-    async setRating(trackId: string, rating: Fraction | null): Promise<void> {
+    async setRating(trackId: CatalogueIdString, rating: Fraction | null): Promise<void> {
         if (rating !== null && (rating < 0 || rating > 1)) {
             throw Error(`tried to give track ${trackId} invalid rating ${rating}`)
         }
         await this.query(tables.track)
-            .where({ id: UlidMonotonic.fromCanonical(trackId).bytes })
+            .where({ id: parseCatalogueId(trackId) })
             .update({ rating })
             .execute()
         // TODO: verify that the track existed (affected rows may still be 0 if the rating didn't change)
@@ -194,7 +205,7 @@ export class LibraryStore {
 
 function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): CataloguedAlbum {
     return {
-        catalogueId: UlidMonotonic.construct(albumFromDb.id).toCanonical(),
+        catalogueId: stringifyCatalogueId(albumFromDb.id as CatalogueId),
         externalId: albumFromDb.externalId,
         title: albumFromDb.title,
         coverImageUrl: albumFromDb.coverImageUrl,
@@ -205,7 +216,7 @@ function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): CataloguedA
 
 function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): CataloguedArtist {
     return {
-        catalogueId: UlidMonotonic.construct(artistFromDb.id).toCanonical(),
+        catalogueId: stringifyCatalogueId(artistFromDb.id as CatalogueId),
         externalId: artistFromDb.externalId,
         name: artistFromDb.name,
         imageUrl: artistFromDb.imageUrl,
@@ -215,9 +226,9 @@ function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): Catalogu
 
 function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): CataloguedTrack {
     return {
-        catalogueId: UlidMonotonic.construct(trackFromDb.id).toCanonical(),
-        albumId: UlidMonotonic.construct(trackFromDb.albumId).toCanonical(),
-        artistId: UlidMonotonic.construct(trackFromDb.artistId).toCanonical(),
+        catalogueId: stringifyCatalogueId(trackFromDb.id as CatalogueId),
+        albumId: stringifyCatalogueId(trackFromDb.albumId as CatalogueId),
+        artistId: stringifyCatalogueId(trackFromDb.artistId as CatalogueId),
         externalId: trackFromDb.externalId,
         title: trackFromDb.title,
         trackNumber: trackFromDb.trackNumber,

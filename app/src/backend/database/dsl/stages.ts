@@ -1,4 +1,4 @@
-import { ColumnDefinition, Origin, SubqueryOrigin, TableDefinition, type } from "./definitions"
+import { ColumnDefinition, Origin, SqlType, SubqueryOrigin, TableDefinition } from "./definitions"
 import { PHANTOM_INSTANCE } from "./symbols"
 
 export interface ExecResult {
@@ -8,9 +8,9 @@ export interface ExecResult {
 
 export type PickStringProperties<T> = Pick<T, keyof T & string>
 
-type ProjectedTypeOf<Col extends { type: type }> = Col["type"][typeof PHANTOM_INSTANCE]
+type ProjectedTypeOf<Col extends { type: SqlType }> = Col["type"][typeof PHANTOM_INSTANCE]
 
-export type ColumnsFrom<TableAlias, SelectedColumns extends Record<string, type>> = {
+export type ColumnsFrom<TableAlias, SelectedColumns extends Record<string, SqlType>> = {
     [ColumnAlias in keyof SelectedColumns & string]: ColumnDefinition<
         SubqueryOrigin,
         SelectedColumns[ColumnAlias],
