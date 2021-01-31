@@ -9,7 +9,6 @@ import {
 import { unixNow } from "../util/time"
 import { Dict, Fraction, Timestamp } from "../util/types"
 import {
-    CatalogueId,
     CatalogueIdGenerator,
     CatalogueIdString,
     parseCatalogueId,
@@ -205,7 +204,7 @@ export class LibraryStore {
 
 function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): CataloguedAlbum {
     return {
-        catalogueId: stringifyCatalogueId(albumFromDb.id as CatalogueId),
+        catalogueId: stringifyCatalogueId(albumFromDb.id),
         externalId: albumFromDb.externalId,
         title: albumFromDb.title,
         coverImageUrl: albumFromDb.coverImageUrl,
@@ -216,7 +215,7 @@ function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): CataloguedA
 
 function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): CataloguedArtist {
     return {
-        catalogueId: stringifyCatalogueId(artistFromDb.id as CatalogueId),
+        catalogueId: stringifyCatalogueId(artistFromDb.id),
         externalId: artistFromDb.externalId,
         name: artistFromDb.name,
         imageUrl: artistFromDb.imageUrl,
@@ -226,9 +225,9 @@ function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): Catalogu
 
 function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): CataloguedTrack {
     return {
-        catalogueId: stringifyCatalogueId(trackFromDb.id as CatalogueId),
-        albumId: stringifyCatalogueId(trackFromDb.albumId as CatalogueId),
-        artistId: stringifyCatalogueId(trackFromDb.artistId as CatalogueId),
+        catalogueId: stringifyCatalogueId(trackFromDb.id),
+        albumId: stringifyCatalogueId(trackFromDb.albumId),
+        artistId: stringifyCatalogueId(trackFromDb.artistId),
         externalId: trackFromDb.externalId,
         title: trackFromDb.title,
         trackNumber: trackFromDb.trackNumber,
