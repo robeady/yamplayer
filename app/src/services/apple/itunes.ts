@@ -37,7 +37,7 @@ export function parseItunesLibraryXml(xmlContents: string): ItunesLibraryContent
             artistName: data["Artist"],
             albumName: data["Album"],
             durationSecs: "Total Time" in data ? data["Total Time"] / 1000 : undefined,
-            rating: "Rating" in data ? data["Rating"] / 100 : undefined,
+            rating: "Rating" in data && !data["Rating Computed"] ? data["Rating"] / 100 : undefined,
             playCount: data["Play Count"],
             dateAdded: "Date Added" in data ? isoToTimestamp(data["Date Added"]) : undefined,
         }
