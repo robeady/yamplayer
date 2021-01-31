@@ -50,7 +50,6 @@ export const {
         }
 
         const setTrackRating = async (trackId: string, newRating: number | null) => {
-            console.log(`setting rating of track ${trackId} to ${newRating}`)
             await explorerClient.setTrackRating(trackId, newRating)
             update(s => {
                 const track = s.tracks[trackId]
@@ -82,7 +81,6 @@ export const {
 
     useEffect(() => {
         dispatch.explorerClient.getLibrary().then(r => {
-            console.log(JSON.stringify(r))
             // TODO: should we be populating external ID pointers too?
             setState(s => ({ ...s, ...r }))
         })
