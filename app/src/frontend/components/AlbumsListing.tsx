@@ -2,12 +2,13 @@ import { css } from "linaria"
 import { styled } from "linaria/lib/react"
 import React, { useState } from "react"
 import { Album, Artist, Track } from "../../model"
-import { Flex, FlexCol, Subheading } from "../elements"
+import { Col, DotDotDot, Flex, Subheading } from "../elements"
 import { formatTime } from "../formatting"
-import { resolveCanonical, useExplorerState } from "../library/library"
+import { resolveCanonical, useExplorerDispatch, useExplorerState } from "../library/library"
 import { usePlayerDispatch } from "../playback/playback"
 import { createState } from "../state"
 import { colors, fontSizes } from "../styles"
+import { TrackRating } from "./Rating"
 
 const SelectedTrackId = createState((props: {}) => useState<string>())
 
@@ -59,7 +60,7 @@ function Headings() {
 }
 
 function AlbumRow(props: { tracks: Track[]; albumId: string }) {
-    const fullSizeThreshold = 10
+    const fullSizeThreshold = 9
     const album = useExplorerState(s => resolveCanonical(s.albums, props.albumId))
     const artist = useExplorerState(s =>
         resolveCanonical(s.artists, props.tracks[0].artistId /* TODO: get album primary artist */),
@@ -67,7 +68,7 @@ function AlbumRow(props: { tracks: Track[]; albumId: string }) {
     return (
         <Flex
             className={css`
-                border-bottom: 1px solid ${colors.rowBorder};
+                border-bottom: 1px solid ${colors.grey8};
                 font-size: ${fontSizes.tableContent};
             `}>
             {props.tracks.length >= fullSizeThreshold ? (
@@ -75,7 +76,7 @@ function AlbumRow(props: { tracks: Track[]; albumId: string }) {
             ) : (
                 <SmallAlbumCell album={album} artist={artist} />
             )}
-            <FlexCol className={css`width: 100%; padding: 10px 0;`}>
+            <Col className={css`width: 100%; padding: 10px 0;`}>
                 {props.tracks.map(track => (
                     <TrackRow
                         key={track.catalogueId ?? track.externalId}
@@ -84,7 +85,7 @@ function AlbumRow(props: { tracks: Track[]; albumId: string }) {
                         artist={artist}
                     />
                 ))}
-            </FlexCol>
+            </Col>
         </Flex>
     )
 }
@@ -100,13 +101,13 @@ function FullSizeAlbumCell(props: { album: Album; artist: Artist }) {
             <img
                 className={css`border-radius: 10px;`}
                 src={props.album.coverImageUrl ?? undefined}
-                width={250}
-                height={250}
+                width={230}
+                height={230}
             />
-            <FlexCol>
+            <Col>
                 <AlbumTitle title={props.album.title} />
                 <ArtistName name={props.artist.name} />
-            </FlexCol>
+            </Col>
         </AlbumArtistCol>
     )
 }
@@ -126,7 +127,7 @@ function SmallAlbumCell(props: { album: Album; artist: Artist }) {
                 width={36}
                 height={36}
             />
-            <FlexCol
+            <Col
                 className={css`
                     overflow: hidden;
                     margin-top: -1px; // shift up
@@ -134,50 +135,46 @@ function SmallAlbumCell(props: { album: Album; artist: Artist }) {
                 `}>
                 <AlbumTitle title={props.album.title} />
                 <ArtistName name={props.artist.name} />
-            </FlexCol>
+            </Col>
         </AlbumArtistCol>
     )
 }
 
 function AlbumTitle({ title = "" }) {
-    return <Name className={css``}>{title}</Name>
+    return <DotDotDot className={css``}>{title}</DotDotDot>
 }
 
 function ArtistName({ name = "" }) {
     return (
-        <Name className={css`color: ${colors.greyText}; font-size: ${fontSizes.tableSecondary};`}>
+        <DotDotDot className={css`color: ${colors.grey2}; font-size: ${fontSizes.tableSecondary};`}>
             {name}
-        </Name>
+        </DotDotDot>
     )
 }
 
-const Name = styled.div`
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-`
-
 function TrackRow(props: { track: Track; album: Album; artist: Artist }) {
     const { enqueueTrack } = usePlayerDispatch()
+    const { setTrackRating } = useExplorerDispatch()
+    const trackId = props.track.catalogueId ?? props.track.externalId
     const selected = SelectedTrackId.useState()
     const setSelectedTrack = SelectedTrackId.useDispatch()
     // TODO: should I just use class names here?
-    const TrackComponent =
-        selected === (props.track.catalogueId ?? props.track.externalId) /* _FallBackToExternalId_ */
-            ? SelectedTrackFlex
-            : TrackFlex
+    const TrackComponent = selected === trackId ? SelectedTrackFlex : TrackFlex
     return (
         <TrackComponent
-            onMouseDown={() =>
-                setSelectedTrack(
-                    props.track.catalogueId ?? props.track.externalId /* _FallBackToExternalId_ */,
-                )
-            }
+            onMouseDown={() => setSelectedTrack(trackId)}
             onDoubleClick={() => enqueueTrack(props.track)}
             className={css``}>
             <TrackNumCol>{props.track.trackNumber}</TrackNumCol>
             <TrackCol>{props.track.title}</TrackCol>
-            <RatingCol>{props.track.rating && "★".repeat(Math.round(props.track.rating * 5))} </RatingCol>
+
+            <RatingCol>
+                <TrackRating
+                    rating={props.track.rating}
+                    enabled={props.track.catalogueId !== undefined}
+                    onRate={r => setTrackRating(trackId, r)}
+                />
+            </RatingCol>
             {/* <TrackRating id={track.catalogueId} rating={track.rating} /> */}
             <LengthCol>{formatTime(props.track.durationSecs)}</LengthCol>
         </TrackComponent>
@@ -193,21 +190,21 @@ const TrackFlex = styled.div`
         border-bottom: 0;
     }
     &:hover {
-        background: ${colors.rowHover};
+        background: ${colors.grey9};
     }
 `
 
 const SelectedTrackFlex = styled(TrackFlex)`
-    background: ${colors.selected};
+    background: ${colors.purple9};
     &:hover {
-        background: ${colors.selectedHover};
+        background: ${colors.purple8};
     }
 `
 
 const TableCol = styled.div`padding-right: 20px;`
 
 const AlbumArtistCol = styled(TableCol)`flex: 0 0 274px;`
-const TrackNumCol = styled(TableCol)`flex: 0 0 40px; text-align: right; color: ${colors.greyText};`
+const TrackNumCol = styled(TableCol)`flex: 0 0 40px; text-align: right; color: ${colors.grey2};`
 const TrackCol = styled(TableCol)`flex: 0 0 500px;`
 const RatingCol = styled(TableCol)`flex: 0 0 100px;`
 const LengthCol = styled(TableCol)`flex: 0 0 100px;`

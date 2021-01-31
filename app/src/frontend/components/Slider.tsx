@@ -1,10 +1,11 @@
 import { css, cx } from "linaria"
 import React from "react"
 import ReactSlider, { ReactSliderProps } from "react-slider"
+import { colors } from "../styles"
 
 const trackClassName = css`
-    background: gainsboro;
-    height: 6px;
+    background: ${colors.grey8};
+    height: 5px;
     &-0 {
         border-top-left-radius: 3px;
         border-bottom-left-radius: 3px;
@@ -15,21 +16,21 @@ const trackClassName = css`
     }
 `
 const className = css`
-    height: 6px;
+    height: 5px;
 `
 const classNameIfEnabled = css`
     .${trackClassName}-0 {
-        background: darkgray;
+        background: ${colors.purple5};
     }
     &:hover .${trackClassName}-0, &:active .${trackClassName}-0 {
-        background: hsl(270, 100%, 70%);
+        background: ${colors.purple4};
     }
 `
 const thumbClassName = css`
-    background: darkgray;
+    background: ${colors.purple5};
     .${classNameIfEnabled}:hover &,
     .${classNameIfEnabled}:active & {
-        background: hsl(270, 100%, 60%);
+        background: ${colors.purple4};
     }
     padding: 7px;
     border-radius: 50%;

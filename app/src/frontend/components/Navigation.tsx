@@ -1,7 +1,7 @@
 import { css } from "linaria"
 import React, { PropsWithChildren } from "react"
 import { NavLink } from "react-router-dom"
-import { Flex, Subheading } from "../elements"
+import { Row, Subheading } from "../elements"
 import PlayArrow from "../icons/play_arrow.svg"
 import { colors } from "../styles"
 
@@ -10,7 +10,7 @@ export function LeftNav() {
         <nav
             className={css`
                 width: 200px;
-                padding: 24px 0 0 16px;
+                padding-top: 24px;
                 border-right: 1px solid gainsboro;
             `}>
             <NavSection title="Explore">
@@ -33,6 +33,7 @@ function NavSection(props: PropsWithChildren<{ title: string }>) {
         <div className={css`padding-bottom: 16px;`}>
             <Subheading
                 className={css`
+                    padding-left: 16px;
                     padding-bottom: 8px;
                 `}>
                 {props.title}
@@ -49,24 +50,38 @@ function NavItem(props: { link: string; text: string }) {
             to={props.link}
             className={css`
                 display: block;
+                padding-left: 16px;
                 text-decoration: none;
-                color: ${colors.base};
+                color: ${colors.grey2};
                 flex: 1;
-                svg {
-                    color: ${colors.baseIcon};
+                &:hover {
+                    color: ${colors.grey0};
+                    svg {
+                        color: ${colors.grey2};
+                    }
                 }
+                svg {
+                    color: ${colors.grey3};
+                }
+                border-left: 5px solid transparent;
             `}
             activeClassName={css`
-                color: ${colors.primaryText};
-                border-right: 5px solid ${colors.primary};
+                color: ${colors.purple3};
+                border-color: ${colors.purple5};
                 svg {
-                    color: ${colors.primary};
+                    color: ${colors.purple5};
+                }
+                &:hover {
+                    color: ${colors.purple2};
+                    svg {
+                        color: ${colors.purple4};
+                    }
                 }
             `}>
-            <Flex className={css`gap: 4px;`}>
+            <Row className={css`gap: 4px;`}>
                 <PlayArrow />
                 {props.text}
-            </Flex>
+            </Row>
         </NavLink>
     )
 }

@@ -4,11 +4,13 @@ import { useEffect, useState } from "react"
 import { PlayPauseButton } from "./components/PlayPause"
 import { Slider } from "./components/Slider"
 import { VolumeControl } from "./components/Volume"
+import { DotDotDot, Flex, Noverflow } from "./elements"
 import { formatTime } from "./formatting"
 import SkipNext from "./icons/skip_next.svg"
 import SkipPrevious from "./icons/skip_previous.svg"
 import { resolveCanonical, useExplorerState } from "./library/library"
 import { usePlayerDispatch, usePlayerState } from "./playback/playback"
+import { colors } from "./styles"
 
 const Player = () => {
     return (
@@ -46,18 +48,15 @@ function PlayingTrack() {
                 className={css`
                     padding: 16px;
                 `}>
-                <div
-                    className={css`
-                        display: flex;
-                    `}>
-                    <img src={playingAlbum?.coverImageUrl ?? undefined} height={40} width={40} />
-                    <div>
-                        <div>{playingTrack?.title}</div>
-                        <div>
-                            {playingArtist?.name} -- {playingAlbum?.title}
-                        </div>
-                    </div>
-                </div>
+                <Flex className={css`gap: 12px; justify-content: space-between;`}>
+                    <img src={playingAlbum?.coverImageUrl ?? undefined} width={48} />
+                    <Noverflow>
+                        <DotDotDot>{playingTrack?.title}</DotDotDot>
+                        <DotDotDot className={css`color: ${colors.grey2};`}>
+                            {playingArtist?.name} • {playingAlbum?.title}
+                        </DotDotDot>
+                    </Noverflow>
+                </Flex>
             </div>
         )
     }
@@ -177,7 +176,7 @@ function TrackTime(props: { time: number }) {
         <span
             className={css`
                 font-size: 14px;
-                color: darkslategray;
+                color: ${colors.grey2};
             `}>
             {formatTime(props.time)}
         </span>

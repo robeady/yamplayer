@@ -1,7 +1,8 @@
-import React from "react"
-import PlayArrow from "../icons/play_arrow.svg"
-import Pause from "../icons/pause.svg"
 import { css } from "linaria"
+import React from "react"
+import Pause from "../icons/pause.svg"
+import PlayArrow from "../icons/play_arrow.svg"
+import { colors } from "../styles"
 
 export function PlayPauseButton(props: {
     icon: "play" | "pause"
@@ -18,14 +19,14 @@ export function PlayPauseButton(props: {
     return (
         <div
             className={css`
-                background: hsl(270, 80%, 60%);
+                background: ${colors.purple5};
                 border-radius: 50%;
                 cursor: pointer;
                 padding: 6px;
-                fill: white;
+                color: white;
                 line-height: 0;
                 &:hover {
-                    background: hsl(270, 80%, 50%);
+                    background: ${colors.purple4};
                 }
             `}
             onClick={props.onClick}>

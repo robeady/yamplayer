@@ -2,7 +2,7 @@ import { css } from "linaria"
 import React, { useState } from "react"
 import { AlbumsListing } from "./components/AlbumsListing"
 import { TrackListing } from "./components/TrackListing"
-import { Flex, FlexCol } from "./elements"
+import { Col, Flex } from "./elements"
 import { useExplorerState } from "./library/library"
 
 export function LibraryTracks() {
@@ -14,7 +14,7 @@ export function LibraryTracks() {
     const [view, setView] = useState("playlist" as "playlist" | "tracks")
     const ListComponent = view === "playlist" ? AlbumsListing : TrackListing
     return (
-        <FlexCol>
+        <Col>
             <Flex className={css`padding-bottom: 25px; align-items: center; gap: 10px;`}>
                 <span>View:</span>
                 <select value={view} onChange={e => setView(e.target.value as any)}>
@@ -23,6 +23,6 @@ export function LibraryTracks() {
                 </select>
             </Flex>
             <ListComponent trackIds={libraryTrackIds} />
-        </FlexCol>
+        </Col>
     )
 }
