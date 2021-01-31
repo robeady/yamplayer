@@ -11,6 +11,7 @@ import { Dict, Fraction, Timestamp } from "../util/types"
 import {
     CatalogueIdGenerator,
     CatalogueIdString,
+    extractTimestamp,
     parseCatalogueId,
     stringifyCatalogueId,
 } from "./database/catalogueIds"
@@ -116,7 +117,6 @@ export class LibraryStore {
                 isrc: trackPointingToInternalArtistAndAlbum.isrc,
                 playCount: 0,
                 rating: trackPointingToInternalArtistAndAlbum.rating,
-                cataloguedTimestamp: now,
             })
             .execute()
         return {
@@ -138,7 +138,6 @@ export class LibraryStore {
                 coverImageUrl: externalAlbum.coverImageUrl,
                 releaseDate: externalAlbum.releaseDate,
                 externalId: externalAlbum.externalId,
-                cataloguedTimestamp: now,
             })
             .execute()
 
@@ -154,7 +153,6 @@ export class LibraryStore {
                 name: externalArtist.name,
                 imageUrl: externalArtist.imageUrl,
                 externalId: externalArtist.externalId,
-                cataloguedTimestamp: now,
             })
             .execute()
         return { ...externalArtist, catalogueId: stringifyCatalogueId(id), cataloguedTimestamp: now }
@@ -209,7 +207,7 @@ function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): CataloguedA
         title: albumFromDb.title,
         coverImageUrl: albumFromDb.coverImageUrl,
         releaseDate: albumFromDb.releaseDate,
-        cataloguedTimestamp: albumFromDb.cataloguedTimestamp as Timestamp,
+        cataloguedTimestamp: extractTimestamp(albumFromDb.id),
     }
 }
 
@@ -219,7 +217,7 @@ function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): Catalogu
         externalId: artistFromDb.externalId,
         name: artistFromDb.name,
         imageUrl: artistFromDb.imageUrl,
-        cataloguedTimestamp: artistFromDb.cataloguedTimestamp as Timestamp,
+        cataloguedTimestamp: extractTimestamp(artistFromDb.id),
     }
 }
 
@@ -235,7 +233,7 @@ function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): CataloguedT
         durationSecs: trackFromDb.durationSecs,
         isrc: trackFromDb.isrc,
         rating: trackFromDb.rating,
-        cataloguedTimestamp: trackFromDb.cataloguedTimestamp as Timestamp,
+        cataloguedTimestamp: extractTimestamp(trackFromDb.id),
         savedTimestamp: trackFromDb.savedTimestamp as Timestamp,
     }
 }

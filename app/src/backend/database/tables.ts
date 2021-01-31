@@ -3,7 +3,6 @@ import { binary, number, string } from "./dsl/types"
 
 export const track = table("track", {
     id: binary,
-    cataloguedTimestamp: number,
     externalId: string,
     albumId: binary,
     artistId: binary,
@@ -19,7 +18,6 @@ export const track = table("track", {
 
 export const album = table("album", {
     id: binary,
-    cataloguedTimestamp: number,
     externalId: string,
     title: string,
     coverImageUrl: string.orNull(),
@@ -31,7 +29,6 @@ export const artist = table("artist", {
     externalId: string,
     name: string,
     imageUrl: string.orNull(),
-    cataloguedTimestamp: number,
 })
 
 export const playlist = table("playlist", {

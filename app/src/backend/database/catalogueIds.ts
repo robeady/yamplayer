@@ -108,6 +108,14 @@ export function stringifyCatalogueId(id: CatalogueId): CatalogueIdString {
     return uuid.stringify(id)
 }
 
+export function extractTimestamp(id: CatalogueId): Timestamp {
+    let result = 0
+    for (let i = 0; i < 6; i++) {
+        result = result * 256 + id[i]
+    }
+    return result as Timestamp
+}
+
 function populateTimestamp(bytes: Uint8Array, timestamp: Timestamp) {
     const timeLow = timestamp % UINT32_RADIX
     const timeHigh = (timestamp - timeLow) / UINT32_RADIX

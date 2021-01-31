@@ -13,7 +13,6 @@ const migration0: DatabaseMigration = {
 
     CREATE TABLE track (
         id BINARY(16) PRIMARY KEY,
-        cataloguedTimestamp BIGINT NOT NULL,
         externalId VARCHAR(50) NOT NULL,
         albumId BINARY(16) NOT NULL REFERENCES album (id),
         artistId BINARY(16) NOT NULL REFERENCES artist (id),
@@ -29,7 +28,6 @@ const migration0: DatabaseMigration = {
 
     CREATE TABLE album (
         id BINARY(16) PRIMARY KEY,
-        cataloguedTimestamp BIGINT NOT NULL,
         externalId VARCHAR(50) NOT NULL,
         title VARCHAR(255) NOT NULL,
         coverImageUrl VARCHAR(2000),
@@ -38,7 +36,6 @@ const migration0: DatabaseMigration = {
 
     CREATE TABLE artist (
         id BINARY(16) PRIMARY KEY,
-        cataloguedTimestamp BIGINT NOT NULL,
         externalId VARCHAR(50) NOT NULL,
         name VARCHAR(255) NOT NULL,
         imageUrl VARCHAR(2000)
