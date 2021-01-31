@@ -1,7 +1,7 @@
 import { Howl } from "howler"
-import { Dict } from "../../util/types"
-import { idSequence } from "../../util/ids"
 import { forEach } from "lodash"
+import { idSequence } from "../../util/ids"
+import { Dict } from "../../util/types"
 
 type AudioPlayerEvent = { type: "trackEnded" }
 type EventCallback = (event: AudioPlayerEvent) => void
@@ -140,6 +140,7 @@ export class AudioPlayer {
 
     private playNextFromQueue() {
         this.howl?.unload()
+        this.howl = null
         const nextTrackData = this.queue.shift()
         if (nextTrackData) {
             this.howl = this.createHowlAndPlay(nextTrackData)
