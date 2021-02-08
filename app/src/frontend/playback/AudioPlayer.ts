@@ -1,6 +1,6 @@
 import { Howl } from "howler"
 import { forEach } from "lodash"
-import { idSequence } from "../../util/ids"
+import { IdSequence } from "../../util/ids"
 import { Dict } from "../../util/types"
 
 type AudioPlayerEvent = { type: "trackEnded" }
@@ -16,14 +16,14 @@ export class AudioPlayer {
     instanceId = Math.random()
 
     eventSubscribers: Dict<EventCallback> = {}
-    nextEventSubscriberId = idSequence()
+    subscriberIdSequence = new IdSequence()
 
     constructor(initialVolume: number) {
         this._volume = initialVolume
     }
 
     subscribe(callback: EventCallback) {
-        const id = this.nextEventSubscriberId()
+        const id = this.subscriberIdSequence.next()
         this.eventSubscribers[id] = callback
         return id
     }
