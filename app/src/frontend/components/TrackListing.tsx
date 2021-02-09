@@ -5,8 +5,8 @@ import Rating from "react-rating"
 import { Album, Track } from "../../model"
 import PlayArrow from "../icons/play_arrow.svg"
 import Star from "../icons/star_rate.svg"
-import { resolveCanonical, useExplorerDispatch, useExplorerState } from "../library/library"
-import { usePlayerDispatch } from "../playback/playback"
+import { resolveCanonical, useExplorerDispatch, useExplorerState } from "../state/library"
+import { usePlayerDispatch } from "../state/playback"
 
 export function TrackListing(props: { trackIds: string[] }) {
     const allTracks = useExplorerState(s => s.tracks)

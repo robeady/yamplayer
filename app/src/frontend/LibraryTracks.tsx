@@ -3,7 +3,7 @@ import React, { useState } from "react"
 import { AlbumsListing } from "./components/AlbumsListing"
 import { TrackListing } from "./components/TrackListing"
 import { Col, Flex } from "./elements"
-import { useExplorerState } from "./library/library"
+import { useExplorerState } from "./state/library"
 
 export function LibraryTracks() {
     const allTracks = useExplorerState(s => s.tracks)

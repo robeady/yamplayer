@@ -1,10 +1,10 @@
+import { css } from "linaria"
 import React from "react"
 import VolumeDown from "../icons/volume_down.svg"
 import VolumeMute from "../icons/volume_mute.svg"
 import VolumeOff from "../icons/volume_off.svg"
 import VolumeUp from "../icons/volume_up.svg"
-import { usePlayerState, usePlayerDispatch } from "../playback/playback"
-import { css } from "linaria"
+import { usePlayerDispatch, usePlayerState } from "../state/playback"
 import { Slider } from "./Slider"
 
 export function VolumeControl() {

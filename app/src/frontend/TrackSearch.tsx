@@ -1,6 +1,6 @@
 import React, { useState } from "react"
-import { useSearchResults } from "./library/library"
 import { TrackListing } from "./components/TrackListing"
+import { useSearchResults } from "./state/library"
 
 function SearchBox(props: { onSubmit: (text: string) => void }) {
     const [text, setText] = useState("")

@@ -8,8 +8,8 @@ import { DotDotDot, Flex, Noverflow } from "./elements"
 import { formatTime } from "./formatting"
 import SkipNext from "./icons/skip_next.svg"
 import SkipPrevious from "./icons/skip_previous.svg"
-import { resolveCanonical, useExplorerState } from "./library/library"
-import { usePlayerDispatch, usePlayerState } from "./playback/playback"
+import { resolveCanonical, useExplorerState } from "./state/library"
+import { usePlayerDispatch, usePlayerState } from "./state/playback"
 import { colors } from "./styles"
 
 const Player = () => {
