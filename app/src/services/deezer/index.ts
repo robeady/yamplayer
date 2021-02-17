@@ -71,8 +71,8 @@ export class DeezerApiClient implements Service {
         const track = response.data
         return {
             externalId: id,
-            albumId: `$dz:${track.album.id}`,
-            artistId: `$dz:${track.artist.id}`,
+            albumId: `dz:${track.album.id}`,
+            artistId: `dz:${track.artist.id}`,
             title: track.title,
             trackNumber: track.track_position,
             discNumber: track.disk_number,
