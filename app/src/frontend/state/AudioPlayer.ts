@@ -25,6 +25,11 @@ export class AudioPlayer {
     howl: Howl | null = null
     _volume: number
     muted = false
+    /**
+     * A counter to keep track of track loads, so that if the user skips while we're still loading a track,
+     * then once that track is loaded we will discard the result.
+     */
+    load = 0
 
     constructor(
         initialVolume: number,
@@ -151,6 +156,7 @@ export class AudioPlayer {
             mute: this.muted,
             autoplay: true,
             // TODO: on error skip next
+            // hmm. when skipping a playing song (and calling howl.unload) we often seem to get onloaderror messages of the form 'Decoding audio data failed.'
             onloaderror: (id, e) => console.error(e),
             onplayerror: (id, e) => console.error(e),
             onend: () => this.unloadHowlThenPlayNext(),
@@ -171,16 +177,19 @@ export class AudioPlayer {
         if (nextTrackId === undefined) {
             this.emitEvent(player.playbackStopped())
         } else {
+            const load = ++this.load
             this.emitEvent(player.playbackLoading())
             this.loadTrack(nextTrackId)
                 .then(trackData => {
-                    this.howl = this.createHowlAndPlay(trackData)
-                    this.emitEvent(
-                        player.playbackResumed({
-                            sinceMillis: performance.now(),
-                            positionAtTimestamp: 0,
-                        }),
-                    )
+                    if (this.load === load) {
+                        this.howl = this.createHowlAndPlay(trackData)
+                        this.emitEvent(
+                            player.playbackResumed({
+                                sinceMillis: performance.now(),
+                                positionAtTimestamp: 0,
+                            }),
+                        )
+                    }
                 })
                 .catch(error => {
                     console.error(`error loading track ${nextTrackId}: ${error}`)
