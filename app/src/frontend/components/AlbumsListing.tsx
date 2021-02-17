@@ -3,7 +3,7 @@ import { styled } from "linaria/lib/react"
 import React from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { Album, Artist, Track } from "../../model"
-import { Col, DotDotDot, Flex, Subheading } from "../elements"
+import { Col, DotDotDot, Flex, Row, Subheading } from "../elements"
 import { formatTime } from "../formatting"
 import { audio, catalogue, view } from "../state/actions"
 import { resolveCanonical } from "../state/catalogue"
@@ -41,16 +41,13 @@ export function AlbumsListing(props: { trackIds: string[] }) {
 function Headings() {
     return (
         <Subheading>
-            <Flex
-                className={css`
-                    height: 30px;
-                `}>
+            <Row className={css`height: 30px;`}>
                 <AlbumArtistCol>Artist / Album</AlbumArtistCol>
                 <TrackNumCol>#</TrackNumCol>
                 <TrackCol>Track</TrackCol>
                 <RatingCol>Rating</RatingCol>
                 <LengthCol>Length</LengthCol>
-            </Flex>
+            </Row>
         </Subheading>
     )
 }

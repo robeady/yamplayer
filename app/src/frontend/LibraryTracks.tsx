@@ -3,7 +3,7 @@ import React, { useState } from "react"
 import { useSelector } from "react-redux"
 import { AlbumsListing } from "./components/AlbumsListing"
 import { TrackListing } from "./components/TrackListing"
-import { Col, Flex } from "./elements"
+import { Col, Row } from "./elements"
 
 export function LibraryTracks() {
     const allTracks = useSelector(s => s.catalogue.tracks)
@@ -15,13 +15,13 @@ export function LibraryTracks() {
     const ListComponent = view === "playlist" ? AlbumsListing : TrackListing
     return (
         <Col>
-            <Flex className={css`padding-bottom: 25px; align-items: center; gap: 10px;`}>
+            <Row className={css`padding-bottom: 25px; align-items: center; gap: 10px;`}>
                 <span>View:</span>
                 <select value={view} onChange={e => setView(e.target.value as any)}>
                     <option value="playlist">Playlist</option>
                     <option value="tracks">Tracks</option>
                 </select>
-            </Flex>
+            </Row>
             <ListComponent trackIds={libraryTrackIds} />
         </Col>
     )
