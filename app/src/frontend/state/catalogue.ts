@@ -13,6 +13,7 @@ interface CatalogueState {
 const initialState: CatalogueState = { searchResultsByQuery: {}, tracks: {}, albums: {}, artists: {} }
 
 export const catalogueThunks = curriedAsyncThunks({
+    getLibrary: api => api.extra.explorer.getLibrary,
     addToLibrary: api => api.extra.explorer.addTrack,
     unsaveTrack: api => api.extra.explorer.unsave,
     setTrackRating: api => api.extra.explorer.setTrackRating,
@@ -34,6 +35,10 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
     reducers: {},
     extraReducers: builder =>
         builder
+            .addCase(catalogueThunks.getLibrary.fulfilled, (state, { payload }) => {
+                // TODO: should we be populating external ID pointers too?
+                return { ...state, ...payload }
+            })
             .addCase(
                 catalogueThunks.addToLibrary.fulfilled,
                 (state, { payload: { track, album, artist } }) => {

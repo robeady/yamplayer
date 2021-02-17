@@ -1,6 +1,6 @@
 import { isFulfilled } from "@reduxjs/toolkit"
 import { css } from "linaria"
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { hot } from "react-hot-loader/root"
 import { useDispatch } from "react-redux"
 import { HashRouter, Route, Switch } from "react-router-dom"
@@ -31,6 +31,10 @@ const App = () => (
 )
 
 function Main() {
+    const dispatch = useDispatch()
+    useEffect(() => {
+        void dispatch(catalogue.getLibrary())
+    }, [dispatch])
     return (
         <div
             className={css`

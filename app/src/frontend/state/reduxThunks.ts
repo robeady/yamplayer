@@ -30,15 +30,15 @@ export function curriedAsyncThunks<
     thunks: Thunks,
 ): {
     [K in keyof Thunks]: Thunks[K] extends CurriedAsyncThunkPayloadCreator<infer R, infer A>
-        ? AsyncThunk<R, A, YamThunkApiConfig>
+        ? AsyncThunk<R, [A] extends [never] ? void : A, YamThunkApiConfig>
         : never
 } {
     return mapValues(thunks, (thunk, key) => curriedAsyncThunk(key, thunk)) as any
 }
 
-export type CurriedAsyncThunkPayloadCreator<R, T> = (
+export type CurriedAsyncThunkPayloadCreator<R, A> = (
     thunkApi: YamThunkApi,
-) => (arg: T) => AsyncThunkPayloadCreatorReturnValue<R, YamThunkApiConfig>
+) => (...args: A[]) => AsyncThunkPayloadCreatorReturnValue<R, YamThunkApiConfig>
 
 // getting hold of the ThunkApi type is hard because not everything is exported so let's infer it
 export type YamThunkApi = AsyncThunkPayloadCreator<any, any, YamThunkApiConfig> extends (
