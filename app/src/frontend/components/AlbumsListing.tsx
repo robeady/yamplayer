@@ -22,7 +22,15 @@ export function AlbumsListing(props: { trackIds: string[] }) {
             // append to the last row
             rows[rows.length - 1]!.tracks.push(canonicalTrack)
         } else {
-            // new row
+            // clean up the old row, order tracks that appear together from the same album by track number then disc number
+            if (rows.length > 0) {
+                rows[rows.length - 1]!.tracks.sort(
+                    (a, b) =>
+                        (a.discNumber ?? 0) - (b.discNumber ?? 0) ||
+                        (a.trackNumber ?? 0) - (b.trackNumber ?? 0),
+                )
+            }
+            // now make a new row
             rows.push({ tracks: [canonicalTrack], albumId: canonicalTrack.albumId })
         }
         lastAlbumId = canonicalTrack.albumId
