@@ -164,7 +164,7 @@ function TrackRow(props: { track: Track; album: Album; artist: Artist }) {
             <RatingCol>
                 <TrackRating
                     rating={props.track.rating}
-                    enabled={props.track.catalogueId !== undefined}
+                    enabled={props.track.catalogueId !== null}
                     onRate={newRating => dispatch(catalogue.setTrackRating({ trackId, newRating }))}
                 />
             </RatingCol>

@@ -61,4 +61,4 @@ main()
     .then(({ address, port }) => {
         console.log(`backend listening on ${address}:${port}`)
     })
-    .catch(e => console.error(e))
+    .catch(error => console.error(error))

@@ -41,26 +41,24 @@ function PlayingTrack() {
         s => playingTrack && resolveCanonical(s.catalogue.artists, playingTrack.artistId),
     )
 
-    if (nowPlayingTrackId === undefined) {
-        return <span>We are {status.state}</span>
-    } else {
-        return (
-            <div
-                className={css`
-                    padding: 16px;
-                `}>
-                <Flex className={css`gap: 12px; justify-content: space-between;`}>
-                    <img src={playingAlbum?.coverImageUrl ?? undefined} width={48} />
-                    <Noverflow>
-                        <DotDotDot>{playingTrack?.title}</DotDotDot>
-                        <DotDotDot className={css`color: ${colors.grey2};`}>
-                            {playingArtist?.name} • {playingAlbum?.title}
-                        </DotDotDot>
-                    </Noverflow>
-                </Flex>
-            </div>
-        )
-    }
+    return nowPlayingTrackId === null ? (
+        <span>We are {status.state}</span>
+    ) : (
+        <div
+            className={css`
+                padding: 16px;
+            `}>
+            <Flex className={css`gap: 12px; justify-content: space-between;`}>
+                <img src={playingAlbum?.coverImageUrl ?? undefined} width={48} />
+                <Noverflow>
+                    <DotDotDot>{playingTrack?.title}</DotDotDot>
+                    <DotDotDot className={css`color: ${colors.grey2};`}>
+                        {playingArtist?.name} • {playingAlbum?.title}
+                    </DotDotDot>
+                </Noverflow>
+            </Flex>
+        </div>
+    )
 }
 
 function ControlsAndProgressBar() {

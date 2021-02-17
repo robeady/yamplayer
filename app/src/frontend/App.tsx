@@ -75,11 +75,13 @@ function Import() {
                 onChange={e => {
                     const file = e.target.files?.[0]
                     if (!file) return
-                    dispatch(catalogue.importItunesLibrary(file)).then(r => {
-                        if (isFulfilled(r)) {
-                            setUploadStats(r.payload.stats)
-                        }
-                    })
+                    dispatch(catalogue.importItunesLibrary(file))
+                        .then(r => {
+                            if (isFulfilled(r)) {
+                                setUploadStats(r.payload.stats)
+                            }
+                        })
+                        .catch(error => console.error(error) /* _Toast_? */)
                     e.target.value = ""
                 }}
             />
