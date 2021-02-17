@@ -29,7 +29,6 @@
         "eqeqeq": "error",
         "no-throw-literal": "error",
         "@typescript-eslint/no-unnecessary-condition": ["error"],
-        // "@typescript-eslint/strict-boolean-expressions": ["warn", { "ignoreRhs": true }],
         // convered by TS
         "@typescript-eslint/no-unused-vars": "off",
         "@typescript-eslint/explicit-function-return-type": "off",
@@ -41,8 +40,9 @@
         "@typescript-eslint/no-unsafe-assignment": "off",
         "@typescript-eslint/no-unsafe-return": "off",
         "@typescript-eslint/no-unsafe-call": "off",
-        "@typescript-eslint/member-delimiter-style": "off",
+        // sometimes we need empty react callbacks
         "@typescript-eslint/no-empty-function": ["error", { "allow": ["arrowFunctions"] }],
+        // passing numbers and similar into template expressions is fine
         "@typescript-eslint/restrict-template-expressions": "off",
         // too annoying for obvious return types and react components
         "@typescript-eslint/explicit-module-boundary-types": "off",
@@ -51,6 +51,7 @@
         // "unicorn/no-for-loop": "error",
         "unicorn/prevent-abbreviations": "off",
         "unicorn/prefer-ternary": "warn",
+        // for now we use null because optional properties are easily forgotten
         "unicorn/no-null": "off",
         // not useless for destructuring
         "unicorn/no-useless-undefined": "off",
@@ -58,6 +59,7 @@
         "unicorn/no-nested-ternary": "off",
         // conflicts with prettier
         "unicorn/number-literal-case": "off",
+        // we don't query the dom much and this dislikes the thing we do use to set up react, document.getElementById
         "unicorn/prefer-query-selector": "off"
     }
 }
