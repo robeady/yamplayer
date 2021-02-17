@@ -30,7 +30,8 @@ export function curriedAsyncThunks<
     thunks: Thunks,
 ): {
     [K in keyof Thunks]: Thunks[K] extends CurriedAsyncThunkPayloadCreator<infer R, infer A>
-        ? AsyncThunk<R, [A] extends [never] ? void : A, YamThunkApiConfig>
+        ? // check for 0 arguments, which infers as A = never. but we cannot check extends never, we have to use this trick instead
+          AsyncThunk<R, [A] extends [never] ? void : A, YamThunkApiConfig>
         : never
 } {
     return mapValues(thunks, (thunk, key) => curriedAsyncThunk(key, thunk)) as any
