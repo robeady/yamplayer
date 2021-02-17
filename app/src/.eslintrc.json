@@ -55,7 +55,7 @@
         "unicorn/no-null": "off",
         // not useless for destructuring
         "unicorn/no-useless-undefined": "off",
-        "unicorn/filename-case": ["error", { "cases": { "camelCase": true, "pascalCase": true }}],
+        "unicorn/filename-case": ["error", { "cases": { "camelCase": true, "pascalCase": true } }],
         "unicorn/no-nested-ternary": "off",
         // conflicts with prettier
         "unicorn/number-literal-case": "off",
