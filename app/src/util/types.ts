@@ -2,6 +2,8 @@ export type Dict<T = unknown> = {
     [key: string]: T
 }
 
+export type Empty = Dict<never>
+
 export declare const OPAQUE: unique symbol
 
 /** A floating point number between 0 and 1 inclusive */

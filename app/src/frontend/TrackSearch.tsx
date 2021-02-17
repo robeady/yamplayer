@@ -30,13 +30,13 @@ export function TrackSearch() {
     const searchResults = useSelector(s => searchQuery && s.catalogue.searchResultsByQuery[searchQuery])
     useEffect(() => {
         if (searchResults === undefined) {
-            dispatch(catalogue.fetchSearchResults(searchQuery))
+            void dispatch(catalogue.fetchSearchResults(searchQuery))
         }
     }, [dispatch, searchQuery, searchResults])
     return (
         <div>
             <SearchBox onSubmit={setSearchQuery} />
-            <SearchResults trackIds={(searchResults && searchResults.externalTrackIds) || []} />
+            <SearchResults trackIds={searchResults ? searchResults.externalTrackIds : []} />
         </div>
     )
 }

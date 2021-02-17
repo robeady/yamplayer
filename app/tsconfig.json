@@ -9,7 +9,7 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "useDefineForClassFields": true,
-        "noUncheckedIndexedAccess": false
+        "noUncheckedIndexedAccess": true
     },
     "include": ["./src/**/*"]
 }

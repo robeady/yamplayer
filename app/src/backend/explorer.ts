@@ -52,8 +52,8 @@ export class Explorer {
             externalTracks.map(t =>
                 explorer.library.addTrack({
                     ...t,
-                    albumId: albumIdsByExternalId[t.albumId],
-                    artistId: artistIdsByExternalId[t.artistId],
+                    albumId: albumIdsByExternalId[t.albumId]!,
+                    artistId: artistIdsByExternalId[t.artistId]!,
                 }),
             ),
         )

@@ -209,7 +209,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         if (columns.length === 0) {
             throw new Error("joined table has zero columns")
         }
-        const tableAlias = columns[0].tableAlias
+        const tableAlias = columns[0]!.tableAlias
         if (tableAlias === this.primaryTableAlias) {
             throw new Error("joined table has same alias as initial table")
         }
@@ -277,7 +277,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
 
         const columnsInPrimaryTable = Object.values(this.state.primaryTable)
         if (columnsInPrimaryTable.length === 0) throw new Error("Primary table has no columns")
-        const { tableOrigin, tableAlias } = Object.values(this.state.primaryTable)[0]
+        const { tableOrigin, tableAlias } = columnsInPrimaryTable[0]!
         const tableOriginSql =
             tableOrigin.type === "table"
                 ? this.renderer.realTableSql(tableOrigin)
@@ -293,10 +293,11 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
 
         const mapRow = (row: unknown[]) => {
             let rowObject: any = {}
+            // eslint-disable-next-line unicorn/no-for-loop
             for (let i = 0; i < row.length; i++) {
                 rowObject = populateAtPath(
                     rowObject,
-                    selectionDestinations[i],
+                    selectionDestinations[i]!,
                     dialect.convertSqlValueToJs(row[i]),
                 )
             }
@@ -310,7 +311,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         const { sql, mapRow } = this.render()
         const rows = await this.state.databaseHandle.query(sql)
         if (rows.length !== 1) throw new Error(`Expected 1 row, got ${rows.length}`)
-        return mapRow(rows[0])
+        return mapRow(rows[0]!)
     }
 
     fetch = async (): Promise<RowTypeFrom<Selection>[]> => {
@@ -583,15 +584,15 @@ function populateAtPath(object: any, path: string[], value: unknown, pathStartIn
     if (pathLength === 0) {
         return value
     } else if (pathLength === 1) {
-        object[path[pathStartIndex]] = value
+        object[path[pathStartIndex]!] = value
         return object
     } else {
         let subObject: any
-        if (path[pathStartIndex] in object) {
-            subObject = object[path[pathStartIndex]]
+        if (path[pathStartIndex]! in object) {
+            subObject = object[path[pathStartIndex]!]
         } else {
             subObject = {}
-            object[path[pathStartIndex]] = subObject
+            object[path[pathStartIndex]!] = subObject
         }
         populateAtPath(subObject, path, value, pathStartIndex + 1)
         return object
@@ -765,7 +766,7 @@ function tableDetails(definition: TableDefinition): { tableAlias: string; tableO
     if (cols.length === 0) {
         throw new Error("table has zero columns")
     }
-    return cols[0]
+    return cols[0]!
 }
 
 function unreachable(_: never): never {

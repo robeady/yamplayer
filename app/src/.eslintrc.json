@@ -44,13 +44,14 @@
         "@typescript-eslint/member-delimiter-style": "off",
         "@typescript-eslint/no-empty-function": ["error", { "allow": ["arrowFunctions"] }],
         "@typescript-eslint/restrict-template-expressions": "off",
+        // too annoying for obvious return types and react components
+        "@typescript-eslint/explicit-module-boundary-types": "off",
         "react/prop-types": "off",
         // TODO: restore this later because it'll help avoid index undefined ts errors
-        "unicorn/no-for-loop": "off",
+        // "unicorn/no-for-loop": "error",
         "unicorn/prevent-abbreviations": "off",
         "unicorn/prefer-ternary": "warn",
-        // we'll get there
-        "unicorn/no-null": "warn",
+        "unicorn/no-null": "off",
         // not useless for destructuring
         "unicorn/no-useless-undefined": "off",
         "unicorn/filename-case": ["error", { "cases": { "camelCase": true, "pascalCase": true }}],
