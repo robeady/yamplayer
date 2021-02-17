@@ -21,22 +21,45 @@
         "plugin:@typescript-eslint/recommended",
         "plugin:@typescript-eslint/recommended-requiring-type-checking",
         "plugin:react/recommended",
-        "plugin:react-hooks/recommended"
+        "plugin:react-hooks/recommended",
+        "plugin:unicorn/recommended",
+        "prettier"
     ],
     "rules": {
         "eqeqeq": "error",
-        "@typescript-eslint/no-unnecessary-condition": ["error", { "ignoreRhs": true }],
-        // "@typescript-eslint/strict-boolean-expressions": ["warn", { "ignoreRhs": true }],
-        "@typescript-eslint/no-unused-vars": [
-            "warn",
-            { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }
-        ],
+        "no-throw-literal": "error",
+        "@typescript-eslint/no-unnecessary-condition": ["error"],
+        // convered by TS
+        "@typescript-eslint/no-unused-vars": "off",
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/no-use-before-define": "off",
         "@typescript-eslint/no-explicit-any": "off",
-        "@typescript-eslint/member-delimiter-style": "off",
+        // TODO: maybe we can keep the below for most files
+        "@typescript-eslint/no-unsafe-member-access": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off",
+        "@typescript-eslint/no-unsafe-return": "off",
+        "@typescript-eslint/no-unsafe-call": "off",
+        // sometimes we need empty react callbacks
         "@typescript-eslint/no-empty-function": ["error", { "allow": ["arrowFunctions"] }],
-        "react/prop-types": "off"
+        // passing numbers and similar into template expressions is fine
+        "@typescript-eslint/restrict-template-expressions": "off",
+        // too annoying for obvious return types and react components
+        "@typescript-eslint/explicit-module-boundary-types": "off",
+        "react/prop-types": "off",
+        // TODO: restore this later because it'll help avoid index undefined ts errors
+        // "unicorn/no-for-loop": "error",
+        "unicorn/prevent-abbreviations": "off",
+        "unicorn/prefer-ternary": "warn",
+        // for now we use null because optional properties are easily forgotten
+        "unicorn/no-null": "off",
+        // not useless for destructuring
+        "unicorn/no-useless-undefined": "off",
+        "unicorn/filename-case": ["error", { "cases": { "camelCase": true, "pascalCase": true } }],
+        "unicorn/no-nested-ternary": "off",
+        // conflicts with prettier
+        "unicorn/number-literal-case": "off",
+        // we don't query the dom much and this dislikes the thing we do use to set up react, document.getElementById
+        "unicorn/prefer-query-selector": "off"
     }
 }

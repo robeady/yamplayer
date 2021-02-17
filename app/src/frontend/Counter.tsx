@@ -1,6 +1,7 @@
 import * as React from "react"
+import { Empty } from "../util/types"
 
-class Counter extends React.Component<{}, { count: number }> {
+class Counter extends React.Component<Empty, { count: number }> {
     interval: number | null = null
 
     constructor(props: any) {

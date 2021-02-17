@@ -151,12 +151,12 @@ describe("fetching", () => {
             "Expected 1 row, got 0",
         )
     })
-    test("fetchOne throws on >1 row", () => {
+    test("fetchOne throws on >1 row", async () => {
         const queryBuilderReturningMultipleRows = queryBuilder({
             dialect: new MySqlDialect(),
             query: () => Promise.resolve([{}, {}, {}]),
         } as any)
-        expect(queryBuilderReturningMultipleRows(exampleTable).fetchOne()).rejects.toThrow(
+        await expect(queryBuilderReturningMultipleRows(exampleTable).fetchOne()).rejects.toThrow(
             "Expected 1 row, got 3",
         )
     })

@@ -1,6 +1,5 @@
-import { sql } from "./sqltypes"
-
 import { DatabaseHandle } from "./dsl/impl"
+import { sql } from "./sqltypes"
 
 const migrationTablesSetup = sql`
     CREATE TABLE IF NOT EXISTS migrations (
@@ -22,7 +21,7 @@ export async function applyMigrations(migrations: DatabaseMigration[], db: Datab
         // take an exclusive lock,
         // preventing other instances from performing schema migrations at the same time as we are
         const r = await conn.query(sql`SELECT MAX(schemaVersion) FROM migrations FOR UPDATE`)
-        const foundSchemaVersion = (r[0][0] as number | null) ?? -1
+        const foundSchemaVersion = (r[0]![0] as number | null) ?? -1
         const lastKnownSchemaVersion = migrations.length - 1
 
         if (foundSchemaVersion < lastKnownSchemaVersion) {
@@ -30,10 +29,10 @@ export async function applyMigrations(migrations: DatabaseMigration[], db: Datab
                 `migrating database forwards from schema version ${foundSchemaVersion} to ${lastKnownSchemaVersion}`,
             )
             for (let i = foundSchemaVersion + 1; i <= lastKnownSchemaVersion; i++) {
-                await conn.query(migrations[i].sqlForwards)
+                await conn.query(migrations[i]!.sqlForwards)
                 await conn.query(
                     sql`INSERT INTO migrations (schemaVersion, executionTimestamp, sqlForwards, sqlBackwards) VALUES (?, ?, ?, ?)`,
-                    [i, Date.now(), migrations[i].sqlForwards, migrations[i].sqlBackwards],
+                    [i, Date.now(), migrations[i]!.sqlForwards, migrations[i]!.sqlBackwards],
                 )
             }
         } else if (foundSchemaVersion > lastKnownSchemaVersion) {

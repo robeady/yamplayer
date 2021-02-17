@@ -40,7 +40,7 @@ See https://www.figma.com/file/UL3IcZhYuqSxL31gvCydxl/Yamplayer-app
 ### Running locally
 
 1. Ensure the database is started: `docker start yamplayerdb`
-2. `yarn run develop`
+2. `yarn start`
 
     This starts 3 things concurrently:
 

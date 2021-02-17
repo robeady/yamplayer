@@ -1,28 +1,26 @@
 import { css } from "linaria"
 import { styled } from "linaria/lib/react"
-import React, { useState } from "react"
+import React from "react"
+import { useDispatch, useSelector } from "react-redux"
 import { Album, Artist, Track } from "../../model"
 import { Col, DotDotDot, Flex, Subheading } from "../elements"
 import { formatTime } from "../formatting"
-import { resolveCanonical, useExplorerDispatch, useExplorerState } from "../library/library"
-import { usePlayerDispatch } from "../playback/playback"
-import { createState } from "../state"
+import { audio, catalogue, view } from "../state/actions"
+import { resolveCanonical } from "../state/catalogue"
 import { colors, fontSizes } from "../styles"
 import { TrackRating } from "./Rating"
-
-const SelectedTrackId = createState((props: {}) => useState<string>())
 
 /** This component shows a table of tracks, but where consecutive tracks from the same album are grouped together. */
 export function AlbumsListing(props: { trackIds: string[] }) {
     // let's fetch all those tracks, because we'll need to iterate over them to find which ones have the same album
-    const allTracks = useExplorerState(s => s.tracks)
+    const allTracks = useSelector(s => s.catalogue.tracks)
     let lastAlbumId = ""
     const rows = [] as { tracks: Track[]; albumId: string }[]
     for (const trackId of props.trackIds) {
         const canonicalTrack = resolveCanonical(allTracks, trackId)
         if (canonicalTrack.albumId === lastAlbumId) {
             // append to the last row
-            rows[rows.length - 1].tracks.push(canonicalTrack)
+            rows[rows.length - 1]!.tracks.push(canonicalTrack)
         } else {
             // new row
             rows.push({ tracks: [canonicalTrack], albumId: canonicalTrack.albumId })
@@ -31,14 +29,12 @@ export function AlbumsListing(props: { trackIds: string[] }) {
     }
 
     return (
-        <SelectedTrackId.Provider>
-            <div>
-                <Headings />
-                {rows.map((r, i) => (
-                    <AlbumRow key={i /* TODO: is index ok? */} {...r} />
-                ))}
-            </div>
-        </SelectedTrackId.Provider>
+        <div>
+            <Headings />
+            {rows.map((r, i) => (
+                <AlbumRow key={i /* TODO: is index ok? */} {...r} />
+            ))}
+        </div>
     )
 }
 
@@ -49,11 +45,11 @@ function Headings() {
                 className={css`
                     height: 30px;
                 `}>
-                <AlbumArtistCol> Artist / Album</AlbumArtistCol>
+                <AlbumArtistCol>Artist / Album</AlbumArtistCol>
                 <TrackNumCol>#</TrackNumCol>
-                <TrackCol> Track</TrackCol>
-                <RatingCol> Rating</RatingCol>
-                <LengthCol> Length</LengthCol>
+                <TrackCol>Track</TrackCol>
+                <RatingCol>Rating</RatingCol>
+                <LengthCol>Length</LengthCol>
             </Flex>
         </Subheading>
     )
@@ -61,9 +57,9 @@ function Headings() {
 
 function AlbumRow(props: { tracks: Track[]; albumId: string }) {
     const fullSizeThreshold = 9
-    const album = useExplorerState(s => resolveCanonical(s.albums, props.albumId))
-    const artist = useExplorerState(s =>
-        resolveCanonical(s.artists, props.tracks[0].artistId /* TODO: get album primary artist */),
+    const album = useSelector(s => resolveCanonical(s.catalogue.albums, props.albumId))
+    const artist = useSelector(s =>
+        resolveCanonical(s.catalogue.artists, props.tracks[0]!.artistId /* TODO: get album primary artist */),
     )
     return (
         <Flex
@@ -153,29 +149,25 @@ function ArtistName({ name = "" }) {
 }
 
 function TrackRow(props: { track: Track; album: Album; artist: Artist }) {
-    const { enqueueTrack } = usePlayerDispatch()
-    const { setTrackRating } = useExplorerDispatch()
+    const dispatch = useDispatch()
+
     const trackId = props.track.catalogueId ?? props.track.externalId
-    const selected = SelectedTrackId.useState()
-    const setSelectedTrack = SelectedTrackId.useDispatch()
-    // TODO: should I just use class names here?
+    const selected = useSelector(s => s.view.selectedTrackId)
     const TrackComponent = selected === trackId ? SelectedTrackFlex : TrackFlex
     return (
         <TrackComponent
-            onMouseDown={() => setSelectedTrack(trackId)}
-            onDoubleClick={() => enqueueTrack(props.track)}
+            onMouseDown={() => dispatch(view.selectedTrackChanged(trackId))}
+            onDoubleClick={() => dispatch(audio.play(trackId))}
             className={css``}>
             <TrackNumCol>{props.track.trackNumber}</TrackNumCol>
             <TrackCol>{props.track.title}</TrackCol>
-
             <RatingCol>
                 <TrackRating
                     rating={props.track.rating}
-                    enabled={props.track.catalogueId !== undefined}
-                    onRate={r => setTrackRating(trackId, r)}
+                    enabled={props.track.catalogueId !== null}
+                    onRate={newRating => dispatch(catalogue.setTrackRating({ trackId, newRating }))}
                 />
             </RatingCol>
-            {/* <TrackRating id={track.catalogueId} rating={track.rating} /> */}
             <LengthCol>{formatTime(props.track.durationSecs)}</LengthCol>
         </TrackComponent>
     )

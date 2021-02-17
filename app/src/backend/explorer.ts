@@ -28,7 +28,7 @@ export class Explorer {
         resolver: TrackResolver,
         externalTrackIds: string[],
     ): Promise<Explorer> {
-        library.clear()
+        await library.clear()
 
         const explorer = new Explorer(library, service, resolver)
 
@@ -52,8 +52,8 @@ export class Explorer {
             externalTracks.map(t =>
                 explorer.library.addTrack({
                     ...t,
-                    albumId: albumIdsByExternalId[t.albumId],
-                    artistId: artistIdsByExternalId[t.artistId],
+                    albumId: albumIdsByExternalId[t.albumId]!,
+                    artistId: artistIdsByExternalId[t.artistId]!,
                 }),
             ),
         )
@@ -109,8 +109,8 @@ export class Explorer {
         return this.library.unsave(trackId)
     }
 
-    async setTrackRating(trackId: string, newRating: number | null): Promise<void> {
-        return this.library.setRating(trackId, newRating)
+    async setTrackRating(arg: { trackId: string; newRating: number | null }): Promise<void> {
+        return this.library.setRating(arg.trackId, arg.newRating)
     }
 
     async addTrack(
@@ -176,7 +176,7 @@ export class Explorer {
                 // TODO: inform the user that we failed to match this track
                 continue
             } else {
-                const externalTrackId = matches.results.externalTrackIds[0]
+                const externalTrackId = matches.results.externalTrackIds[0]!
                 itunesTracksByExternalTrackId.set(externalTrackId, track)
             }
         }
@@ -259,7 +259,7 @@ export class Explorer {
             }),
         }
         const matches = await this.service.searchTracks(query)
-        if (matches.results.externalTrackIds.length !== 0) {
+        if (matches.results.externalTrackIds.length > 0) {
             return matches
         }
 
@@ -284,5 +284,5 @@ export interface ImportItunesResult {
 }
 
 function removeStuffInBrackets(s: string): string {
-    return s.replace(/\[.*?\]|\(.*?\)/, "")
+    return s.replace(/\[.*?]|\(.*?\)/g, "")
 }

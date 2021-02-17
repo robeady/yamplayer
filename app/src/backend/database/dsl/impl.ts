@@ -1,7 +1,8 @@
 import { mapValues, size } from "lodash"
+import { Dict } from "../../../util/types"
 import { ColumnDefinition, Origin, RealTableOrigin, SubqueryOrigin, TableDefinition } from "./definitions"
 import { SqlDialect } from "./dialect"
-import { DslMisuseError } from "./errors"
+import { DslMisuseError, Todo as TodoError } from "./errors"
 import {
     AliasIn,
     ColumnIn,
@@ -41,7 +42,7 @@ export function queryBuilder(databaseHandle: DatabaseHandle): QueryBuilder {
 }
 
 const errorNoDatabase = () => {
-    throw Error("no database")
+    throw new Error("no database")
 }
 
 export function noDatabaseHandle(dialect: SqlDialect): DatabaseHandle {
@@ -114,7 +115,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         // TODO: create "unsafe" constructor for use when copying this class to make the builder cheaper
         const primaryTableDetails = tableDetails(state.primaryTable)
         if (primaryTableDetails.tableOrigin.type !== "table") {
-            throw Error("not a real table")
+            throw new Error("not a real table")
         }
         this.primaryTableAlias = primaryTableDetails.tableAlias
         this.primaryTableName = primaryTableDetails.tableOrigin.name
@@ -130,7 +131,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
 
     renderer = new Renderer(this.state.databaseHandle.dialect)
 
-    where = (...args: {}[]) => {
+    where = (...args: unknown[]) => {
         return this.withWhereFilter(f => {
             if (f === undefined) {
                 return parseFilterArgs(this.selection, args)
@@ -140,7 +141,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         })
     }
 
-    on = (...args: {}[]) => {
+    on = (...args: unknown[]) => {
         return this.withJoinFilter(f => {
             if (f === undefined) {
                 return parseFilterArgs(this.selection, args)
@@ -150,15 +151,15 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         })
     }
 
-    and = (...args: {}[]) => {
+    and = (...args: unknown[]) => {
         return this.andOr("and", args)
     }
 
-    or = (...args: {}[]) => {
+    or = (...args: unknown[]) => {
         return this.andOr("or", args)
     }
 
-    private andOr = (connective: "and" | "or", ...args: {}[]) => {
+    private andOr = (connective: "and" | "or", ...args: unknown[]) => {
         return this.withFilter(f => {
             if (f === undefined) {
                 throw new DslMisuseError(`${connective} called before where/join`)
@@ -208,7 +209,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         if (columns.length === 0) {
             throw new Error("joined table has zero columns")
         }
-        const tableAlias = columns[0].tableAlias
+        const tableAlias = columns[0]!.tableAlias
         if (tableAlias === this.primaryTableAlias) {
             throw new Error("joined table has same alias as initial table")
         }
@@ -275,12 +276,13 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         const selectionDestinations = traverseSelection(this.selection, keyPath => keyPath)
 
         const columnsInPrimaryTable = Object.values(this.state.primaryTable)
-        if (columnsInPrimaryTable.length === 0) throw Error("Primary table has no columns")
-        const { tableOrigin, tableAlias } = Object.values(this.state.primaryTable)[0]
+        if (columnsInPrimaryTable.length === 0) throw new Error("Primary table has no columns")
+        const { tableOrigin, tableAlias } = columnsInPrimaryTable[0]!
         const tableOriginSql =
             tableOrigin.type === "table"
                 ? this.renderer.realTableSql(tableOrigin)
-                : `(${tableOrigin.render().sql})`
+                : // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/restrict-template-expressions
+                  `(${tableOrigin.render().sql})`
         const fromSql = `${tableOriginSql} AS ${dialect.escapeIdentifier(tableAlias)}`
 
         const sql = `SELECT ${selectionsSql} FROM ${fromSql}${this.renderer.joinSql(
@@ -291,10 +293,11 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
 
         const mapRow = (row: unknown[]) => {
             let rowObject: any = {}
+            // eslint-disable-next-line unicorn/no-for-loop
             for (let i = 0; i < row.length; i++) {
                 rowObject = populateAtPath(
                     rowObject,
-                    selectionDestinations[i],
+                    selectionDestinations[i]!,
                     dialect.convertSqlValueToJs(row[i]),
                 )
             }
@@ -307,14 +310,14 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
     fetchOne = async (): Promise<RowTypeFrom<Selection>> => {
         const { sql, mapRow } = this.render()
         const rows = await this.state.databaseHandle.query(sql)
-        if (rows.length !== 1) throw Error("Expected 1 row, got " + rows.length)
-        return mapRow(rows[0])
+        if (rows.length !== 1) throw new Error(`Expected 1 row, got ${rows.length}`)
+        return mapRow(rows[0]!)
     }
 
     fetch = async (): Promise<RowTypeFrom<Selection>[]> => {
         const { sql, mapRow } = this.render()
         const rows = await this.state.databaseHandle.query(sql)
-        return rows.map(mapRow)
+        return rows.map(r => mapRow(r))
     }
 
     asTable = <Alias extends string>(
@@ -333,7 +336,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         : never => {
         const cols = Object.entries(this.selection)
         if (cols.some(c => !(COLUMN_DEFINITION in c))) {
-            throw Error("Can only convert flat selection of columns to a table")
+            throw new Error("Can only convert flat selection of columns to a table")
         }
         const newCols: [
             string,
@@ -462,7 +465,7 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
         const columns = Object.entries(row).map(([columnName, value]) => {
             const columnDefinition = primaryTable[columnName]
             if (columnDefinition === undefined) {
-                throw Error(`column ${columnName} not found in table ${primaryTableName}`)
+                throw new Error(`column ${columnName} not found in table ${primaryTableName.join(".")}`)
             }
             return { columnName, columnDefinition, value }
         })
@@ -517,14 +520,14 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
     }
 }
 
-function parseFilterArgs(defaultSelection: any, args: {}[]): Filter {
+function parseFilterArgs(defaultSelection: any, args: unknown[]): Filter {
     if (args.length === 1) {
         if (typeof args[0] === "function") {
-            throw Error("TODO: where builder function")
-        } else if (typeof args[0] === "object") {
-            return parseMatcher(defaultSelection, args[0])
+            throw new TodoError("where builder function")
+        } else if (typeof args[0] === "object" && args[0] !== null) {
+            return parseMatcher(defaultSelection, args[0] as Dict)
         } else {
-            throw Error("unexpected single argument of type " + typeof args[0])
+            throw new TypeError("unexpected single argument of type " + typeof args[0])
         }
     } else if (args.length === 3) {
         return { type: "filter", first: parseWhereClause(args[0], args[1], args[2]), rest: [] }
@@ -534,7 +537,9 @@ function parseFilterArgs(defaultSelection: any, args: {}[]): Filter {
 }
 
 function parseWhereClause(left: unknown, operator: unknown, right: unknown): FilterElement {
-    if (!sqlOperators.includes(operator as any)) throw Error("unsupported operator " + operator)
+    if (!sqlOperators.includes(operator as any)) {
+        throw new Error(`unsupported operator ${JSON.stringify(operator)}`)
+    }
     return {
         type: "element",
         left:
@@ -549,31 +554,29 @@ function parseWhereClause(left: unknown, operator: unknown, right: unknown): Fil
     }
 }
 
-function parseMatcher(defaultSelection: any, matcher: {}): Filter {
+function parseMatcher(defaultSelection: any, matcher: Dict): Filter {
     const elements = parseMatcherIntoFilterElements(defaultSelection, matcher)
     const first = elements.shift() || true
     return { type: "filter", first, rest: elements.map(e => ["and", e]) }
 }
 
-function parseMatcherIntoFilterElements(defaultSelection: any, matcher: {}): FilterElement[] {
-    if (COLUMN_DEFINITION in defaultSelection) {
-        return [
-            {
-                type: "element",
-                left: { type: "column", definition: defaultSelection },
-                op: "=",
-                right: { type: "literal", literal: matcher },
-            },
-        ]
-    } else {
-        return Object.entries(matcher).flatMap(([key, subMatcher]) => {
-            if (key in defaultSelection) {
-                return parseMatcherIntoFilterElements(defaultSelection[key], subMatcher as {})
-            } else {
-                throw Error(`Key ${key} in matcher not found in selected tables`)
-            }
-        })
-    }
+function parseMatcherIntoFilterElements(defaultSelection: any, matcher: Dict): FilterElement[] {
+    return COLUMN_DEFINITION in defaultSelection
+        ? [
+              {
+                  type: "element",
+                  left: { type: "column", definition: defaultSelection },
+                  op: "=",
+                  right: { type: "literal", literal: matcher },
+              },
+          ]
+        : Object.entries(matcher).flatMap(([key, subMatcher]) => {
+              if (key in defaultSelection) {
+                  return parseMatcherIntoFilterElements(defaultSelection[key], subMatcher as Dict)
+              } else {
+                  throw new Error(`Key ${key} in matcher not found in selected tables`)
+              }
+          })
 }
 
 function populateAtPath(object: any, path: string[], value: unknown, pathStartIndex = 0) {
@@ -581,15 +584,15 @@ function populateAtPath(object: any, path: string[], value: unknown, pathStartIn
     if (pathLength === 0) {
         return value
     } else if (pathLength === 1) {
-        object[path[pathStartIndex]] = value
+        object[path[pathStartIndex]!] = value
         return object
     } else {
         let subObject: any
-        if (path[pathStartIndex] in object) {
-            subObject = object[path[pathStartIndex]]
+        if (path[pathStartIndex]! in object) {
+            subObject = object[path[pathStartIndex]!]
         } else {
             subObject = {}
-            object[path[pathStartIndex]] = subObject
+            object[path[pathStartIndex]!] = subObject
         }
         populateAtPath(subObject, path, value, pathStartIndex + 1)
         return object
@@ -605,10 +608,10 @@ function traverseSelection<T>(
         return [func(keyPathPrefix, selection as ColumnDefinition)]
     } else if (RAW_SQL in selection) {
         // TODO handle raw sql
-        throw Error("raw sql not supported yet")
+        throw new Error("raw sql not supported yet")
     } else {
         return Object.entries(selection).flatMap(([key, s]) =>
-            traverseSelection(s, func, keyPathPrefix.concat([key])),
+            traverseSelection(s, func, [...keyPathPrefix, key]),
         )
     }
 }
@@ -641,7 +644,7 @@ class Renderer {
             const { tableAlias, tableOrigin } = tableDetails(tableDefinition)
 
             if (tableOrigin.type !== "table") {
-                throw Error(`table ${tableAlias} is not a real table`)
+                throw new Error(`table ${tableAlias} is not a real table`)
             }
 
             sql += ` ${this.joinTypeSql(joinType)} ${this.realTableSql(tableOrigin)} AS ${this.escapeId(
@@ -692,11 +695,7 @@ class Renderer {
     }
 
     whereSql(filter: Filter | undefined) {
-        if (filter === undefined) {
-            return ""
-        } else {
-            return ` WHERE ${this.filterSql(filter)}`
-        }
+        return filter === undefined ? "" : ` WHERE ${this.filterSql(filter)}`
     }
 
     filterSql(filter: Filter) {
@@ -765,11 +764,11 @@ class Renderer {
 function tableDetails(definition: TableDefinition): { tableAlias: string; tableOrigin: Origin } {
     const cols = Object.values(definition)
     if (cols.length === 0) {
-        throw Error("table has zero columns")
+        throw new Error("table has zero columns")
     }
-    return cols[0]
+    return cols[0]!
 }
 
 function unreachable(_: never): never {
-    throw Error("unreachable")
+    throw new Error("unreachable")
 }

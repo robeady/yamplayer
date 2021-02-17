@@ -48,17 +48,15 @@ const sliderProps: ReactSliderProps = {
 
 /** Slider with a value from 0 to 1 */
 export function Slider(props: { value: number | null; onChange: (value: number) => void }) {
-    if (props.value === null) {
-        return <ReactSlider {...sliderProps} className={className} value={0.5} disabled />
-    } else {
-        return (
-            <ReactSlider
-                {...sliderProps}
-                className={cx(className, classNameIfEnabled)}
-                thumbClassName={thumbClassName}
-                value={props.value}
-                onChange={v => props.onChange(v as number)}
-            />
-        )
-    }
+    return props.value === null ? (
+        <ReactSlider {...sliderProps} className={className} value={0.5} disabled />
+    ) : (
+        <ReactSlider
+            {...sliderProps}
+            className={cx(className, classNameIfEnabled)}
+            thumbClassName={thumbClassName}
+            value={props.value}
+            onChange={v => props.onChange(v as number)}
+        />
+    )
 }

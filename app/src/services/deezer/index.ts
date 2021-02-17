@@ -42,8 +42,8 @@ export class DeezerApiClient implements Service {
         apiBaseUrl = "https://api.deezer.com",
         cacheDirectory = null as string | null,
         rateLimit = true,
-    } = {}) {
-        console.log("cache dir " + cacheDirectory)
+    } = {}): Promise<DeezerApiClient> {
+        console.log(`cache dir: ${cacheDirectory}`)
         return new DeezerApiClient(
             apiBaseUrl,
             axios.create({
@@ -66,13 +66,13 @@ export class DeezerApiClient implements Service {
         const rawId = stripDeezerPrefix(id)
         const response = await this.httpGet<TrackResponse>(`track/${rawId}`)
         if (response.data.error) {
-            throw Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
+            throw new Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
         }
         const track = response.data
         return {
             externalId: id,
-            albumId: "dz:" + track.album.id,
-            artistId: "dz:" + track.artist.id,
+            albumId: `dz:${track.album.id}`,
+            artistId: `dz:${track.artist.id}`,
             title: track.title,
             trackNumber: track.track_position,
             discNumber: track.disk_number,
@@ -86,7 +86,7 @@ export class DeezerApiClient implements Service {
         const rawId = stripDeezerPrefix(id)
         const response = await this.httpGet<AlbumResponse>(`album/${rawId}`)
         if (response.data.error) {
-            throw Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
+            throw new Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
         }
         const album = response.data
         return {
@@ -101,7 +101,7 @@ export class DeezerApiClient implements Service {
         const rawId = stripDeezerPrefix(id)
         const response = await this.httpGet<ArtistResponse>(`artist/${rawId}`)
         if (response.data.error) {
-            throw Error(`artist ${id} not found: ${JSON.stringify(response.data.error)}`)
+            throw new Error(`artist ${id} not found: ${JSON.stringify(response.data.error)}`)
         }
         const artist = response.data
         return {
@@ -131,9 +131,9 @@ export class DeezerApiClient implements Service {
         const albums = {} as Dict<ExternalAlbum>
 
         for (const item of payload.data) {
-            const externalTrackId = "dz:" + item.id
-            const externalAlbumId = "dz:" + item.album.id
-            const externalArtistId = "dz:" + item.artist.id
+            const externalTrackId = `dz:${item.id}`
+            const externalAlbumId = `dz:${item.album.id}`
+            const externalArtistId = `dz:${item.artist.id}`
             resultExternalTrackIds.push(externalTrackId)
             tracks[externalTrackId] = {
                 externalId: externalTrackId,
@@ -187,8 +187,8 @@ function buildSearchQuery(query: TrackSearchQuery): string {
 
 function stripDeezerPrefix(id: string) {
     if (id.startsWith("dz:")) {
-        return id.substring(3)
+        return id.slice(3)
     } else {
-        throw Error(id + " is not a deezer ID")
+        throw new Error(id + " is not a deezer ID")
     }
 }

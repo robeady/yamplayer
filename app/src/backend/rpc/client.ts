@@ -16,8 +16,14 @@ export function remote<T>(baseUrl: string): Remote<T> {
         {},
         {
             get: (_target, prop, _receiver) => {
+                if (typeof prop !== "string") {
+                    throw new TypeError(
+                        "Can only call named functions on remote object. Tried to dereference property " +
+                            JSON.stringify(prop),
+                    )
+                }
                 return async (...args: unknown[]) => {
-                    const result = await fetch(`${baseUrl}/${prop as string}`, {
+                    const result = await fetch(`${baseUrl}/${prop}`, {
                         method: "POST",
                         headers: {
                             Accept: "application/json",
@@ -30,7 +36,7 @@ export function remote<T>(baseUrl: string): Remote<T> {
                     } else if (result.ok) {
                         return await result.json()
                     } else {
-                        throw Error(await result.text())
+                        throw new Error(await result.text())
                     }
                 }
             },

@@ -1,18 +1,18 @@
+import { isFulfilled } from "@reduxjs/toolkit"
 import { css } from "linaria"
-import React, { PropsWithChildren, useRef, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { hot } from "react-hot-loader/root"
+import { useDispatch } from "react-redux"
 import { HashRouter, Route, Switch } from "react-router-dom"
 import { ImportItunesResult } from "../backend/explorer"
 import { LeftNav } from "./components/Navigation"
-import { ExplorerProvider, useExplorerDispatch } from "./library/library"
 import { LibraryTracks } from "./LibraryTracks"
-import { AudioPlayer } from "./playback/AudioPlayer"
-import { PlaybackProvider } from "./playback/playback"
 import Player, { NowPlaying } from "./Player"
+import { catalogue } from "./state/actions"
 import { TrackSearch } from "./TrackSearch"
 
 const App = () => (
-    <Providers>
+    <HashRouter>
         <div
             className={css`
                 height: 100vh;
@@ -27,10 +27,14 @@ const App = () => (
                 <Player />
             </footer>
         </div>
-    </Providers>
+    </HashRouter>
 )
 
 function Main() {
+    const dispatch = useDispatch()
+    useEffect(() => {
+        void dispatch(catalogue.getLibrary())
+    }, [dispatch])
     return (
         <div
             className={css`
@@ -64,7 +68,7 @@ function Main() {
 }
 
 function Import() {
-    const { importItunesLibrary } = useExplorerDispatch()
+    const dispatch = useDispatch()
     const [uploadStats, setUploadStats] = useState<ImportItunesResult["stats"]>()
     return (
         <div>
@@ -75,7 +79,13 @@ function Import() {
                 onChange={e => {
                     const file = e.target.files?.[0]
                     if (!file) return
-                    importItunesLibrary(file).then(setUploadStats)
+                    dispatch(catalogue.importItunesLibrary(file))
+                        .then(r => {
+                            if (isFulfilled(r)) {
+                                setUploadStats(r.payload.stats)
+                            }
+                        })
+                        .catch(error => console.error(error) /* _Toast_? */)
                     e.target.value = ""
                 }}
             />
@@ -87,18 +97,6 @@ function Import() {
                 </div>
             )}
         </div>
-    )
-}
-
-function Providers(props: PropsWithChildren<{}>) {
-    // a ref has consistent identity across hot reloads
-    const playerRef = useRef(new AudioPlayer(0.1))
-    return (
-        <HashRouter>
-            <ExplorerProvider backendUrl="http://127.0.0.1:8280">
-                <PlaybackProvider player={playerRef.current}>{props.children}</PlaybackProvider>
-            </ExplorerProvider>
-        </HashRouter>
     )
 }
 

@@ -18,16 +18,18 @@ beforeAll(done => {
     app.get("/album/302127", (req, res) => res.json(albumResponse))
     app.get("/artist/27", (req, res) => res.json(artistResponse))
     app.use((err: any, req: any, res: any, next: any) => {
-        if (err) console.log(err)
+        if (err) console.error(err)
         next(err)
     })
     mockDeezerServer = app.listen(0, "127.0.0.1", () => {
         const { address, port } = mockDeezerServer.address() as AddressInfo
         const baseUrl = `http://${address}:${port}`
-        DeezerApiClient.create({ apiBaseUrl: baseUrl, rateLimit: false }).then(client => {
-            deezerClient = client
-            done()
-        })
+        DeezerApiClient.create({ apiBaseUrl: baseUrl, rateLimit: false })
+            .then(client => {
+                deezerClient = client
+                done()
+            })
+            .catch(error => console.error(error))
     })
 })
 

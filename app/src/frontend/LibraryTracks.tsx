@@ -1,12 +1,12 @@
 import { css } from "linaria"
 import React, { useState } from "react"
+import { useSelector } from "react-redux"
 import { AlbumsListing } from "./components/AlbumsListing"
 import { TrackListing } from "./components/TrackListing"
 import { Col, Flex } from "./elements"
-import { useExplorerState } from "./library/library"
 
 export function LibraryTracks() {
-    const allTracks = useExplorerState(s => s.tracks)
+    const allTracks = useSelector(s => s.catalogue.tracks)
     const libraryTrackIds = Object.entries(allTracks)
         .filter(([_, track]) => typeof track !== "string" && track.savedTimestamp !== null)
         .map(([id]) => id)

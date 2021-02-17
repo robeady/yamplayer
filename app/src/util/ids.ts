@@ -1,28 +1,33 @@
 const defaultAlphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-/** Create an ID sequence, */
-export function idSequence({ alphabet = defaultAlphabet } = {}) {
-    const digits: number[] = []
-    const maxDigit = alphabet.length - 1
-    const getNextId = () => {
-        let i = digits.length
-        while (--i >= 0) {
-            if (digits[i] === maxDigit) {
-                digits[i] = 0
+export class IdSequence {
+    private digits: number[] = []
+    constructor(private alphabet = defaultAlphabet) {}
+
+    next(): string {
+        this.increment()
+        return this.print()
+    }
+
+    private increment() {
+        for (let i = 0; i < this.digits.length; i++) {
+            if (this.digits[i] === this.alphabet.length - 1) {
+                this.digits[i] = 0
             } else {
-                digits[i]++
-                break
+                this.digits[i]++
+                return
             }
         }
-        if (i < 0) {
-            // we didn't break early, so we need to carry over by inserting a new digit
-            digits.unshift(0)
-        }
-        let s = ""
-        for (const digit of digits) {
-            s += alphabet[digit]
-        }
-        return s
+        // if we get here, we have a carry, so add a new digit
+        this.digits.push(0)
     }
-    return getNextId
+
+    private print() {
+        let printed = ""
+        // print in big endian fashion
+        for (let i = this.digits.length - 1; i >= 0; i--) {
+            printed += this.alphabet[this.digits[i]!]
+        }
+        return printed
+    }
 }

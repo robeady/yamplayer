@@ -1,7 +1,7 @@
-import mariadb, { Pool, UpsertResult, Connection } from "mariadb"
-import { DatabaseHandle, DatabaseConnectionHandle } from "./dsl/impl"
-import { ExecResult } from "./dsl/stages"
+import mariadb, { Connection, Pool, UpsertResult } from "mariadb"
 import { MySqlDialect } from "./dsl/dialect"
+import { DatabaseConnectionHandle, DatabaseHandle } from "./dsl/impl"
+import { ExecResult } from "./dsl/stages"
 
 class MariaDBConnection implements DatabaseConnectionHandle {
     constructor(private connection: Pool | Connection) {}
@@ -11,9 +11,9 @@ class MariaDBConnection implements DatabaseConnectionHandle {
             const result: unknown[][] = await this.connection.query(sql, values)
             console.log(`${sql} produced ${result.length} rows`)
             return result
-        } catch (e) {
-            console.log(`${sql} threw ${e}`)
-            throw e
+        } catch (error) {
+            console.log(`${sql} threw ${error}`)
+            throw error
         }
     }
 
@@ -59,10 +59,10 @@ export class MariaDB implements DatabaseHandle {
                 const result = f(new MariaDBConnection(connection))
                 await connection.commit()
                 return result
-            } catch (e) {
+            } catch (error) {
                 await connection.rollback()
                 // this code will lose the original exception if rollback() also throws
-                throw e
+                throw error
             }
         } finally {
             connection.release()

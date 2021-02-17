@@ -2,25 +2,24 @@ import { css } from "linaria"
 import { styled } from "linaria/react"
 import React from "react"
 import Rating from "react-rating"
+import { useDispatch, useSelector } from "react-redux"
 import { Album, Track } from "../../model"
 import PlayArrow from "../icons/play_arrow.svg"
 import Star from "../icons/star_rate.svg"
-import { resolveCanonical, useExplorerDispatch, useExplorerState } from "../library/library"
-import { usePlayerDispatch } from "../playback/playback"
+import { audio, catalogue } from "../state/actions"
+import { resolveCanonical } from "../state/catalogue"
 
 export function TrackListing(props: { trackIds: string[] }) {
-    const allTracks = useExplorerState(s => s.tracks)
-    const allAlbums = useExplorerState(s => s.albums)
-    const allArtists = useExplorerState(s => s.artists)
-    const { setTrackRating } = useExplorerDispatch()
+    const allTracks = useSelector(s => s.catalogue.tracks)
+    const allAlbums = useSelector(s => s.catalogue.albums)
+    const allArtists = useSelector(s => s.catalogue.artists)
+    const dispatch = useDispatch()
     const tracksToList = props.trackIds.map(trackId => {
         const track = resolveCanonical(allTracks, trackId)
         const artist = resolveCanonical(allArtists, track.artistId)
         const album = resolveCanonical(allAlbums, track.albumId)
         return { trackId, track, artist, album }
     })
-
-    const { enqueueTrack } = usePlayerDispatch()
 
     return (
         <div className={css`font-size: 14px;`}>
@@ -33,12 +32,14 @@ export function TrackListing(props: { trackIds: string[] }) {
                             e.preventDefault()
                         }
                     }}
-                    onDoubleClick={() => enqueueTrack(t.track)}>
+                    onDoubleClick={() => dispatch(audio.play(t.track.catalogueId ?? t.track.externalId))}>
                     <CoverAndTrackTitle {...t} />
                     <TrackRating
                         rating={t.track.rating}
                         enabled={t.track.catalogueId !== null}
-                        onRate={newRating => setTrackRating(t.track.catalogueId!, newRating)}
+                        onRate={newRating =>
+                            dispatch(catalogue.setTrackRating({ trackId: t.track.catalogueId!, newRating }))
+                        }
                     />
                     <span className={css`color: rgb(90, 90, 90); &:hover { text-decoration: underline; }`}>
                         {t.album.title}
@@ -84,20 +85,6 @@ function TrackRating(props: {
                     }
                 />
             )}
-        </div>
-    )
-}
-
-function tests() {
-    return (
-        <div
-            className={css`
-                display: flex;
-                flex-direction: column;
-                background-color: blue;
-                padding-bottom: 5px;
-            `}>
-            ...
         </div>
     )
 }
@@ -167,12 +154,11 @@ function PlayCircle(props: { displayed: boolean; size: number }) {
 }
 
 function SaveButton(props: { trackId: string }) {
-    const track = useExplorerState(s => resolveCanonical(s.tracks, props.trackId))
-    const { addToLibrary, unsave } = useExplorerDispatch()
-    if (track.savedTimestamp !== null) {
-        return <button onClick={() => unsave(track.catalogueId!)}>-</button>
-    } else {
-        // TODO: support re-saving
-        return <button onClick={() => addToLibrary(track.externalId)}>Add</button>
-    }
+    const track = useSelector(s => resolveCanonical(s.catalogue.tracks, props.trackId))
+    const dispatch = useDispatch()
+    return track.savedTimestamp === null ? (
+        <button onClick={() => dispatch(catalogue.addToLibrary(track.externalId))}>Add</button>
+    ) : (
+        <button onClick={() => dispatch(catalogue.unsaveTrack(track.catalogueId!))}>-</button>
+    )
 }

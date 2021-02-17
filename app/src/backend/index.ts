@@ -19,12 +19,12 @@ async function _loadLibrarySeed(): Promise<LibrarySeedFile> {
     try {
         const seedFile = await fs.readFile(seedFileName)
         return JSON.parse(seedFile.toString())
-    } catch (e) {
-        if (e.code === "ENOENT") {
+    } catch (error) {
+        if (error.code === "ENOENT") {
             console.log(`no ${seedFileName} file present`)
             return { externalTrackIds: [] }
         }
-        throw e
+        throw error
     }
 }
 
@@ -61,4 +61,4 @@ main()
     .then(({ address, port }) => {
         console.log(`backend listening on ${address}:${port}`)
     })
-    .catch(e => console.error(e))
+    .catch(error => console.error(error))

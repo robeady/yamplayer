@@ -34,7 +34,7 @@ describe("library store tests", () => {
     })
 
     afterAll(async () => {
-        db.closeConnection()
+        await db.closeConnection()
         await container.stop({ removeVolumes: true })
     })
 
