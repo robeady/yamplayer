@@ -11,7 +11,7 @@ export function LeftNav() {
             className={css`
                 width: 200px;
                 padding-top: 24px;
-                border-right: 1px solid gainsboro;
+                border-right: 1px solid ${colors.grey8};
                 overflow: auto;
             `}>
             <NavSection title="Explore">
