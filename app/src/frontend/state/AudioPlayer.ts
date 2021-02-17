@@ -1,49 +1,53 @@
 import { Howl } from "howler"
-import { forEach } from "lodash"
-import { IdSequence } from "../../util/ids"
-import { Dict } from "../../util/types"
-
-type AudioPlayerEvent = { type: "trackEnded" }
-type EventCallback = (event: AudioPlayerEvent) => void
+import { player, PlayerAction } from "./actions"
 
 const HOWL_VOLUME_RATIO = 0.25
 
+export interface AudioQueue {
+    /** The currently playing (or paused) track ID */
+    current: string | null
+    /**
+     * Track IDs that have finished playing, with most recent last. Note that this is not the same as the
+     * playback history because if the user skips backwards, the relevant tracks will move from `previous`
+     * into `current` or `next`
+     */
+    previous: string[]
+    /** Track IDs up next, with soonest first */
+    next: string[]
+}
+
+export function audioQueue(current: string | null = null): AudioQueue {
+    return { current, previous: [], next: [] }
+}
+
 export class AudioPlayer {
-    queue: Uint8Array[] = []
+    queue: AudioQueue = audioQueue()
     howl: Howl | null = null
     _volume: number
     muted = false
-    instanceId = Math.random()
 
-    eventSubscribers: Dict<EventCallback> = {}
-    subscriberIdSequence = new IdSequence()
-
-    constructor(initialVolume: number) {
+    constructor(
+        initialVolume: number,
+        private loadTrack: (trackId: string) => Promise<Uint8Array>,
+        private emitEvent: (action: PlayerAction) => void,
+    ) {
         this._volume = initialVolume
     }
 
-    subscribe(callback: EventCallback) {
-        const id = this.subscriberIdSequence.next()
-        this.eventSubscribers[id] = callback
-        return id
-    }
-
-    unsubscribe(subscriptionId: string) {
-        delete this.eventSubscribers[subscriptionId]
-    }
-
     /** Play a track, replacing the existing queue */
-    play(trackData: Uint8Array) {
-        this.queue = [trackData]
+    play(trackId: string) {
+        this.queue = audioQueue(trackId)
+        this.emitEvent(player.queueChanged(this.copyOfQueue()))
         this.playNextFromQueue()
     }
 
     /** Enqueue a track to play at the end of the current queue */
-    enqueue(trackData: Uint8Array) {
+    playLater(trackId: string) {
         if (this.howl) {
-            this.queue.push(trackData)
+            this.queue.next.push(trackId)
+            this.emitEvent(player.queueChanged(this.copyOfQueue()))
         } else {
-            this.play(trackData)
+            this.play(trackId)
         }
     }
 
@@ -54,7 +58,9 @@ export class AudioPlayer {
     pause(): number | null {
         if (this.howl) {
             this.howl.pause()
-            return this.howl.seek() as number
+            const position = this.howl.seek() as number
+            this.emitEvent(player.playbackPaused(position))
+            return position
         } else {
             return null
         }
@@ -62,12 +68,18 @@ export class AudioPlayer {
 
     /**
      * Resumes playback and returns the position in secs at which playback resumed from, or if nothing is
-     * playing does nothing and returns false
+     * playing does nothing and returns null
      */
     unpause() {
         if (this.howl) {
             const position = this.howl.seek() as number
             this.howl.play()
+            this.emitEvent(
+                player.playbackResumed({
+                    sinceMillis: performance.now(),
+                    positionAtTimestamp: position,
+                }),
+            )
             return position
         } else {
             return null
@@ -76,7 +88,7 @@ export class AudioPlayer {
 
     /** Skips to the next track in the queue */
     skipNext() {
-        this.playNextFromQueue()
+        this.unloadHowlThenPlayNext()
     }
 
     /** Gets the position in seconds from the start of the current track, or null if nothing is playing */
@@ -89,15 +101,23 @@ export class AudioPlayer {
     }
 
     /**
-     * Seeks the playing track to the given offset in seconds and returns true, or if nothing is playing does
-     * nothing and returns false
+     * Seeks the playing track to the given offset in seconds and returns the new position, or if nothing is
+     * playing does nothing and returns null
      */
-    seekTo(offsetSecs: number) {
+    seekTo(offsetSecs: number): number | null {
         if (this.howl) {
-            this.howl.seek(offsetSecs)
-            return true
+            const newPosition = this.howl.seek(offsetSecs) as number
+            this.emitEvent(
+                this.howl.playing()
+                    ? player.playbackResumed({
+                          sinceMillis: performance.now(),
+                          positionAtTimestamp: newPosition,
+                      })
+                    : player.playbackPaused(newPosition),
+            )
+            return newPosition
         } else {
-            return false
+            return null
         }
     }
 
@@ -110,12 +130,14 @@ export class AudioPlayer {
     setVolume(volume: number) {
         this.howl?.volume(volume * HOWL_VOLUME_RATIO)
         this._volume = volume
+        this.emitEvent(player.volumeChanged({ muted: this.muted, volume }))
     }
 
     /** Toggle whether the player is muted */
     toggleMute() {
         this.muted = !this.muted
         this.howl?.mute(this.muted)
+        this.emitEvent(player.volumeChanged({ muted: this.muted, volume: this._volume }))
     }
 
     private createHowlAndPlay(trackData: Uint8Array): Howl {
@@ -127,23 +149,46 @@ export class AudioPlayer {
             volume: this._volume * HOWL_VOLUME_RATIO,
             mute: this.muted,
             autoplay: true,
+            // TODO: on error skip next
             onloaderror: (id, e) => console.error(e),
             onplayerror: (id, e) => console.error(e),
-            onend: () => {
-                this.playNextFromQueue()
-                // TODO: why does it think the callback can be undefined
-                forEach(this.eventSubscribers, cb => cb({ type: "trackEnded" }))
-            },
+            onend: () => this.unloadHowlThenPlayNext(),
         })
         return howl
     }
 
-    private playNextFromQueue() {
+    private unloadHowlThenPlayNext() {
         this.howl?.unload()
         this.howl = null
-        const nextTrackData = this.queue.shift()
-        if (nextTrackData) {
-            this.howl = this.createHowlAndPlay(nextTrackData)
+        this.playNextFromQueue()
+    }
+
+    private playNextFromQueue() {
+        const nextTrackId = this.queue.next.shift()
+        this.queue.current = nextTrackId ?? null
+        this.emitEvent(player.queueChanged(this.copyOfQueue()))
+        if (nextTrackId === undefined) {
+            this.emitEvent(player.playbackStopped())
+        } else {
+            this.emitEvent(player.playbackLoading())
+            this.loadTrack(nextTrackId)
+                .then(trackData => {
+                    this.howl = this.createHowlAndPlay(trackData)
+                    this.emitEvent(
+                        player.playbackResumed({
+                            sinceMillis: performance.now(),
+                            positionAtTimestamp: 0,
+                        }),
+                    )
+                })
+                .catch(error => {
+                    console.error(`error loading track ${nextTrackId}: ${error}`)
+                    this.playNextFromQueue()
+                })
         }
+    }
+
+    private copyOfQueue(): AudioQueue {
+        return { current: this.queue.current, previous: [...this.queue.previous], next: [...this.queue.next] }
     }
 }

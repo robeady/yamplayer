@@ -6,6 +6,6 @@ export function unixNow(): Timestamp {
 
 export function isoToTimestamp(dateTime: string): Timestamp {
     const parsed = Date.parse(dateTime)
-    if (isNaN(parsed)) throw Error("invalid ISO date-time " + dateTime)
+    if (Number.isNaN(parsed)) throw new Error("invalid ISO date-time " + dateTime)
     return parsed as Timestamp
 }

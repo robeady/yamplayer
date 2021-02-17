@@ -1,5 +1,6 @@
 import { promises as fs } from "fs"
-import * as path from "path"
+import path from "path"
+import { Dict } from "../../util/types"
 
 // implements https://github.com/RasCarlito/axios-cache-adapter/blob/master/src/memory.js
 /**
@@ -15,18 +16,18 @@ export class FilesystemAxiosCache {
         return new FilesystemAxiosCache(cacheDirectory)
     }
 
-    async getItem(key: string): Promise<object | null> {
+    async getItem(key: string): Promise<Dict | null> {
         try {
             const filePath = this.getFilePath(key)
             const contents = await fs.readFile(filePath)
             console.log(`cache hit for ${key}`)
             return JSON.parse(contents.toString())
-        } catch (e) {
+        } catch (error) {
             console.log(`cache miss for ${key}`)
-            if (e.code === "ENOENT") {
+            if (error.code === "ENOENT") {
                 return null
             }
-            throw e
+            throw error
         }
     }
 
@@ -37,10 +38,10 @@ export class FilesystemAxiosCache {
             await fs.writeFile(filePath, data)
             console.log(`cached ${key}`)
             return value
-        } catch (e) {
+        } catch (error) {
             console.error(`failed to cache ${key}`)
-            console.error(e)
-            throw e
+            console.error(error)
+            throw error
         }
     }
 
@@ -74,26 +75,15 @@ export class FilesystemAxiosCache {
     private getFilePath(key: string): string {
         // bijective sanitization function to avoid erroneous collisions
         // TODO: may need expansion as I hit more URLs
-        const disallowedCharsInWindowsFileNames = [
-            /[/]/g,
-            /[:]/g,
-            /[?]/g,
-            /["]/g,
-            /[<]/g,
-            /[>]/g,
-            /[\\]/g,
-            /[|]/g,
-            /[*]/g,
-        ]
+        const disallowedCharsInWindowsFileNames = [/\//g, /:/g, /\?/g, /"/g, /</g, />/g, /\\/g, /\|/g, /\*/g]
         const replacement = "_"
         const replacementPairings = [replacement, ...disallowedCharsInWindowsFileNames].map(
             (original, i) => [original, replacement.repeat(i + 2)] as const,
         )
-        const sanitised =
-            replacementPairings.reduce(
-                (k, [original, replacement]) => k.replace(original, replacement),
-                key,
-            ) + ".json"
-        return path.join(this.cacheDirectory, sanitised)
+        let sanitised = ""
+        for (const [original, replacement] of replacementPairings) {
+            sanitised = sanitised.replace(original, replacement)
+        }
+        return path.join(this.cacheDirectory, sanitised + ".json")
     }
 }

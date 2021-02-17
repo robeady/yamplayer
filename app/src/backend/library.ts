@@ -158,39 +158,39 @@ export class LibraryStore {
         return { ...externalArtist, catalogueId: stringifyCatalogueId(id), cataloguedTimestamp: now }
     }
 
-    async matchTracks(externalTrackIds: string[]) {
+    async matchTracks(externalTrackIds: string[]): Promise<CataloguedTrack[]> {
         return externalTrackIds.length === 0
             ? []
             : (
                   await this.query(tables.track)
                       .where(tables.track.externalId, "IN", externalTrackIds)
                       .fetch()
-              ).map(mapTrack)
+              ).map(element => mapTrack(element))
     }
 
-    async matchAlbums(externalAlbumIds: string[]) {
+    async matchAlbums(externalAlbumIds: string[]): Promise<CataloguedAlbum[]> {
         return externalAlbumIds.length === 0
             ? []
             : (
                   await this.query(tables.album)
                       .where(tables.album.externalId, "IN", externalAlbumIds)
                       .fetch()
-              ).map(mapAlbum)
+              ).map(element => mapAlbum(element))
     }
 
-    async matchArtists(externalArtistIds: string[]) {
+    async matchArtists(externalArtistIds: string[]): Promise<CataloguedArtist[]> {
         return externalArtistIds.length === 0
             ? []
             : (
                   await this.query(tables.artist)
                       .where(tables.artist.externalId, "IN", externalArtistIds)
                       .fetch()
-              ).map(mapArtist)
+              ).map(element => mapArtist(element))
     }
 
     async setRating(trackId: CatalogueIdString, rating: Fraction | null): Promise<void> {
         if (rating !== null && (rating < 0 || rating > 1)) {
-            throw Error(`tried to give track ${trackId} invalid rating ${rating}`)
+            throw new Error(`tried to give track ${trackId} invalid rating ${rating}`)
         }
         await this.query(tables.track)
             .where({ id: parseCatalogueId(trackId) })

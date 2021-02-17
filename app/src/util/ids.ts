@@ -4,7 +4,7 @@ export class IdSequence {
     private digits: number[] = []
     constructor(private alphabet = defaultAlphabet) {}
 
-    next() {
+    next(): string {
         this.increment()
         return this.print()
     }
@@ -26,7 +26,7 @@ export class IdSequence {
         let printed = ""
         // print in big endian fashion
         for (let i = this.digits.length - 1; i >= 0; i--) {
-            printed += this.alphabet[this.digits[i]]
+            printed += this.alphabet[this.digits[i]!]
         }
         return printed
     }

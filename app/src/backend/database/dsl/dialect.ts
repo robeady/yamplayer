@@ -7,13 +7,13 @@ export interface SqlDialect {
 }
 
 export class MySqlDialect implements SqlDialect {
-    convertSqlValueToJs = (sqlValue: unknown) => {
+    convertSqlValueToJs = (sqlValue: unknown): unknown => {
         // TODO: verify that this is sensible
         return sqlValue
     }
 
-    escapeJsValueToSql = (value: unknown) => {
-        if (value instanceof Array) {
+    escapeJsValueToSql = (value: unknown): string => {
+        if (Array.isArray(value)) {
             // TODO: maybe we should do this on the caller side?
             return "(" + sqlstring.escape(value) + ")"
         } else if (value instanceof Uint8Array) {
@@ -28,7 +28,7 @@ export class MySqlDialect implements SqlDialect {
         ) {
             return sqlstring.escape(value)
         } else {
-            throw Error(
+            throw new Error(
                 `invalid literal ${value}, type ${typeof value}, instanceof ${
                     (value as any)?.constructor?.name
                 }`,
@@ -36,5 +36,5 @@ export class MySqlDialect implements SqlDialect {
         }
     }
 
-    escapeIdentifier = (identifier: string) => sqlstring.escapeId(identifier)
+    escapeIdentifier = (identifier: string): string => sqlstring.escapeId(identifier)
 }

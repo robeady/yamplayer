@@ -1,7 +1,7 @@
-export function parseExternalId(externalId: string, service: string) {
+export function parseExternalId(externalId: string, service: string): string {
     if (externalId.startsWith(service + ":")) {
-        return externalId.substring(service.length + 1)
+        return externalId.slice(service.length + 1)
     } else {
-        throw Error(`${externalId} is not a ${service} ID`)
+        throw new Error(`${externalId} is not a ${service} ID`)
     }
 }

@@ -1,6 +1,7 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
 import { TrackListing } from "./components/TrackListing"
-import { useSearchResults } from "./state/library"
+import { catalogue } from "./state/actions"
 
 function SearchBox(props: { onSubmit: (text: string) => void }) {
     const [text, setText] = useState("")
@@ -24,12 +25,18 @@ function SearchResults(props: { trackIds: string[] }) {
 }
 
 export function TrackSearch() {
-    const [searchQuery, setSearchQuery] = useState(null as string | null)
-    const searchResults = useSearchResults(searchQuery)
+    const dispatch = useDispatch()
+    const [searchQuery, setSearchQuery] = useState("")
+    const searchResults = useSelector(s => searchQuery && s.catalogue.searchResultsByQuery[searchQuery])
+    useEffect(() => {
+        if (searchResults === undefined) {
+            dispatch(catalogue.fetchSearchResults(searchQuery))
+        }
+    }, [dispatch, searchQuery, searchResults])
     return (
         <div>
             <SearchBox onSubmit={setSearchQuery} />
-            <SearchResults trackIds={searchResults.externalTrackIds} />
+            <SearchResults trackIds={(searchResults && searchResults.externalTrackIds) || []} />
         </div>
     )
 }

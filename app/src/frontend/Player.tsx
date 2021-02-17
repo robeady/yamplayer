@@ -1,6 +1,7 @@
 import { css } from "linaria"
 import * as React from "react"
 import { useEffect, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
 import { PlayPauseButton } from "./components/PlayPause"
 import { Slider } from "./components/Slider"
 import { VolumeControl } from "./components/Volume"
@@ -8,8 +9,8 @@ import { DotDotDot, Flex, Noverflow } from "./elements"
 import { formatTime } from "./formatting"
 import SkipNext from "./icons/skip_next.svg"
 import SkipPrevious from "./icons/skip_previous.svg"
-import { resolveCanonical, useExplorerState } from "./state/library"
-import { usePlayerDispatch, usePlayerState } from "./state/playback"
+import { audio } from "./state/actions"
+import { resolveCanonical } from "./state/catalogue"
 import { colors } from "./styles"
 
 const Player = () => {
@@ -28,16 +29,16 @@ const Player = () => {
 }
 
 function PlayingTrack() {
-    const status = usePlayerState(s => s.status)
-    const nowPlayingTrackId = usePlayerState(s => s.queue[0]?.trackId as string | undefined)
-    const playingTrack = useExplorerState(s =>
-        nowPlayingTrackId === undefined ? undefined : resolveCanonical(s.tracks, nowPlayingTrackId),
+    const status = useSelector(s => s.player.status)
+    const nowPlayingTrackId = useSelector(s => s.player.queue.current)
+    const playingTrack = useSelector(s =>
+        nowPlayingTrackId === null ? undefined : resolveCanonical(s.catalogue.tracks, nowPlayingTrackId),
     )
-    const playingAlbum = useExplorerState(
-        s => playingTrack && resolveCanonical(s.albums, playingTrack.albumId),
+    const playingAlbum = useSelector(
+        s => playingTrack && resolveCanonical(s.catalogue.albums, playingTrack.albumId),
     )
-    const playingArtist = useExplorerState(
-        s => playingTrack && resolveCanonical(s.artists, playingTrack.artistId),
+    const playingArtist = useSelector(
+        s => playingTrack && resolveCanonical(s.catalogue.artists, playingTrack.artistId),
     )
 
     if (nowPlayingTrackId === undefined) {
@@ -76,7 +77,7 @@ function ControlsAndProgressBar() {
 }
 
 function PlayPauseSkipControls() {
-    const { skipNext } = usePlayerDispatch()
+    const dispatch = useDispatch()
     return (
         <div
             className={css`
@@ -108,27 +109,31 @@ function PlayPauseSkipControls() {
                 fill="slategray"
                 width={32}
                 height={32}
-                onClick={() => skipNext()}
+                onClick={() => dispatch(audio.skipNext())}
             />
         </div>
     )
 }
 
 function PlayPause(props: { size: number }) {
-    const status = usePlayerState(s => s.status)
-    const { pause, unpause } = usePlayerDispatch()
+    const status = useSelector(s => s.player.status)
+    const dispatch = useDispatch()
     if (status.state === "stopped") {
         return <PlayPauseButton icon="play" disabled {...props} />
     } else if (status.state === "paused") {
-        return <PlayPauseButton icon="play" {...props} onClick={unpause} />
+        return <PlayPauseButton icon="play" {...props} onClick={() => dispatch(audio.pause())} />
     } else {
-        return <PlayPauseButton icon="pause" {...props} onClick={pause} />
+        return <PlayPauseButton icon="pause" {...props} onClick={() => dispatch(audio.pause())} />
     }
 }
 
 function ProgressBar() {
-    const status = usePlayerState(s => s.status)
-    const songDuration = 180 // TODO
+    const status = useSelector(s => s.player.status)
+    const duration = useSelector(s =>
+        s.player.queue.current === null
+            ? null
+            : resolveCanonical(s.catalogue.tracks, s.player.queue.current).durationSecs,
+    )
     const refreshIntervalMillis = 500
 
     const [timestampMillis, setTimestampMillis] = useState(performance.now())
@@ -141,16 +146,12 @@ function ProgressBar() {
     }, [status.state])
 
     const songPosition =
-        status.state === "stopped"
+        status.state === "stopped" || status.state === "loading"
             ? null
             : status.state === "paused"
-            ? status.atPosition
-            : clamp(
-                  status.positionAtTimestamp + (timestampMillis - status.sinceTimestampMillis) / 1000,
-                  0,
-                  songDuration,
-              )
-    const sliderValue = songPosition === null ? null : songPosition / songDuration
+            ? status.position
+            : clamp(status.positionAtTimestamp + (timestampMillis - status.sinceMillis) / 1000, 0, duration!)
+    const sliderValue = songPosition === null ? null : songPosition / duration!
 
     return (
         <div
@@ -166,7 +167,7 @@ function ProgressBar() {
                 `}>
                 <Slider value={sliderValue} onChange={v => v /* TODO implement seeking */} />
             </div>
-            <TrackTime time={songDuration} />
+            <TrackTime time={duration ?? 0} />
         </div>
     )
 }
@@ -200,14 +201,14 @@ function SecondaryControls() {
 }
 
 export function NowPlaying() {
-    const queue = usePlayerState(s => s.queue)
+    const queue = useSelector(s => s.player.queue)
     return (
         <div>
             <br />
-            <span>Now playing:</span>
+            <span>Up next:</span>
             <ol>
-                {queue.map(item => (
-                    <li key={item.trackId}>{item.trackId}</li>
+                {queue.next.map(trackId => (
+                    <li key={trackId}>{trackId}</li>
                 ))}
             </ol>
         </div>
