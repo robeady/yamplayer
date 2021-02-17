@@ -93,11 +93,7 @@ export class AudioPlayer {
 
     /** Gets the position in seconds from the start of the current track, or null if nothing is playing */
     positionSecs(): number | null {
-        if (this.howl) {
-            return this.howl.seek() as number
-        } else {
-            return null
-        }
+        return this.howl ? (this.howl.seek() as number) : null
     }
 
     /**

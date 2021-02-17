@@ -156,10 +156,9 @@ function PlayCircle(props: { displayed: boolean; size: number }) {
 function SaveButton(props: { trackId: string }) {
     const track = useSelector(s => resolveCanonical(s.catalogue.tracks, props.trackId))
     const dispatch = useDispatch()
-    if (track.savedTimestamp !== null) {
-        return <button onClick={() => dispatch(catalogue.unsaveTrack(track.catalogueId!))}>-</button>
-    } else {
-        // TODO: support re-saving
-        return <button onClick={() => dispatch(catalogue.addToLibrary(track.externalId))}>Add</button>
-    }
+    return track.savedTimestamp === null ? (
+        <button onClick={() => dispatch(catalogue.addToLibrary(track.externalId))}>Add</button>
+    ) : (
+        <button onClick={() => dispatch(catalogue.unsaveTrack(track.catalogueId!))}>-</button>
+    )
 }
