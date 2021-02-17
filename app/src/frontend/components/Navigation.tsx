@@ -12,6 +12,7 @@ export function LeftNav() {
                 width: 200px;
                 padding-top: 24px;
                 border-right: 1px solid gainsboro;
+                overflow: auto;
             `}>
             <NavSection title="Explore">
                 <NavItem link="/now-playing" text="Now Playing" />
