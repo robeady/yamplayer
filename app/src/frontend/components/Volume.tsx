@@ -1,25 +1,30 @@
 import { css } from "linaria"
 import React from "react"
+import { MdVolumeDown, MdVolumeMute, MdVolumeOff, MdVolumeUp } from "react-icons/md"
 import { useDispatch, useSelector } from "react-redux"
-import VolumeDown from "../icons/volume_down.svg"
-import VolumeMute from "../icons/volume_mute.svg"
-import VolumeOff from "../icons/volume_off.svg"
-import VolumeUp from "../icons/volume_up.svg"
 import { audio } from "../state/actions"
+import { colors } from "../styles"
 import { Slider } from "./Slider"
 
 export function VolumeControl() {
     const volume = useSelector(s => s.player.volume)
     const muted = useSelector(s => s.player.muted)
     const dispatch = useDispatch()
-    const VolumeIcon = muted ? VolumeOff : volume < 0.1 ? VolumeMute : volume < 0.5 ? VolumeDown : VolumeUp
+    const VolumeIcon = muted
+        ? MdVolumeOff
+        : volume < 0.1
+        ? MdVolumeMute
+        : volume < 0.5
+        ? MdVolumeDown
+        : MdVolumeUp
     return (
         <div
             className={css`
                 display: flex;
                 align-items: center;
+                color: ${colors.grey3};
             `}>
-            <VolumeIcon fill="slategray" onClick={() => dispatch(audio.toggleMute())} />
+            <VolumeIcon size={24} onClick={() => dispatch(audio.toggleMute())} />
             <div
                 className={css`
                     width: 100px;

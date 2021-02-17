@@ -1,6 +1,7 @@
 import { css } from "linaria"
 import * as React from "react"
 import { useEffect, useState } from "react"
+import { MdRepeat, MdShuffle } from "react-icons/md"
 import { useDispatch, useSelector } from "react-redux"
 import { PlayPauseButton } from "./components/PlayPause"
 import { Slider } from "./components/Slider"
@@ -182,6 +183,10 @@ function TrackTime(props: { time: number }) {
     )
 }
 
+const playerIcon = css`
+    color: ${colors.grey3};
+`
+
 function SecondaryControls() {
     return (
         <div
@@ -190,9 +195,10 @@ function SecondaryControls() {
                 align-items: center;
                 justify-content: flex-end;
                 padding: 16px;
+                gap: 12px;
             `}>
-            <div>(Shuffle)</div>
-            <div>(Repeat)</div>
+            <MdShuffle className={playerIcon} size={20} />
+            <MdRepeat className={playerIcon} size={20} />
             <VolumeControl />
         </div>
     )
