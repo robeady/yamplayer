@@ -4,7 +4,7 @@ import ReactSlider, { ReactSliderProps } from "react-slider"
 import { colors } from "../styles"
 
 const trackClassName = css`
-    background: ${colors.grey8};
+    background: ${colors.gray2};
     height: 5px;
     &-0 {
         border-top-left-radius: 3px;

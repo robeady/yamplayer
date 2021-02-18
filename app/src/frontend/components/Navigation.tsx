@@ -11,7 +11,7 @@ export function LeftNav() {
             className={css`
                 width: 200px;
                 padding-top: 24px;
-                border-right: 1px solid ${colors.grey8};
+                border-right: 1px solid ${colors.gray2};
                 overflow: auto;
             `}>
             <NavSection title="Explore">
@@ -53,16 +53,16 @@ function NavItem(props: { link: string; text: string }) {
                 display: block;
                 padding-left: 16px;
                 text-decoration: none;
-                color: ${colors.grey2};
+                color: ${colors.gray6};
                 flex: 1;
                 &:hover {
-                    color: ${colors.grey0};
+                    color: ${colors.gray9};
                     svg {
-                        color: ${colors.grey2};
+                        color: ${colors.gray6};
                     }
                 }
                 svg {
-                    color: ${colors.grey3};
+                    color: ${colors.gray4};
                 }
                 border-left: 5px solid transparent;
             `}

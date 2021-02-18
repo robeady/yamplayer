@@ -110,7 +110,7 @@ function AlbumRow(props: { tracks: Track[]; albumId: string; buildQueue: (from: 
     return (
         <Flex
             className={css`
-                border-bottom: 1px solid ${colors.grey8};
+                border-bottom: 1px solid ${colors.gray2};
                 font-size: ${fontSizes.tableContent};
             `}>
             {props.tracks.length >= fullSizeThreshold ? (
@@ -189,7 +189,7 @@ function AlbumTitle({ title = "" }) {
 
 function ArtistName({ name = "" }) {
     return (
-        <DotDotDot className={css`color: ${colors.grey2}; font-size: ${fontSizes.tableSecondary};`}>
+        <DotDotDot className={css`color: ${colors.gray6}; font-size: ${fontSizes.tableSecondary};`}>
             {name}
         </DotDotDot>
     )
@@ -235,7 +235,7 @@ const TrackFlex = styled.div`
         border-bottom: 0;
     }
     &:hover {
-        background: ${colors.grey9};
+        background: ${colors.gray1};
     }
 `
 
@@ -249,7 +249,7 @@ const SelectedTrackFlex = styled(TrackFlex)`
 const TableCol = styled.div`padding-right: 20px;`
 
 const AlbumArtistCol = styled(TableCol)`flex: 0 0 274px;`
-const TrackNumCol = styled(TableCol)`flex: 0 0 40px; text-align: right; color: ${colors.grey2};`
+const TrackNumCol = styled(TableCol)`flex: 0 0 40px; text-align: right; color: ${colors.gray6};`
 const TrackCol = styled(TableCol)`flex: 0 0 500px;`
 const RatingCol = styled(TableCol)`flex: 0 0 100px;`
 const LengthCol = styled(TableCol)`flex: 0 0 100px;`

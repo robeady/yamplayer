@@ -22,9 +22,17 @@ export function VolumeControl() {
             className={css`
                 display: flex;
                 align-items: center;
-                color: ${colors.grey3};
             `}>
-            <VolumeIcon size={24} onClick={() => dispatch(audio.toggleMute())} />
+            <VolumeIcon
+                className={css`
+                    color: ${colors.gray5};
+                    &:hover {
+                        color: ${colors.gray7};
+                    }
+                `}
+                size={24}
+                onClick={() => dispatch(audio.toggleMute())}
+            />
             <div
                 className={css`
                     width: 100px;

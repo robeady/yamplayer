@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { PlayPauseButton } from "./components/PlayPause"
 import { Slider } from "./components/Slider"
 import { VolumeControl } from "./components/Volume"
-import { DotDotDot, Flex, Noverflow } from "./elements"
+import { Col, DotDotDot, Flex, Noverflow } from "./elements"
 import { formatTime } from "./formatting"
 import SkipNext from "./icons/skip_next.svg"
 import SkipPrevious from "./icons/skip_previous.svg"
@@ -49,11 +49,11 @@ function PlayingTrack() {
             className={css`
                 padding: 16px;
             `}>
-            <Flex className={css`gap: 12px; justify-content: space-between;`}>
+            <Flex className={css`gap: 12px;`}>
                 <img src={playingAlbum?.coverImageUrl ?? undefined} width={48} />
                 <Noverflow>
                     <DotDotDot>{playingTrack?.title}</DotDotDot>
-                    <DotDotDot className={css`color: ${colors.grey2};`}>
+                    <DotDotDot className={css`color: ${colors.gray6};`}>
                         {playingArtist?.name} • {playingAlbum?.title}
                     </DotDotDot>
                 </Noverflow>
@@ -64,14 +64,10 @@ function PlayingTrack() {
 
 function ControlsAndProgressBar() {
     return (
-        <div
-            className={css`
-                display: flex;
-                flex-direction: column;
-            `}>
+        <Col>
             <PlayPauseSkipControls />
             <ProgressBar />
-        </div>
+        </Col>
     )
 }
 
@@ -176,7 +172,7 @@ function TrackTime(props: { time: number }) {
         <span
             className={css`
                 font-size: 14px;
-                color: ${colors.grey2};
+                color: ${colors.gray6};
             `}>
             {formatTime(props.time)}
         </span>
@@ -184,7 +180,10 @@ function TrackTime(props: { time: number }) {
 }
 
 const playerIcon = css`
-    color: ${colors.grey3};
+    color: ${colors.gray6};
+    &:hover {
+        color: ${colors.gray8};
+    }
 `
 
 function SecondaryControls() {

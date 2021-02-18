@@ -11,7 +11,7 @@ export const Subheading = styled.div`
     font-size: ${fontSizes.tableSecondary};
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: ${colors.grey2};
+    color: ${colors.gray6};
 `
 
 export const Noverflow = styled.div`
