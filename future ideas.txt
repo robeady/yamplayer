@@ -1,0 +1,10 @@
+music app ideas
+
+
+visualisation of your library, according to spotify track attributes (https://developer.spotify.com/documentation/web-api/reference/browse/get-recommendations/)
+
+clustering, dimensionality reduction
+
+select a cluster and play it as a playlist
+
+release inbox: prioritised list of new releases. press dismiss once done with a release
