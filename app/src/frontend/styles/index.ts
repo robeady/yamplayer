@@ -59,6 +59,6 @@ export const colors = {
 }
 
 export const fontSizes = {
-    tableContent: "15px",
-    tableSecondary: "13.5px",
+    tableContent: "14px",
+    tableSecondary: "13px",
 }
