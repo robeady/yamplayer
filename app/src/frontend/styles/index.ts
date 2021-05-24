@@ -58,6 +58,12 @@ export const colors = {
     ...purples,
 }
 
+export const shadows = {
+    // from tailwind https://tailwindcss.com/docs/box-shadow#outer-shadow
+    small: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+    medium: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+}
+
 export const fontSizes = {
     tableContent: "14px",
     tableSecondary: "13px",
