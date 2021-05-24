@@ -10,12 +10,5 @@
             "source.organizeImports": true
         }
     },
-    "typescript.tsdk": "node_modules\\typescript\\lib",
-    "workbench.colorCustomizations": {
-        "activityBar.background": "#ECD",
-        "titleBar.activeBackground": "#ECD",
-        "titleBar.inactiveBackground": "#ECD",
-        "statusBar.background": "#ECD"
-    },
-    "files.eol": "\n"
+    "typescript.tsdk": "node_modules\\typescript\\lib"
 }
