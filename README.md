@@ -39,8 +39,9 @@ See https://www.figma.com/file/UL3IcZhYuqSxL31gvCydxl/Yamplayer-app
 
 ### Running locally
 
-1. Ensure the database is started: `docker start yamplayerdb`
-2. `yarn start`
+1. Ensure docker is running
+2. Start the database: `docker start yamplayerdb`
+3. `yarn start`
 
     This starts 3 things concurrently:
 
@@ -59,3 +60,22 @@ add `--silent` to supress stdout, `--verbose` to see a detailed breakdown of eve
 ### Project structure
 
 The codebase is a single typescript module. We intend to rely on webpack tree shaking to eliminate unnecessary dependencies from the frontend and backend. Running the backend with ts-node-dev avoids any unnecessary reloads.
+
+### Git submodules
+
+The following git config is recommended to make working with submodules easier (note that these changes apply only to this repo, not globally)
+
+	git config diff.submodule log
+	git config submodule.recurse true
+	git config push.recurseSubmodules on-demand
+
+you can also add
+
+	git config status.submodulesummary 1
+
+but this makes git status slow.
+
+Otherwise, you need to remember to:
+
+	git pull --recurse-submodules
+	git push --recurse-submodules=on-demand
