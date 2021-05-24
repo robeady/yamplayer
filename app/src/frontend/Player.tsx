@@ -116,7 +116,7 @@ function PlayPause(props: { size: number }) {
     if (status.state === "stopped") {
         return <PlayPauseButton icon="play" disabled {...props} />
     } else if (status.state === "paused") {
-        return <PlayPauseButton icon="play" {...props} onClick={() => dispatch(audio.pause())} />
+        return <PlayPauseButton icon="play" {...props} onClick={() => dispatch(audio.unpause())} />
     } else {
         return <PlayPauseButton icon="pause" {...props} onClick={() => dispatch(audio.pause())} />
     }
