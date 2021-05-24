@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { Album, Artist, Track } from "../../model"
 import { Dict } from "../../util/types"
 import { Col, DotDotDot, Flex, Row, Subheading } from "../elements"
+import { DropdownMenu, DropdownMenuItem, useDropdownMenu } from "../elements/DropdownMenu"
 import { formatTime } from "../formatting"
 import { audio, catalogue, view } from "../state/actions"
 import { AudioQueue } from "../state/AudioPlayer"
@@ -102,17 +103,21 @@ function Headings() {
 }
 
 function AlbumRow(props: { tracks: Track[]; albumId: string; buildQueue: (from: string) => AudioQueue }) {
+    const dispatch = useDispatch()
     const fullSizeThreshold = 9
     const album = useSelector(s => resolveCanonical(s.catalogue.albums, props.albumId))
     const artist = useSelector(s =>
         resolveCanonical(s.catalogue.artists, props.tracks[0]!.artistId /* TODO: get album primary artist */),
     )
+    const { state, show } = useDropdownMenu()
+
     return (
         <Flex
             className={css`
                 border-bottom: 1px solid ${colors.gray2};
                 font-size: ${fontSizes.tableContent};
-            `}>
+            `}
+            onContextMenu={show}>
             {props.tracks.length >= fullSizeThreshold ? (
                 <FullSizeAlbumCell album={album} artist={artist} />
             ) : (
@@ -207,29 +212,43 @@ function TrackRow(props: {
     const selected = useSelector(s => s.view.selectedTrackId)
     const TrackComponent = selected === trackId ? SelectedTrackFlex : TrackFlex
 
+    const { state, show } = useDropdownMenu()
+
     return (
-        <TrackComponent
-            onMouseDown={() => dispatch(view.selectedTrackChanged(trackId))}
-            onDoubleClick={() => dispatch(audio.play(props.buildQueue(trackId)))}
-            className={css``}>
-            <TrackNumCol>{props.track.trackNumber}</TrackNumCol>
-            <TrackCol>{props.track.title}</TrackCol>
-            <RatingCol>
-                <TrackRating
-                    rating={props.track.rating}
-                    enabled={props.track.catalogueId !== null}
-                    onRate={newRating => dispatch(catalogue.setTrackRating({ trackId, newRating }))}
-                />
-            </RatingCol>
-            <LengthCol>{formatTime(props.track.durationSecs)}</LengthCol>
-        </TrackComponent>
+        <>
+            <DropdownMenu state={state}>
+                <DropdownMenuItem
+                    onClick={() => {
+                        console.log("playing " + trackId + " later")
+                        return dispatch(audio.playLater([trackId]))
+                    }}>
+                    Play later
+                </DropdownMenuItem>
+            </DropdownMenu>
+            <TrackComponent
+                onContextMenu={show}
+                onMouseDown={() => dispatch(view.selectedTrackChanged(trackId))}
+                onDoubleClick={() => dispatch(audio.play(props.buildQueue(trackId)))}
+                className={css``}>
+                <TrackNumCol>{props.track.trackNumber}</TrackNumCol>
+                <TrackCol>{props.track.title}</TrackCol>
+                <RatingCol>
+                    <TrackRating
+                        rating={props.track.rating}
+                        enabled={props.track.catalogueId !== null}
+                        onRate={newRating => dispatch(catalogue.setTrackRating({ trackId, newRating }))}
+                    />
+                </RatingCol>
+                <LengthCol>{formatTime(props.track.durationSecs)}</LengthCol>
+            </TrackComponent>
+        </>
     )
 }
 
 const TrackFlex = styled.div`
     display: flex;
     align-items: center;
-    padding: 4px 12px;
+    padding: 2px 4px 3px;
     border-radius: 6px;
     &:last-child {
         border-bottom: 0;

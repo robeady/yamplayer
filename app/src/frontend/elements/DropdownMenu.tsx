@@ -18,10 +18,12 @@ interface DropdownState {
 
 export function DropdownMenu(props: { state: DropdownState; children: ReactNode }) {
     const { open, close, setContainerElement, popperState } = props.state
-    console.log("open?", open)
     return open ? (
         <Backdrop onMouseDown={close}>
             <PopupContainer
+                // stop mouse down propagating to backdrop if clicked inside the menu,
+                // to avoid closing the menu before menu item click handlers run
+                onMouseDown={e => e.stopPropagation()}
                 onClick={close}
                 ref={setContainerElement}
                 style={popperState.styles.popper}
