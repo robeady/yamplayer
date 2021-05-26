@@ -1,6 +1,6 @@
-docker run ^
+docker run -d ^
     --name yamplayerdb ^
-    -v mariadb:/var/lib/mysql ^
+    -v yamplayerdb:/var/lib/mysql ^
     -e MYSQL_ROOT_PASSWORD=hunter2 ^
     -e MYSQL_DATABASE=yamplayer ^
     -e MYSQL_USER=yamplayer_user ^

@@ -70,7 +70,7 @@ export class LibraryStore {
         const playlists = {} as Dict<Playlist>
         for (const row of playlistRows) {
             const playlist = {
-                catalogueId: stringifyCatalogueId(row.playlistId),
+                catalogueId: stringifyCatalogueId(row.id),
                 name: row.name,
             }
             playlists[playlist.catalogueId] = playlist
@@ -210,7 +210,7 @@ export class LibraryStore {
 
     async addPlaylist(playlist: { name: string }): Promise<Playlist> {
         const id = this.idGenerator.generate()
-        await this.query(tables.playlist).insert({ name: playlist.name, playlistId: id }).execute()
+        await this.query(tables.playlist).insert({ name: playlist.name, id }).execute()
         return { ...playlist, catalogueId: stringifyCatalogueId(id) }
     }
 }

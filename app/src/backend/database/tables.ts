@@ -32,7 +32,7 @@ export const artist = table("artist", {
 })
 
 export const playlist = table("playlist", {
-    playlistId: binary,
+    id: binary,
     name: string,
 })
 

@@ -42,12 +42,12 @@ const migration0: DatabaseMigration = {
     );
 
     CREATE TABLE playlist (
-        playlistId BINARY(16) PRIMARY KEY,
+        id BINARY(16) PRIMARY KEY,
         name VARCHAR(255) NOT NULL
     );
 
     CREATE TABLE playlistEntry (
-        playlistId BINARY(16) NOT NULL REFERENCES playlist (playlistId),
+        id BINARY(16) NOT NULL REFERENCES playlist (id),
         trackId BINARY(16) NOT NULL REFERENCES track (id)
     );
     `,

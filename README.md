@@ -2,7 +2,6 @@
 
 A music player written in Typescript.
 
-
 ## Architecture
 
 Yamplayer consists of:
@@ -16,11 +15,9 @@ For example, when installed locally on a desktop, the frontend and most of the b
 
 Alternatively, the frontend could be run in a web browser with the entire backend hosted remotely, in an install-less or mobile use case.
 
-
 ## Design
 
 See https://www.figma.com/file/UL3IcZhYuqSxL31gvCydxl/Yamplayer-app
-
 
 ## Development
 
@@ -32,24 +29,28 @@ See https://www.figma.com/file/UL3IcZhYuqSxL31gvCydxl/Yamplayer-app
 
 ### Installation
 
-1. Clone the repo with its submodules: `git clone --recurse-submodules https://github.com/robeady/yamplayer.git`  
+1. Clone the repo with its submodules: `git clone --recurse-submodules https://github.com/robeady/yamplayer.git`
 2. Change to the app directory: `cd app`
 3. Install dependencies: `yarn install --frozen-lockfile`
-4. Create a database: `create_db.cmd` will use the mariadb docker image to do this.
+4. Create a database: `scripts/create_db.cmd` will use the mariadb docker image to do this.
 
 ### Running locally
 
 1. Ensure docker is running
-2. Start the database: `docker start yamplayerdb`
+2. Start the database: `scripts/start_db.cmd`
 3. `yarn start`
 
-    This starts 3 things concurrently:
+   This starts 3 things concurrently:
 
-    1. The backend, using ts-node-dev for automatic reloading
-    2. An electron app, which pulls from:
-    3. A webpack server, which compiles the frontend bundle in hot-reload mode. Typescript compilation occurs in the background.
+   1. The backend, using ts-node-dev for automatic reloading
+   2. An electron app, which pulls from:
+   3. A webpack server, which compiles the frontend bundle in hot-reload mode. Typescript compilation occurs in the background.
 
-    Press ctrl-c or close the electron window to exit and it should clean up all the processes.
+   Press ctrl-c or close the electron window to exit and it should clean up all the processes.
+
+### Resetting the database
+
+Docker will preserve your database between runs of `scripts/start_db.cmd`. To clear the database by deleting the container and its volumes run `scripts/reset_db.cmd` then `scripts/create_db.cmd` to restart it.
 
 ### Running tests
 
@@ -65,17 +66,17 @@ The codebase is a single typescript module. We intend to rely on webpack tree sh
 
 The following git config is recommended to make working with submodules easier (note that these changes apply only to this repo, not globally)
 
-	git config diff.submodule log
-	git config submodule.recurse true
-	git config push.recurseSubmodules on-demand
+    git config diff.submodule log
+    git config submodule.recurse true
+    git config push.recurseSubmodules on-demand
 
 you can also add
 
-	git config status.submodulesummary 1
+    git config status.submodulesummary 1
 
 but this makes git status slow.
 
 Otherwise, you need to remember to:
 
-	git pull --recurse-submodules
-	git push --recurse-submodules=on-demand
+    git pull --recurse-submodules
+    git push --recurse-submodules=on-demand
