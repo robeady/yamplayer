@@ -47,7 +47,6 @@ function buildQueue(rows: Row[], playFromTrackId: string): AudioQueue {
     // 'playFromTrackId' appears somewhere in rows
     // we scan through all the tracks in order and build a queue
     const previous: string[] = []
-    let current
     const next: string[] = []
     let target = previous
     for (const row of rows) {
@@ -55,17 +54,15 @@ function buildQueue(rows: Row[], playFromTrackId: string): AudioQueue {
             // TODO is it ok to just check catalogue ID here?
             const id = track.catalogueId ?? track.externalId
             if (id === playFromTrackId) {
-                current = id
                 target = next
-            } else {
-                target.push(id)
             }
+            target.push(id)
         }
     }
-    if (current === undefined) {
-        throw new Error("could not find track to play froms")
+    if (next.length === 0) {
+        throw new Error("could not find track to play from")
     }
-    return { previous, current, next }
+    return { previous, current: null, next }
 }
 
 /** This component shows a table of tracks, but where consecutive tracks from the same album are grouped together. */
@@ -103,7 +100,6 @@ function Headings() {
 }
 
 function AlbumRow(props: { tracks: Track[]; albumId: string; buildQueue: (from: string) => AudioQueue }) {
-    const dispatch = useDispatch()
     const fullSizeThreshold = 9
     const album = useSelector(s => resolveCanonical(s.catalogue.albums, props.albumId))
     const artist = useSelector(s =>

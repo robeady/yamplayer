@@ -40,13 +40,8 @@ export class AudioPlayer {
     }
 
     /** Play tracks, replacing the existing queue */
-    play(trackIds: string[] | AudioQueue) {
-        if (Array.isArray(trackIds)) {
-            const [current = null, ...next] = trackIds
-            this.queue = { current, next, previous: [] }
-        } else {
-            this.queue = trackIds
-        }
+    play({ next = [] as string[], previous = [] as string[] }) {
+        this.queue = { current: null, next, previous }
         this.emitEvent(player.queueChanged(this.copyOfQueue()))
         this.playNextFromQueue()
     }
@@ -57,7 +52,7 @@ export class AudioPlayer {
             this.queue.next.push(...trackIds)
             this.emitEvent(player.queueChanged(this.copyOfQueue()))
         } else {
-            this.play(trackIds)
+            this.play({ next: trackIds })
         }
     }
 

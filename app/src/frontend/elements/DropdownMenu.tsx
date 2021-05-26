@@ -101,6 +101,7 @@ const Backdrop = styled.div`
 const PopupContainer = styled.div`
     background: white;
     border: 1px solid ${colors.gray2};
+    padding: 4px 0;
     min-width: 200px;
     box-shadow: ${shadows.small};
 `
