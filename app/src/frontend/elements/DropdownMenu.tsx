@@ -78,10 +78,7 @@ export function useDropdownMenu() {
         state: {
             popperState,
             setContainerElement: (e: HTMLElement | null) => {
-                if (e !== null) {
-                    console.log("container element set", e)
-                    setContainerElement(e)
-                }
+                if (e !== null) setContainerElement(e)
             },
             open: !!menuOpen,
             close,

@@ -32,7 +32,9 @@ export function TrackListing(props: { trackIds: string[] }) {
                             e.preventDefault()
                         }
                     }}
-                    onDoubleClick={() => dispatch(audio.play([t.track.catalogueId ?? t.track.externalId]))}>
+                    onDoubleClick={() =>
+                        dispatch(audio.play({ next: [t.track.catalogueId ?? t.track.externalId] }))
+                    }>
                     <CoverAndTrackTitle {...t} />
                     <TrackRating
                         rating={t.track.rating}

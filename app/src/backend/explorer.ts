@@ -6,6 +6,7 @@ import {
     CataloguedArtist,
     CataloguedTrack,
     MatchedSearchResults,
+    Playlist,
     Track,
 } from "../model"
 import { Service, TrackResolver } from "../services"
@@ -17,6 +18,7 @@ export interface LibraryContents {
     tracks: Dict<CataloguedTrack>
     albums: Dict<CataloguedAlbum>
     artists: Dict<CataloguedArtist>
+    playlists: Dict<Playlist>
 }
 
 export class Explorer {

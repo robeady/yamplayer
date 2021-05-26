@@ -88,3 +88,8 @@ export interface MatchedSearchResults {
     albums: Dict<Album | string>
     artists: Dict<Artist | string>
 }
+
+export interface Playlist {
+    catalogueId: CatalogueIdString
+    name: string
+}

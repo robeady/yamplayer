@@ -1,5 +1,6 @@
 import { css } from "linaria"
 import React, { PropsWithChildren } from "react"
+import { useSelector } from "react-redux"
 import { NavLink } from "react-router-dom"
 import { Row, Subheading } from "../elements"
 import PlayArrow from "../icons/play_arrow.svg"
@@ -23,9 +24,21 @@ export function LeftNav() {
                 <NavItem link="/import" text="Import" />
             </NavSection>
             <NavSection title="Playlists">
-                <NavItem link="/playlists/1" text="Playlist" />
+                <PlaylistNavItems />
             </NavSection>
         </nav>
+    )
+}
+
+function PlaylistNavItems() {
+    const playlistsById = useSelector(s => s.catalogue.playlists)
+    const playlists = Object.values(playlistsById)
+    return (
+        <>
+            {playlists.map(p => (
+                <NavItem key={p.catalogueId} link={`/playlists/${p.catalogueId}`} text={p.name} />
+            ))}
+        </>
     )
 }
 

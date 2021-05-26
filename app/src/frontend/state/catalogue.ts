@@ -1,5 +1,5 @@
 import { createSlice, Slice } from "@reduxjs/toolkit"
-import { Album, Artist, SearchResultLists, Track } from "../../model"
+import { Album, Artist, Playlist, SearchResultLists, Track } from "../../model"
 import { Dict } from "../../util/types"
 import { curriedAsyncThunks } from "./reduxThunks"
 
@@ -8,9 +8,16 @@ interface CatalogueState {
     tracks: Dict<Track | string>
     albums: Dict<Album | string>
     artists: Dict<Artist | string>
+    playlists: Dict<Playlist>
 }
 
-const initialState: CatalogueState = { searchResultsByQuery: {}, tracks: {}, albums: {}, artists: {} }
+const initialState: CatalogueState = {
+    searchResultsByQuery: {},
+    tracks: {},
+    albums: {},
+    artists: {},
+    playlists: {},
+}
 
 export const catalogueThunks = curriedAsyncThunks({
     getLibrary: api => api.extra.explorer.getLibrary,

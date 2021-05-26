@@ -5,6 +5,7 @@ import {
     ExternalAlbum,
     ExternalArtist,
     ExternalTrack,
+    Playlist,
 } from "../model"
 import { unixNow } from "../util/time"
 import { Dict, Fraction, Timestamp } from "../util/types"
@@ -21,6 +22,7 @@ import { MariaDB } from "./database/handle"
 import { applyMigrations } from "./database/migrations"
 import { yamplayerMigrations } from "./database/schema"
 import * as tables from "./database/tables"
+import { LibraryContents } from "./explorer"
 
 export class LibraryStore {
     query: QueryBuilder
@@ -42,12 +44,8 @@ export class LibraryStore {
         await Promise.all(Object.values(tables).map(table => this.query(table).truncate().execute()))
     }
 
-    async list(): Promise<{
-        tracks: Dict<CataloguedTrack>
-        albums: Dict<CataloguedAlbum>
-        artists: Dict<CataloguedArtist>
-    }> {
-        const { track, artist, album } = tables
+    async list(): Promise<LibraryContents> {
+        const { track, artist, album, playlist } = tables
         const rows = await this.query(track)
             .innerJoin(album)
             .on(album.id, "=", track.albumId)
@@ -67,7 +65,18 @@ export class LibraryStore {
             albums[mappedAlbum.catalogueId] = mappedAlbum
             artists[mappedArtist.catalogueId] = mappedArtist
         }
-        return { tracks, artists, albums }
+
+        const playlistRows = await this.query(playlist).fetch()
+        const playlists = {} as Dict<Playlist>
+        for (const row of playlistRows) {
+            const playlist = {
+                catalogueId: stringifyCatalogueId(row.playlistId),
+                name: row.name,
+            }
+            playlists[playlist.catalogueId] = playlist
+        }
+
+        return { tracks, artists, albums, playlists }
     }
 
     async getAlbum(catalogueId: string) {
