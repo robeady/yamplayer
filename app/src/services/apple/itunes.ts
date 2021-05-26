@@ -4,6 +4,7 @@ import { Fraction, Timestamp } from "../../util/types"
 
 export interface ItunesLibraryContents {
     tracks: ItunesTrack[]
+    playlists: { name: string }[]
 }
 
 export interface ItunesTrack {
@@ -43,8 +44,9 @@ export function parseItunesLibraryXml(xmlContents: string): ItunesLibraryContent
         }
         return result
     })
-    const _playlists = Object.entries(parsed["Playlists"]).map(([_id, _data]) => {
-        return null // TODO _NoItunesPlaylistsYet_
+    const playlists = Object.entries(parsed["Playlists"]).map(([_id, data]: [string, any]) => {
+        const name = data["Name"] as string
+        return { name }
     })
-    return { tracks }
+    return { tracks, playlists }
 }

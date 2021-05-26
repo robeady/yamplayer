@@ -207,6 +207,12 @@ export class LibraryStore {
             .execute()
         // TODO: verify that the track existed (affected rows may still be 0 if the rating didn't change)
     }
+
+    async addPlaylist(playlist: { name: string }): Promise<Playlist> {
+        const id = this.idGenerator.generate()
+        await this.query(tables.playlist).insert({ name: playlist.name, playlistId: id }).execute()
+        return { ...playlist, catalogueId: stringifyCatalogueId(id) }
+    }
 }
 
 function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): CataloguedAlbum {

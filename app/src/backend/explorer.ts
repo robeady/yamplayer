@@ -227,6 +227,10 @@ export class Explorer {
             artistIdsByExternalId.set(artist.externalId, artist.catalogueId)
         }
 
+        const addedPlaylists = await Promise.all(
+            itunesLibraryContents.playlists.map(p => this.library.addPlaylist(p)),
+        )
+
         const addedTracks = await Promise.all(
             externalTracks.map(t =>
                 this.library.addTrack({
@@ -245,7 +249,12 @@ export class Explorer {
                 numNewAlbumsCatalogued: externalAlbums.length,
                 numNewArtistsCatalogued: externalArtists.length,
             },
-            added: { tracks: addedTracks, albums: addedAlbums, artists: addedArtists },
+            added: {
+                tracks: addedTracks,
+                albums: addedAlbums,
+                artists: addedArtists,
+                playlists: addedPlaylists,
+            },
         }
     }
 
@@ -282,7 +291,12 @@ export interface ImportItunesResult {
         numNewAlbumsCatalogued: Int
         numNewArtistsCatalogued: Int
     }
-    added: { tracks: CataloguedTrack[]; albums: CataloguedAlbum[]; artists: CataloguedArtist[] }
+    added: {
+        tracks: CataloguedTrack[]
+        albums: CataloguedAlbum[]
+        artists: CataloguedArtist[]
+        playlists: Playlist[]
+    }
 }
 
 function removeStuffInBrackets(s: string): string {

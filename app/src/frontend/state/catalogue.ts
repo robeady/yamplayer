@@ -72,6 +72,8 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
                 for (const track of payload.added.tracks) state.tracks[track.catalogueId] = track
                 for (const album of payload.added.albums) state.albums[album.catalogueId] = album
                 for (const artist of payload.added.artists) state.artists[artist.catalogueId] = artist
+                for (const playlist of payload.added.playlists)
+                    state.playlists[playlist.catalogueId] = playlist
             })
             .addCase(catalogueThunks.fetchSearchResults.fulfilled, (state, { meta, payload }) => {
                 const query = meta.arg
