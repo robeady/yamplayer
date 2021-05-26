@@ -2,6 +2,7 @@ import { Duration, TemporalUnit } from "node-duration"
 import { GenericContainer, StartedTestContainer, Wait } from "testcontainers"
 import { Timestamp } from "../util/types"
 import { MariaDB } from "./database/handle"
+import { LibraryContents } from "./explorer"
 import { LibraryStore } from "./library"
 
 jest.setTimeout(30000)
@@ -39,7 +40,8 @@ describe("library store tests", () => {
     })
 
     test("initially empty", async () => {
-        expect(await library.list()).toStrictEqual({ tracks: {}, albums: {}, artists: {} })
+        const expected: LibraryContents = { tracks: {}, albums: {}, artists: {}, playlists: {} }
+        expect(await library.list()).toStrictEqual(expected)
     })
 
     test("can list added tracks", async () => {
@@ -99,7 +101,19 @@ describe("library store tests", () => {
                     imageUrl: "3",
                 },
             },
+            playlists: {},
         })
+    })
+
+    test("can list added playlists", async () => {
+        const playlist = await library.addPlaylist({ name: "pl1" })
+        const expected: LibraryContents = {
+            tracks: {},
+            albums: {},
+            artists: {},
+            playlists: { [playlist.catalogueId]: playlist },
+        }
+        expect(await library.list()).toStrictEqual(expected)
     })
 
     // test("adding existing track sets saved to true", async () => {
