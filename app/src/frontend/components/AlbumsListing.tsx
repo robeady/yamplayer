@@ -213,11 +213,7 @@ function TrackRow(props: {
     return (
         <>
             <DropdownMenu state={state}>
-                <DropdownMenuItem
-                    onClick={() => {
-                        console.log("playing " + trackId + " later")
-                        return dispatch(audio.playLater([trackId]))
-                    }}>
+                <DropdownMenuItem onClick={() => dispatch(audio.playLater([trackId]))}>
                     Play later
                 </DropdownMenuItem>
             </DropdownMenu>
