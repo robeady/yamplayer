@@ -236,8 +236,8 @@ export interface FetchStage<Selection> {
           >
         : never
 
-    map: (<R>(f: (stage: this) => R) => R) &
-        (<R>(f: undefined | null | false | ((stage: this) => R)) => R | this)
+    map: <R>(f: (stage: this) => R) => R
+    // &    (<R>(f: undefined | null | false | ((stage: this) => R)) => R | this)
 }
 
 export interface ExecuteStage {

@@ -342,8 +342,7 @@ class SelectedStageImpl<QueriedTables extends TableDefinitions, Selection>
     implements OrderStage<QueriedTables, Selection> {
     constructor(private backend: StageBackend<QueriedTables, Selection>) {}
 
-    map = <R>(f: undefined | null | false | ((stage: this) => R)) =>
-        typeof f === "function" ? f(this) : this
+    map = <R>(f: (stage: this) => R) => f(this)
 
     private attach = <Q extends TableDefinitions, S, T extends unknown[]>(
         f: (...args: T) => StageBackend<Q, S>,
@@ -362,8 +361,7 @@ class SelectedStageImpl<QueriedTables extends TableDefinitions, Selection>
 class MultiTableStageImpl<QueriedTables extends TableDefinitions> implements OnStage<QueriedTables> {
     constructor(private backend: StageBackend<QueriedTables, QueriedTables>) {}
 
-    map = <R>(f: undefined | null | false | ((stage: this) => R)) =>
-        typeof f === "function" ? f(this) : this
+    map = <R>(f: (stage: this) => R) => f(this)
 
     private attach = <T extends unknown[]>(f: (...args: T) => StageBackend<QueriedTables, QueriedTables>) => (
         ...args: T
@@ -395,8 +393,7 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
 
     renderer = new Renderer(this.backend.state.databaseHandle.dialect)
 
-    map = <R>(f: undefined | null | false | ((stage: this) => R)) =>
-        typeof f === "function" ? f(this) : this
+    map = <R>(f: (stage: this) => R) => f(this)
 
     private attach = <T extends unknown[]>(
         f: (...args: T) => StageBackend<QueriedTablesFromSingle<QueriedTable>, QueriedTable>,
