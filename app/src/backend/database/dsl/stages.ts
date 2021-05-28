@@ -124,8 +124,8 @@ type ColumnsWithoutDefaultsIn<Table extends TableDefinition> = {
 export interface InsertStage<QueriedTable extends TableDefinition>
     extends FilterTableStage<QueriedTable>,
         JoinStage<QueriedTablesFromSingle<QueriedTable>> {
-    truncate(): ExecuteStage
-    insert(row: InsertTypeFor<QueriedTable>): ExecuteStage
+    truncate: () => ExecuteStage
+    insert: (row: InsertTypeFor<QueriedTable>) => ExecuteStage
 }
 
 export interface OnStage<QueriedTables extends TableDefinitions> {
@@ -140,7 +140,7 @@ export interface JoinedStage<QueriedTables extends TableDefinitions>
 }
 
 export interface JoinStage<QueriedTables extends TableDefinitions> {
-    innerJoin<
+    innerJoin: <
         OtherTableOrigin extends Origin,
         OtherTable extends TableDefinition<
             OtherTableOrigin,
@@ -149,7 +149,7 @@ export interface JoinStage<QueriedTables extends TableDefinitions> {
         >
     >(
         otherTable: OtherTable,
-    ): OnStage<QueriedTables & KeyByAlias<OtherTable>>
+    ) => OnStage<QueriedTables & KeyByAlias<OtherTable>>
 }
 
 export interface FilteredStage<QueriedTables extends TableDefinitions>
@@ -180,50 +180,50 @@ export interface FilterTableStage<QueriedTable extends TableDefinition>
 
 export interface UpdateDeleteStage<QueriedTable extends TableDefinition>
     extends OrderStage<QueriedTablesFromSingle<QueriedTable>, QueriedTable> {
-    update(row: Partial<RowTypeFrom<QueriedTable>>): ExecuteStage
-    delete(): ExecuteStage
+    update: (row: Partial<RowTypeFrom<QueriedTable>>) => ExecuteStage
+    delete: () => ExecuteStage
 }
 
 export interface SelectStage<QueriedTables extends TableDefinitions> {
-    select<Selection extends SelectionFrom<QueriedTables>>(
+    select: <Selection extends SelectionFrom<QueriedTables>>(
         selection: Selection,
-    ): OrderStage<QueriedTables, Selection>
+    ) => OrderStage<QueriedTables, Selection>
 }
 
 export interface OrderStage<QueriedTables extends TableDefinitions, Selection> extends LimitStage<Selection> {
-    orderBy(
+    orderBy: (
         column: ColumnIn<QueriedTables> | AliasIn<Selection>,
         direction?: "ASC" | "DESC",
-    ): OrderedStage<QueriedTables, Selection>
+    ) => OrderedStage<QueriedTables, Selection>
 }
 
 export interface OrderedStage<QueriedTables extends TableDefinitions, Selection>
     extends LimitStage<Selection> {
-    thenBy(
+    thenBy: (
         column: ColumnIn<QueriedTables> | AliasIn<Selection>,
         direction?: "ASC" | "DESC",
-    ): OrderedStage<QueriedTables, Selection>
+    ) => OrderedStage<QueriedTables, Selection>
 }
 
 export interface LimitStage<Selection> extends OffsetStage<Selection> {
-    limit(limit: number): OffsetStage<Selection>
+    limit: (limit: number) => OffsetStage<Selection>
 }
 
 export interface OffsetStage<Selection> extends FetchStage<Selection> {
-    offset(offset: number): FetchStage<Selection>
+    offset: (offset: number) => FetchStage<Selection>
 }
 
 export interface FetchStage<Selection> {
-    fetch(): Promise<RowTypeFrom<Selection>[]>
-    fetchOne(): Promise<RowTypeFrom<Selection>>
+    fetch: () => Promise<RowTypeFrom<Selection>[]>
+    fetchOne: () => Promise<RowTypeFrom<Selection>>
 
-    render(): { sql: string; mapRow: (row: unknown[]) => RowTypeFrom<Selection> }
+    render: () => { sql: string; mapRow: (row: unknown[]) => RowTypeFrom<Selection> }
 
     // TODO: asVector, asAlias
 
-    asTable<Alias extends string>(
+    asTable: <Alias extends string>(
         alias: Alias,
-    ): Selection extends Record<string, ColumnDefinition>
+    ) => Selection extends Record<string, ColumnDefinition>
         ? TableDefinition<
               SubqueryOrigin,
               Alias,
@@ -236,11 +236,11 @@ export interface FetchStage<Selection> {
           >
         : never
 
-    map<R>(f: (stage: this) => R): R
-    map<R>(f: undefined | null | false | ((stage: this) => R)): R | this
+    map: (<R>(f: (stage: this) => R) => R) &
+        (<R>(f: undefined | null | false | ((stage: this) => R)) => R | this)
 }
 
 export interface ExecuteStage {
-    render(): { sql: string }
-    execute(): Promise<ExecResult>
+    render: () => { sql: string }
+    execute: () => Promise<ExecResult>
 }

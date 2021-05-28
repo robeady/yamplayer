@@ -20,9 +20,7 @@ import {
 } from "./stages"
 import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
 
-export interface QueryBuilder {
-    <T extends TableDefinition>(table: T): InsertStage<T>
-}
+export type QueryBuilder = <T extends TableDefinition>(table: T) => InsertStage<T>
 
 export function queryBuilder(databaseHandle: DatabaseHandle): QueryBuilder {
     return <T extends TableDefinition>(table: T) => {
@@ -55,20 +53,20 @@ export function noDatabaseHandle(dialect: SqlDialect): DatabaseHandle {
 }
 
 export interface DatabaseConnectionHandle {
-    execute(sql: string, values?: unknown[]): Promise<ExecResult>
-    query(sql: string, values?: unknown[]): Promise<unknown[][]>
+    execute: (sql: string, values?: unknown[]) => Promise<ExecResult>
+    query: (sql: string, values?: unknown[]) => Promise<unknown[][]>
 }
 
 export interface DatabaseHandle extends DatabaseConnectionHandle {
     dialect: SqlDialect
-    inTransaction<T>(f: (connection: DatabaseConnectionHandle) => Promise<T>): Promise<T>
+    inTransaction: <T>(f: (connection: DatabaseConnectionHandle) => Promise<T>) => Promise<T>
 }
 
 interface OrderLimitOffset {
     limit?: number
     offset?: number
     orderBy: {
-        column: string | ColumnDefinition<Origin> // TODO are these type arguments right?
+        column: string | ColumnDefinition // TODO should there be type args here?
         direction?: "ASC" | "DESC"
     }[]
 }
@@ -515,7 +513,7 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
         // TODO: render lazily
         return {
             render: () => ({ sql }),
-            execute: () => this.backend.state.databaseHandle.execute(sql),
+            execute: async () => this.backend.state.databaseHandle.execute(sql),
         }
     }
 }
@@ -556,7 +554,7 @@ function parseWhereClause(left: unknown, operator: unknown, right: unknown): Fil
 
 function parseMatcher(defaultSelection: any, matcher: Dict): Filter {
     const elements = parseMatcherIntoFilterElements(defaultSelection, matcher)
-    const first = elements.shift() || true
+    const first = elements.shift() ?? true
     return { type: "filter", first, rest: elements.map(e => ["and", e]) }
 }
 
@@ -627,7 +625,7 @@ class Renderer {
         return this.dialect.escapeJsValueToSql(value)
     }
 
-    columnDefinitionSql(columnDef: ColumnDefinition<Origin, unknown>, alias?: string) {
+    columnDefinitionSql(columnDef: ColumnDefinition, alias?: string) {
         //  is render identifier correct for aliases?
         const aliasSql = alias === undefined ? "" : ` AS ${this.escapeId(alias)}`
         return `${this.escapeId(columnDef.tableAlias)}.${this.escapeId(columnDef.columnName)}${aliasSql}`

@@ -19,8 +19,8 @@ async function _loadLibrarySeed(): Promise<LibrarySeedFile> {
     try {
         const seedFile = await fs.readFile(seedFileName)
         return JSON.parse(seedFile.toString())
-    } catch (error) {
-        if (error.code === "ENOENT") {
+    } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
             console.log(`no ${seedFileName} file present`)
             return { externalTrackIds: [] }
         }

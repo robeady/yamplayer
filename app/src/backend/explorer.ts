@@ -35,23 +35,23 @@ export class Explorer {
         const explorer = new Explorer(library, service, resolver)
 
         const externalTracks = await Promise.all(
-            externalTrackIds.map(tid => explorer.service.lookupTrack(tid)),
+            externalTrackIds.map(async tid => explorer.service.lookupTrack(tid)),
         )
         const externalAlbumIds = new Set(externalTracks.map(t => t.albumId))
         const externalArtistIds = new Set(externalTracks.map(t => t.artistId))
         const externalAlbums = await Promise.all(
-            [...externalAlbumIds].map(aid => explorer.service.lookupAlbum(aid)),
+            [...externalAlbumIds].map(async aid => explorer.service.lookupAlbum(aid)),
         )
         const externalArtists = await Promise.all(
-            [...externalArtistIds].map(aid => explorer.service.lookupArtist(aid)),
+            [...externalArtistIds].map(async aid => explorer.service.lookupArtist(aid)),
         )
 
-        const addedArtists = await Promise.all(externalArtists.map(a => explorer.library.addArtist(a)))
-        const addedAlbums = await Promise.all(externalAlbums.map(a => explorer.library.addAlbum(a)))
+        const addedArtists = await Promise.all(externalArtists.map(async a => explorer.library.addArtist(a)))
+        const addedAlbums = await Promise.all(externalAlbums.map(async a => explorer.library.addAlbum(a)))
         const artistIdsByExternalId = Object.fromEntries(addedArtists.map(a => [a.externalId, a.catalogueId]))
         const albumIdsByExternalId = Object.fromEntries(addedAlbums.map(a => [a.externalId, a.catalogueId]))
         await Promise.all(
-            externalTracks.map(t =>
+            externalTracks.map(async t =>
                 explorer.library.addTrack({
                     ...t,
                     albumId: albumIdsByExternalId[t.albumId]!,
@@ -190,7 +190,7 @@ export class Explorer {
         // now externalTrackIds only contains IDs of new tracks to catalogue
 
         const externalTracks = await Promise.all(
-            [...itunesTracksByExternalTrackId.keys()].map(tid => this.service.lookupTrack(tid)),
+            [...itunesTracksByExternalTrackId.keys()].map(async tid => this.service.lookupTrack(tid)),
         )
 
         const externalAlbumIds = new Set(externalTracks.map(t => t.albumId))
@@ -211,28 +211,28 @@ export class Explorer {
         // now external album and artist IDs also only contain what's new and needs cataloguing
 
         const externalAlbums = await Promise.all(
-            [...externalAlbumIds].map(id => this.service.lookupAlbum(id)),
+            [...externalAlbumIds].map(async id => this.service.lookupAlbum(id)),
         )
         const externalArtists = await Promise.all(
-            [...externalArtistIds].map(id => this.service.lookupArtist(id)),
+            [...externalArtistIds].map(async id => this.service.lookupArtist(id)),
         )
 
         // TODO batch-add functions
-        const addedAlbums = await Promise.all(externalAlbums.map(a => this.library.addAlbum(a)))
+        const addedAlbums = await Promise.all(externalAlbums.map(async a => this.library.addAlbum(a)))
         for (const album of addedAlbums) {
             albumIdsByExternalId.set(album.externalId, album.catalogueId)
         }
-        const addedArtists = await Promise.all(externalArtists.map(a => this.library.addArtist(a)))
+        const addedArtists = await Promise.all(externalArtists.map(async a => this.library.addArtist(a)))
         for (const artist of addedArtists) {
             artistIdsByExternalId.set(artist.externalId, artist.catalogueId)
         }
 
         const addedPlaylists = await Promise.all(
-            itunesLibraryContents.playlists.map(p => this.library.addPlaylist(p)),
+            itunesLibraryContents.playlists.map(async p => this.library.addPlaylist(p)),
         )
 
         const addedTracks = await Promise.all(
-            externalTracks.map(t =>
+            externalTracks.map(async t =>
                 this.library.addTrack({
                     ...t,
                     rating: itunesTracksByExternalTrackId.get(t.externalId)!.rating ?? null,
@@ -280,7 +280,7 @@ export class Explorer {
             title: removeStuffInBrackets(query.title),
             albumName: removeStuffInBrackets(query.albumName),
         }
-        return await this.service.searchTracks(query2)
+        return this.service.searchTracks(query2)
     }
 }
 

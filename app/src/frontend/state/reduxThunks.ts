@@ -31,6 +31,7 @@ export function curriedAsyncThunks<
 ): {
     [K in keyof Thunks]: Thunks[K] extends CurriedAsyncThunkPayloadCreator<infer R, infer A>
         ? // check for 0 arguments, which infers as A = never. but we cannot check extends never, we have to use this trick instead
+          // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
           AsyncThunk<R, [A] extends [never] ? void : A, YamThunkApiConfig>
         : never
 } {

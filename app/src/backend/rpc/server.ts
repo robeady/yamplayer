@@ -21,7 +21,7 @@ export function serve<T>(object: T) {
             } else {
                 res.status(404).json(`method ${method} not found`)
             }
-        } catch (error) {
+        } catch (error: any) {
             // on async handlers express won't do any error handling by default,
             // let's take care of it ourselves.
             console.error(error)

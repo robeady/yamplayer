@@ -44,9 +44,14 @@ export function parseItunesLibraryXml(xmlContents: string): ItunesLibraryContent
         }
         return result
     })
-    const playlists = Object.entries(parsed["Playlists"]).map(([_id, data]: [string, any]) => {
-        const name = data["Name"] as string
-        return { name }
-    })
+    const playlists = Object.entries(parsed["Playlists"])
+        .map(([_id, data]: [string, any]) => {
+            const name = data["Name"] as string
+            if (data["Visible"] === false) {
+                return null
+            }
+            return { name }
+        })
+        .filter((p): p is { name: string } => p !== null)
     return { tracks, playlists }
 }

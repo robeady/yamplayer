@@ -26,9 +26,55 @@
         "prettier"
     ],
     "rules": {
+        // === enabling non-recommended vanilla eslint rules ===
         "eqeqeq": "error",
         "no-throw-literal": "error",
-        "@typescript-eslint/no-unnecessary-condition": ["error"],
+
+        // === enabling non-recommended ts lint rules ===
+        "@typescript-eslint/return-await": "error",
+        // "@typescript-eslint/no-unnecessary-condition": "error",
+        // "@typescript-eslint/array-type": "error",
+        // "@typescript-eslint/consistent-indexed-object-style": "error",
+
+        "@typescript-eslint/array-type": "error",
+        "@typescript-eslint/ban-tslint-comment": "error",
+        "@typescript-eslint/class-literal-property-style": "error",
+        "@typescript-eslint/consistent-indexed-object-style": "error",
+        "@typescript-eslint/consistent-type-assertions": "error",
+        "@typescript-eslint/consistent-type-definitions": "error",
+        // I want this but too much churn for now
+        // "@typescript-eslint/consistent-type-imports": "error",
+        "@typescript-eslint/method-signature-style": "error",
+        "@typescript-eslint/no-base-to-string": "error",
+        "@typescript-eslint/no-confusing-non-null-assertion": "error",
+        "@typescript-eslint/no-dynamic-delete": "error",
+        "@typescript-eslint/no-extraneous-class": "error",
+        "@typescript-eslint/no-implicit-any-catch": ["error", { "allowExplicitAny": true }],
+        "@typescript-eslint/no-invalid-void-type": "error",
+        "@typescript-eslint/no-unnecessary-boolean-literal-compare": "error",
+        "@typescript-eslint/no-unnecessary-condition": "error",
+        "@typescript-eslint/no-unnecessary-qualifier": "error",
+        "@typescript-eslint/no-unnecessary-type-arguments": "error",
+        "@typescript-eslint/no-unnecessary-type-constraint": "error",
+        "@typescript-eslint/non-nullable-type-assertion-style": "error",
+        "@typescript-eslint/prefer-enum-initializers": "error",
+        "@typescript-eslint/prefer-for-of": "error",
+        "@typescript-eslint/prefer-function-type": "error",
+        "@typescript-eslint/prefer-includes": "error",
+        "@typescript-eslint/prefer-literal-enum-member": "error",
+        "@typescript-eslint/prefer-nullish-coalescing": "error",
+        "@typescript-eslint/prefer-optional-chain": "error",
+        "@typescript-eslint/prefer-reduce-type-parameter": "error",
+        "@typescript-eslint/prefer-string-starts-ends-with": "error",
+        "@typescript-eslint/prefer-ts-expect-error": "error",
+        "@typescript-eslint/promise-function-async": "error",
+        "@typescript-eslint/require-array-sort-compare": "error",
+        "@typescript-eslint/switch-exhaustiveness-check": "error",
+        "@typescript-eslint/type-annotation-spacing": "error",
+        "@typescript-eslint/typedef": "error",
+        "@typescript-eslint/unified-signatures": "error",
+
+        // === disabling stupid ts rules ===
         // convered by TS
         "@typescript-eslint/no-unused-vars": "off",
         "@typescript-eslint/explicit-function-return-type": "off",
@@ -36,6 +82,7 @@
         "@typescript-eslint/no-use-before-define": "off",
         "@typescript-eslint/no-explicit-any": "off",
         // TODO: maybe we can keep the below for most files
+        "@typescript-eslint/no-unsafe-argument": "off",
         "@typescript-eslint/no-unsafe-member-access": "off",
         "@typescript-eslint/no-unsafe-assignment": "off",
         "@typescript-eslint/no-unsafe-return": "off",
@@ -46,8 +93,12 @@
         "@typescript-eslint/restrict-template-expressions": "off",
         // too annoying for obvious return types and react components
         "@typescript-eslint/explicit-module-boundary-types": "off",
+
+        // === disabling react rules ===
         "react/prop-types": "off",
-        // TODO: restore this later because it'll help avoid index undefined ts errors
+
+        // === disabling stupid unicorn rules ===
+        // TODO: maybe restore this later because it'll help avoid index undefined ts errors
         // "unicorn/no-for-loop": "error",
         "unicorn/prevent-abbreviations": "off",
         "unicorn/prefer-ternary": "warn",
@@ -60,6 +111,8 @@
         // conflicts with prettier
         "unicorn/number-literal-case": "off",
         // we don't query the dom much and this dislikes the thing we do use to set up react, document.getElementById
-        "unicorn/prefer-query-selector": "off"
+        "unicorn/prefer-query-selector": "off",
+        // not supported by TS? can't find any help online
+        "unicorn/prefer-node-protocol": "off"
     }
 }

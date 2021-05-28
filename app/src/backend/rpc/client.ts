@@ -34,7 +34,7 @@ export function remote<T>(baseUrl: string): Remote<T> {
                     if (result.status === 204) {
                         return undefined
                     } else if (result.ok) {
-                        return await result.json()
+                        return result.json()
                     } else {
                         throw new Error(await result.text())
                     }

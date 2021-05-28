@@ -22,9 +22,9 @@ export class FilesystemAxiosCache {
             const contents = await fs.readFile(filePath)
             console.log(`cache hit for ${key}`)
             return JSON.parse(contents.toString())
-        } catch (error) {
+        } catch (error: unknown) {
             console.log(`cache miss for ${key}`)
-            if (error.code === "ENOENT") {
+            if ((error as NodeJS.ErrnoException).code === "ENOENT") {
                 return null
             }
             throw error
@@ -38,7 +38,7 @@ export class FilesystemAxiosCache {
             await fs.writeFile(filePath, data)
             console.log(`cached ${key}`)
             return value
-        } catch (error) {
+        } catch (error: unknown) {
             console.error(`failed to cache ${key}`)
             console.error(error)
             throw error

@@ -5,7 +5,7 @@ import { MariaDB } from "./database/handle"
 import { LibraryContents } from "./explorer"
 import { LibraryStore } from "./library"
 
-jest.setTimeout(30000)
+jest.setTimeout(30_000)
 
 describe("library store tests", () => {
     let container: StartedTestContainer

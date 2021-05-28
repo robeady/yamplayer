@@ -41,7 +41,7 @@ export class LibraryStore {
     }
 
     async clear(): Promise<void> {
-        await Promise.all(Object.values(tables).map(table => this.query(table).truncate().execute()))
+        await Promise.all(Object.values(tables).map(async table => this.query(table).truncate().execute()))
     }
 
     async list(): Promise<LibraryContents> {

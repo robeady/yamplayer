@@ -1,9 +1,9 @@
 import sqlstring from "sqlstring"
 
 export interface SqlDialect {
-    convertSqlValueToJs(sqlValue: unknown): unknown
-    escapeJsValueToSql(literal: unknown): string
-    escapeIdentifier(identifier: string): string
+    convertSqlValueToJs: (sqlValue: unknown) => unknown
+    escapeJsValueToSql: (literal: unknown) => string
+    escapeIdentifier: (identifier: string) => string
 }
 
 export class MySqlDialect implements SqlDialect {
