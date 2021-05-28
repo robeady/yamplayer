@@ -145,7 +145,7 @@ describe("fetching", () => {
     test("fetchOne throws on 0 rows", async () => {
         const queryBuilderReturningNoRows = queryBuilder({
             dialect: new MySqlDialect(),
-            query: () => Promise.resolve([]),
+            query: async () => Promise.resolve([]),
         } as any)
         await expect(queryBuilderReturningNoRows(exampleTable).fetchOne()).rejects.toThrow(
             "Expected 1 row, got 0",
@@ -154,7 +154,7 @@ describe("fetching", () => {
     test("fetchOne throws on >1 row", async () => {
         const queryBuilderReturningMultipleRows = queryBuilder({
             dialect: new MySqlDialect(),
-            query: () => Promise.resolve([{}, {}, {}]),
+            query: async () => Promise.resolve([{}, {}, {}]),
         } as any)
         await expect(queryBuilderReturningMultipleRows(exampleTable).fetchOne()).rejects.toThrow(
             "Expected 1 row, got 3",

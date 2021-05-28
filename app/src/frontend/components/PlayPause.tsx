@@ -4,12 +4,7 @@ import Pause from "../icons/pause.svg"
 import PlayArrow from "../icons/play_arrow.svg"
 import { colors } from "../styles"
 
-export function PlayPauseButton(props: {
-    icon: "play" | "pause"
-    disabled?: boolean // TODO use this
-    size: number
-    onClick?: () => void
-}) {
+export function PlayPauseButton(props: { icon: "play" | "pause"; size: number; onClick?: () => void }) {
     const icon =
         props.icon === "play" ? (
             <PlayArrow width={props.size} height={props.size} />

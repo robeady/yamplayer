@@ -1,34 +1,13 @@
 import express from "express"
-import { promises as fs } from "fs"
-import { AddressInfo } from "net"
 import { DeezerApiClient } from "../services/deezer"
 import { Resolver } from "../services/plugins"
+import { listen, ListeningExpress } from "../util/express"
 import { MariaDB } from "./database/handle"
 import { Explorer } from "./explorer"
 import { LibraryStore } from "./library"
 import { serve } from "./rpc/server"
 
-type Server = import("http").Server
-
-interface LibrarySeedFile {
-    externalTrackIds: string[]
-}
-
-async function _loadLibrarySeed(): Promise<LibrarySeedFile> {
-    const seedFileName = "librarySeed.json"
-    try {
-        const seedFile = await fs.readFile(seedFileName)
-        return JSON.parse(seedFile.toString())
-    } catch (error) {
-        if (error.code === "ENOENT") {
-            console.log(`no ${seedFileName} file present`)
-            return { externalTrackIds: [] }
-        }
-        throw error
-    }
-}
-
-async function main(): Promise<AddressInfo> {
+async function main(): Promise<ListeningExpress> {
     const app = express()
     app.use(express.json({ limit: "10mb" }))
 
@@ -47,14 +26,7 @@ async function main(): Promise<AddressInfo> {
     app.use("/library", serve(library))
     app.use("/explorer", serve(explorer))
 
-    return new Promise((resolve, reject) => {
-        const server: Server = app.listen(8280, "127.0.0.1", err => {
-            if (err) {
-                return reject(err)
-            }
-            return resolve(server.address() as AddressInfo)
-        })
-    })
+    return listen(app, 8280, "127.0.0.1")
 }
 
 main()

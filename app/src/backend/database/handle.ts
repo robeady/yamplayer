@@ -11,7 +11,7 @@ class MariaDBConnection implements DatabaseConnectionHandle {
             const result: unknown[][] = await this.connection.query(sql, values)
             console.log(`${sql} produced ${result.length} rows`)
             return result
-        } catch (error) {
+        } catch (error: unknown) {
             console.log(`${sql} threw ${error}`)
             throw error
         }
@@ -56,10 +56,10 @@ export class MariaDB implements DatabaseHandle {
         try {
             await connection.beginTransaction()
             try {
-                const result = f(new MariaDBConnection(connection))
+                const result = await f(new MariaDBConnection(connection))
                 await connection.commit()
                 return result
-            } catch (error) {
+            } catch (error: unknown) {
                 await connection.rollback()
                 // this code will lose the original exception if rollback() also throws
                 throw error

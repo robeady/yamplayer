@@ -31,7 +31,7 @@ export const catalogueThunks = curriedAsyncThunks({
             fileReader.addEventListener("load", () => resolve(fileReader.result as string))
             fileReader.readAsText(file)
         })
-        return await api.extra.explorer.importItunesLibrary(fileContents)
+        return api.extra.explorer.importItunesLibrary(fileContents)
     },
     fetchSearchResults: api => api.extra.explorer.searchTracks,
 })
@@ -42,10 +42,10 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
     reducers: {},
     extraReducers: builder =>
         builder
-            .addCase(catalogueThunks.getLibrary.fulfilled, (state, { payload }) => {
+            .addCase(catalogueThunks.getLibrary.fulfilled, (state, { payload }) =>
                 // TODO: should we be populating external ID pointers too?
-                return { ...state, ...payload }
-            })
+                ({ ...state, ...payload }),
+            )
             .addCase(
                 catalogueThunks.addToLibrary.fulfilled,
                 (state, { payload: { track, album, artist } }) => {

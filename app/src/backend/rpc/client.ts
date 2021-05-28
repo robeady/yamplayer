@@ -15,7 +15,7 @@ export function remote<T>(baseUrl: string): Remote<T> {
     return new Proxy(
         {},
         {
-            get: (_target, prop, _receiver) => {
+            get: (target, prop) => {
                 if (typeof prop !== "string") {
                     throw new TypeError(
                         "Can only call named functions on remote object. Tried to dereference property " +
@@ -34,7 +34,7 @@ export function remote<T>(baseUrl: string): Remote<T> {
                     if (result.status === 204) {
                         return undefined
                     } else if (result.ok) {
-                        return await result.json()
+                        return result.json()
                     } else {
                         throw new Error(await result.text())
                     }

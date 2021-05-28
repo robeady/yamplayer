@@ -1,16 +1,15 @@
 import sqlstring from "sqlstring"
 
 export interface SqlDialect {
-    convertSqlValueToJs(sqlValue: unknown): unknown
-    escapeJsValueToSql(literal: unknown): string
-    escapeIdentifier(identifier: string): string
+    convertSqlValueToJs: (sqlValue: unknown) => unknown
+    escapeJsValueToSql: (literal: unknown) => string
+    escapeIdentifier: (identifier: string) => string
 }
 
 export class MySqlDialect implements SqlDialect {
-    convertSqlValueToJs = (sqlValue: unknown): unknown => {
+    convertSqlValueToJs = (sqlValue: unknown): unknown =>
         // TODO: verify that this is sensible
-        return sqlValue
-    }
+        sqlValue
 
     escapeJsValueToSql = (value: unknown): string => {
         if (Array.isArray(value)) {

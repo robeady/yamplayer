@@ -18,7 +18,7 @@ export class DeezerApiClient implements Service {
     private httpGet: <T>(path: string, config?: AxiosRequestConfig) => Promise<AxiosResponse<T>>
 
     private constructor(apiBaseUrl: string, axios: AxiosInstance, rateLimit: boolean) {
-        const get = <T>(path: string, config?: AxiosRequestConfig) => {
+        const get = async <T>(path: string, config?: AxiosRequestConfig) => {
             const url = `${apiBaseUrl}/${path}`
             console.log("sending GET request " + JSON.stringify({ ...config, path }))
             return axios.get<T>(url, config)

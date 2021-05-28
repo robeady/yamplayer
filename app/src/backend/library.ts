@@ -28,20 +28,21 @@ export class LibraryStore {
     query: QueryBuilder
     private constructor(
         database: MariaDB,
-        private now: () => Timestamp = now,
+
         // TODO: should we have one ID generator per entity?
         private idGenerator: CatalogueIdGenerator,
+        private now: () => Timestamp = now,
     ) {
         this.query = queryBuilder(database)
     }
 
     static async setup(database: MariaDB, now: () => Timestamp = unixNow): Promise<LibraryStore> {
         await applyMigrations(yamplayerMigrations, database)
-        return new LibraryStore(database, now, new CatalogueIdGenerator(now))
+        return new LibraryStore(database, new CatalogueIdGenerator(now), now)
     }
 
     async clear(): Promise<void> {
-        await Promise.all(Object.values(tables).map(table => this.query(table).truncate().execute()))
+        await Promise.all(Object.values(tables).map(async table => this.query(table).truncate().execute()))
     }
 
     async list(): Promise<LibraryContents> {
@@ -112,7 +113,7 @@ export class LibraryStore {
     async addTrack(trackPointingToInternalArtistAndAlbum: ExternalTrack): Promise<CataloguedTrack> {
         const now = this.now()
         const id = this.idGenerator.generate()
-        const result = await this.query(tables.track)
+        await this.query(tables.track)
             .insert({
                 id,
                 title: trackPointingToInternalArtistAndAlbum.title,

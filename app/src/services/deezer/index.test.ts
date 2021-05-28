@@ -1,6 +1,6 @@
 import express from "express"
 import { Server } from "http"
-import { AddressInfo } from "net"
+import { listen } from "../../util/express"
 import albumResponse from "./albumResponse.json"
 import artistResponse from "./artistResponse.json"
 import { DeezerApiClient } from "./index"
@@ -10,7 +10,7 @@ import trackResponse from "./trackResponse.json"
 let mockDeezerServer: Server
 let deezerClient: DeezerApiClient
 
-beforeAll(done => {
+beforeAll(async () => {
     const app = express()
     app.use(express.json())
     app.get("/search", (req, res) => res.json(searchResponse))
@@ -21,16 +21,10 @@ beforeAll(done => {
         if (err) console.error(err)
         next(err)
     })
-    mockDeezerServer = app.listen(0, "127.0.0.1", () => {
-        const { address, port } = mockDeezerServer.address() as AddressInfo
-        const baseUrl = `http://${address}:${port}`
-        DeezerApiClient.create({ apiBaseUrl: baseUrl, rateLimit: false })
-            .then(client => {
-                deezerClient = client
-                done()
-            })
-            .catch(error => console.error(error))
-    })
+    const { server, address, port } = await listen(app, 0, "127.0.0.1")
+    mockDeezerServer = server
+    const baseUrl = `http://${address}:${port}`
+    deezerClient = await DeezerApiClient.create({ apiBaseUrl: baseUrl, rateLimit: false })
 })
 
 afterAll(() => {

@@ -35,7 +35,7 @@ export function TrackListing(props: { trackIds: string[] }) {
                     onDoubleClick={() =>
                         dispatch(audio.play({ next: [t.track.catalogueId ?? t.track.externalId] }))
                     }>
-                    <CoverAndTrackTitle {...t} />
+                    <CoverAndTrackTitle track={t.track} album={t.album} />
                     <TrackRating
                         rating={t.track.rating}
                         enabled={t.track.catalogueId !== null}
@@ -59,7 +59,7 @@ export function TrackListing(props: { trackIds: string[] }) {
 const ratingClass = css``
 
 function CroppedStar(props: { className: string }) {
-    return <Star className={props.className} viewBox={"4 4 16 16"} width={16} height={16} />
+    return <Star className={props.className} viewBox="4 4 16 16" width={16} height={16} />
 }
 
 function TrackRating(props: {
@@ -159,8 +159,12 @@ function SaveButton(props: { trackId: string }) {
     const track = useSelector(s => resolveCanonical(s.catalogue.tracks, props.trackId))
     const dispatch = useDispatch()
     return track.savedTimestamp === null ? (
-        <button onClick={() => dispatch(catalogue.addToLibrary(track.externalId))}>Add</button>
+        <button type="button" onClick={() => dispatch(catalogue.addToLibrary(track.externalId))}>
+            Add
+        </button>
     ) : (
-        <button onClick={() => dispatch(catalogue.unsaveTrack(track.catalogueId!))}>-</button>
+        <button type="button" onClick={() => dispatch(catalogue.unsaveTrack(track.catalogueId!))}>
+            -
+        </button>
     )
 }

@@ -28,7 +28,7 @@ class RandomProvider {
     }
 }
 
-const UINT32_RADIX = Math.pow(2, 32)
+const UINT32_RADIX = 2 ** 32
 const UINT8_MAX = 0b1111_1111
 
 export class CatalogueIdGenerator {

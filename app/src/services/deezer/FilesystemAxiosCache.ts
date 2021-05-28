@@ -22,9 +22,9 @@ export class FilesystemAxiosCache {
             const contents = await fs.readFile(filePath)
             console.log(`cache hit for ${key}`)
             return JSON.parse(contents.toString())
-        } catch (error) {
+        } catch (error: unknown) {
             console.log(`cache miss for ${key}`)
-            if (error.code === "ENOENT") {
+            if ((error as NodeJS.ErrnoException).code === "ENOENT") {
                 return null
             }
             throw error
@@ -38,7 +38,7 @@ export class FilesystemAxiosCache {
             await fs.writeFile(filePath, data)
             console.log(`cached ${key}`)
             return value
-        } catch (error) {
+        } catch (error: unknown) {
             console.error(`failed to cache ${key}`)
             console.error(error)
             throw error
@@ -75,12 +75,22 @@ export class FilesystemAxiosCache {
     private getFilePath(key: string): string {
         // bijective sanitization function to avoid erroneous collisions
         // TODO: may need expansion as I hit more URLs
-        const disallowedCharsInWindowsFileNames = [/\//g, /:/g, /\?/g, /"/g, /</g, />/g, /\\/g, /\|/g, /\*/g]
+        const disallowedCharsInWindowsFileNames = [
+            /\//gu,
+            /:/gu,
+            /\?/gu,
+            /"/gu,
+            /</gu,
+            />/gu,
+            /\\/gu,
+            /\|/gu,
+            /\*/gu,
+        ]
         const replacement = "_"
         const replacementPairings = [replacement, ...disallowedCharsInWindowsFileNames].map(
             (original, i) => [original, replacement.repeat(i + 2)] as const,
         )
-        let sanitised = ""
+        let sanitised = key
         for (const [original, replacement] of replacementPairings) {
             sanitised = sanitised.replace(original, replacement)
         }

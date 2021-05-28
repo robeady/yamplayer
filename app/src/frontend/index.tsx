@@ -11,12 +11,15 @@ import { AudioPlayer } from "./state/AudioPlayer"
 import { resolveCanonical } from "./state/catalogue"
 import { createStore } from "./state/redux"
 
-// don't reorder these
+// these must not be reordered.
+// until https://github.com/microsoft/TypeScript/issues/41494 we need to use require
+/* eslint-disable unicorn/prefer-module, @typescript-eslint/no-require-imports */
 require("sanitize.css/evergreen.css")
 require("sanitize.css/forms.evergreen.css")
 require("sanitize.css/assets.css")
 require("sanitize.css/typography.css")
 require("./styles/global")
+/* eslint-enable unicorn/prefer-module, @typescript-eslint/no-require-imports */
 
 async function loadTrackData(explorerClient: Remote<Explorer>, track: Track) {
     const url = await explorerClient.resolveTrackUrl(track.externalId)
@@ -40,7 +43,8 @@ function setupStore() {
     })
     audioPlayer = new AudioPlayer(
         0.2,
-        trackId => loadTrackData(explorer, resolveCanonical(store.getState().catalogue.tracks, trackId)),
+        async trackId =>
+            loadTrackData(explorer, resolveCanonical(store.getState().catalogue.tracks, trackId)),
         store.dispatch,
     )
     return store

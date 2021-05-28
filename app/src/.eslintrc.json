@@ -16,26 +16,61 @@
         }
     },
     "extends": [
-        "eslint:recommended",
+        "eslint:all",
         "plugin:@typescript-eslint/eslint-recommended",
-        "plugin:@typescript-eslint/recommended",
-        "plugin:@typescript-eslint/recommended-requiring-type-checking",
-        "plugin:react/recommended",
+        "plugin:@typescript-eslint/all",
+        "plugin:react/all",
         "plugin:react-hooks/recommended",
         "plugin:unicorn/recommended",
+        "plugin:jest/all",
         "prettier"
     ],
     "rules": {
-        "eqeqeq": "error",
-        "no-throw-literal": "error",
-        "@typescript-eslint/no-unnecessary-condition": ["error"],
-        // convered by TS
-        "@typescript-eslint/no-unused-vars": "off",
+        // === disabling non-recommended vanilla eslint rules ====
+        // TODO: proper logging library should allow us to restore this
+        "no-console": "off",
+        "no-magic-numbers": "off",
+        "id-length": "off",
+        // doesn't understand TS
+        "no-useless-constructor": "off",
+        // ditto
+        "no-invalid-this": "off",
+        "max-lines": "off",
+        "no-ternary": "off",
+        "one-var": "off",
+        "prefer-template": "off",
+        "capitalized-comments": "off",
+        "init-declarations": "off",
+        "no-plusplus": "off",
+        "sort-keys": "off",
+        "no-warning-comments": "off",
+        "sort-imports": "off",
+        "no-use-before-define": "off",
+        "no-else-return": "off",
+        "no-bitwise": "off",
+        "no-inline-comments": "off",
+        "func-style": "off",
+        "no-shadow": "off",
+        "max-params": "off",
+        "max-lines-per-function": "off",
+        "multiline-comment-style": "off",
+        "line-comment-position": "off",
+        "lines-between-class-members": "off",
+        "max-statements": "off",
+        "no-undefined": "off",
+        "max-classes-per-file": "off",
+        "no-void": "off",
+        "no-await-in-loop": "off",
+        "consistent-return": "off",
+        "default-case": "off",
+
+        // === disabling ts rules ===
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/no-use-before-define": "off",
         "@typescript-eslint/no-explicit-any": "off",
-        // TODO: maybe we can keep the below for most files
+        // TODO: maybe we can keep the below for most files that don't handle any
+        "@typescript-eslint/no-unsafe-argument": "off",
         "@typescript-eslint/no-unsafe-member-access": "off",
         "@typescript-eslint/no-unsafe-assignment": "off",
         "@typescript-eslint/no-unsafe-return": "off",
@@ -46,20 +81,67 @@
         "@typescript-eslint/restrict-template-expressions": "off",
         // too annoying for obvious return types and react components
         "@typescript-eslint/explicit-module-boundary-types": "off",
+
+        // === disabling non-recommended ts rules ===
+        // I want this but too much churn for now
+        "@typescript-eslint/consistent-type-imports": "off",
+        "@typescript-eslint/no-type-alias": "off",
+        "@typescript-eslint/sort-type-union-intersection-members": "off",
+        "@typescript-eslint/prefer-readonly-parameter-types": "off",
+        "@typescript-eslint/explicit-member-accessibility": "off",
+        "@typescript-eslint/no-magic-numbers": "off",
+        "@typescript-eslint/prefer-readonly": "off",
+        "@typescript-eslint/no-shadow": "off",
+        "@typescript-eslint/no-parameter-properties": "off",
+        "@typescript-eslint/no-confusing-void-expression": "off",
+        "@typescript-eslint/lines-between-class-members": "off",
+        "@typescript-eslint/naming-convention": "off",
+        "@typescript-eslint/member-ordering": "off",
+        "@typescript-eslint/no-implicit-any-catch": ["error", { "allowExplicitAny": true }],
+        "@typescript-eslint/init-declarations": "off",
+        "@typescript-eslint/strict-boolean-expressions": ["error", { "allowAny": true }],
+        "@typescript-eslint/no-unused-vars": [
+            "warn",
+            { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+        ],
+
+        // === disabling react rules ===
         "react/prop-types": "off",
-        // TODO: restore this later because it'll help avoid index undefined ts errors
+
+        // === disabling non-recommended react rules ===
+        "react/no-multi-comp": "off",
+        "react/jsx-no-literals": "off",
+        "react/jsx-no-bind": "off",
+        "react/forbid-component-props": "off",
+        "react/jsx-sort-props": "off",
+        "react/jsx-filename-extension": "off",
+        "react/destructuring-assignment": "off",
+        "react/require-default-props": "off",
+        "react/jsx-max-depth": "off",
+
+        // === disabling unicorn rules ===
+        // TODO: maybe restore this later because it'll help avoid index undefined ts errors
         // "unicorn/no-for-loop": "error",
         "unicorn/prevent-abbreviations": "off",
         "unicorn/prefer-ternary": "warn",
         // for now we use null because optional properties are easily forgotten
         "unicorn/no-null": "off",
-        // not useless for destructuring
+        // not useless for array destructuring in TS
         "unicorn/no-useless-undefined": "off",
         "unicorn/filename-case": ["error", { "cases": { "camelCase": true, "pascalCase": true } }],
         "unicorn/no-nested-ternary": "off",
         // conflicts with prettier
         "unicorn/number-literal-case": "off",
         // we don't query the dom much and this dislikes the thing we do use to set up react, document.getElementById
-        "unicorn/prefer-query-selector": "off"
+        "unicorn/prefer-query-selector": "off",
+        // not supported by TS? can't find any help online
+        "unicorn/prefer-node-protocol": "off",
+
+        // === jest ===
+        "jest/expect-expect": ["error", { "assertFunctionNames": ["expect*"] }],
+        "jest/prefer-expect-assertions": "off",
+        "jest/no-hooks": "off",
+        "jest/require-top-level-describe": "off",
+        "jest/consistent-test-it": ["error", { "withinDescribe": "test" }]
     }
 }

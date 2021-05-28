@@ -11,30 +11,30 @@ import Player, { NowPlaying } from "./Player"
 import { catalogue } from "./state/actions"
 import { TrackSearch } from "./TrackSearch"
 
-const App = () => (
-    <HashRouter>
-        <div
-            className={css`
-                height: 100vh;
-                display: grid;
-                grid-template-rows: minmax(0, 1fr) auto;
-            `}>
-            <Main />
-            <footer
+function App() {
+    return (
+        <HashRouter>
+            <div
                 className={css`
-                    border-top: 1px solid gainsboro;
+                    height: 100vh;
+                    display: grid;
+                    grid-template-rows: minmax(0, 1fr) auto;
                 `}>
-                <Player />
-            </footer>
-        </div>
-    </HashRouter>
-)
+                <Main />
+                <footer
+                    className={css`
+                        border-top: 1px solid gainsboro;
+                    `}>
+                    <Player />
+                </footer>
+            </div>
+        </HashRouter>
+    )
+}
 
 function Main() {
     const dispatch = useDispatch()
-    useEffect(() => {
-        void dispatch(catalogue.getLibrary())
-    }, [dispatch])
+    useEffect(() => void dispatch(catalogue.getLibrary()), [dispatch])
     return (
         <div
             className={css`

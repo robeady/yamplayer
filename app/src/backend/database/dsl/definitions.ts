@@ -54,34 +54,23 @@ export function columnType<
 
 export type Origin = RealTableOrigin | SubqueryOrigin
 
-export type RealTableOrigin = {
+export interface RealTableOrigin {
     type: "table"
     name: string[]
 }
 
-export type SubqueryOrigin = { type: "subquery"; render: () => { sql: string } }
+export interface SubqueryOrigin {
+    type: "subquery"
+    render: () => { sql: string }
+}
 
 export type TableDefinition<
     TableOrigin extends Origin = Origin,
     TableAlias extends string = string,
     Columns extends {
-        [ColumnName in string]: ColumnDefinition<
-            TableOrigin,
-            unknown,
-            boolean,
-            TableAlias,
-            ColumnName,
-            unknown
-        >
+        [ColumnName in string]: ColumnDefinition<TableOrigin, unknown, boolean, TableAlias, ColumnName>
     } = {
-        [ColumnName in string]: ColumnDefinition<
-            TableOrigin,
-            unknown,
-            boolean,
-            TableAlias,
-            ColumnName,
-            unknown
-        >
+        [ColumnName in string]: ColumnDefinition<TableOrigin, unknown, boolean, TableAlias, ColumnName>
     }
 > = Columns
 

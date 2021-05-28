@@ -27,7 +27,9 @@ function SearchResults(props: { trackIds: string[] }) {
 export function TrackSearch() {
     const dispatch = useDispatch()
     const [searchQuery, setSearchQuery] = useState("")
-    const searchResults = useSelector(s => searchQuery && s.catalogue.searchResultsByQuery[searchQuery])
+    const searchResults = useSelector(s =>
+        searchQuery ? s.catalogue.searchResultsByQuery[searchQuery] : undefined,
+    )
     useEffect(() => {
         if (searchResults === undefined) {
             void dispatch(catalogue.fetchSearchResults(searchQuery))

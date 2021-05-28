@@ -32,21 +32,26 @@ export function parseItunesLibraryXml(xmlContents: string): ItunesLibraryContent
     // Genre
     // Kind
     const parsed = parse(xmlContents) as any
-    const tracks = Object.entries(parsed["Tracks"]).map(([_id, data]: [string, any]) => {
+    const tracks = Object.entries(parsed.Tracks).map(([, data]: [string, any]) => {
         const result: ItunesTrack = {
-            title: data["Name"],
-            artistName: data["Artist"],
-            albumName: data["Album"],
+            title: data.Name,
+            artistName: data.Artist,
+            albumName: data.Album,
             durationSecs: "Total Time" in data ? data["Total Time"] / 1000 : undefined,
-            rating: "Rating" in data && !data["Rating Computed"] ? data["Rating"] / 100 : undefined,
+            rating: "Rating" in data && !data["Rating Computed"] ? data.Rating / 100 : undefined,
             playCount: data["Play Count"],
             dateAdded: "Date Added" in data ? isoToTimestamp(data["Date Added"]) : undefined,
         }
         return result
     })
-    const playlists = Object.entries(parsed["Playlists"]).map(([_id, data]: [string, any]) => {
-        const name = data["Name"] as string
-        return { name }
-    })
+    const playlists = Object.entries(parsed.Playlists)
+        .map(([, data]: [string, any]) => {
+            const name = data.Name as string
+            if (data.Visible === false) {
+                return null
+            }
+            return { name }
+        })
+        .filter((p): p is { name: string } => p !== null)
     return { tracks, playlists }
 }
