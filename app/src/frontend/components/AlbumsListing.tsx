@@ -13,14 +13,14 @@ import { resolveCanonical } from "../state/catalogue"
 import { colors, fontSizes } from "../styles"
 import { TrackRating } from "./Rating"
 
-interface Row {
+interface AlbumRowData {
     tracks: Track[]
     albumId: string
 }
 
 function assembleRows(trackIds: string[], allTracks: Dict<string | Track>) {
     let lastAlbumId = ""
-    const rows = [] as Row[]
+    const rows: AlbumRowData[] = []
     for (const trackId of trackIds) {
         const canonicalTrack = resolveCanonical(allTracks, trackId)
         if (canonicalTrack.albumId === lastAlbumId) {
@@ -43,7 +43,7 @@ function assembleRows(trackIds: string[], allTracks: Dict<string | Track>) {
     return rows
 }
 
-function buildQueue(rows: Row[], playFromTrackId: string): AudioQueue {
+function buildQueue(rows: AlbumRowData[], playFromTrackId: string): AudioQueue {
     // 'playFromTrackId' appears somewhere in rows
     // we scan through all the tracks in order and build a queue
     const previous: string[] = []
@@ -75,7 +75,9 @@ export function AlbumsListing(props: { trackIds: string[] }) {
             <Headings />
             {rows.map(({ tracks, albumId }, i) => (
                 <AlbumRow
-                    key={i /* same album could appear more than once so cannot just use album id */}
+                    key={
+                        i.toString() /* same album could appear more than once so cannot just use album id */
+                    }
                     tracks={tracks}
                     albumId={albumId}
                     buildQueue={tid => buildQueue(rows, tid)}
@@ -105,7 +107,7 @@ function AlbumRow(props: { tracks: Track[]; albumId: string; buildQueue: (from: 
     const artist = useSelector(s =>
         resolveCanonical(s.catalogue.artists, props.tracks[0]!.artistId /* TODO: get album primary artist */),
     )
-    const { state, show } = useDropdownMenu()
+    const { show } = useDropdownMenu()
 
     return (
         <Flex
@@ -124,8 +126,6 @@ function AlbumRow(props: { tracks: Track[]; albumId: string; buildQueue: (from: 
                     <TrackRow
                         key={track.catalogueId ?? track.externalId}
                         track={track}
-                        album={album}
-                        artist={artist}
                         buildQueue={props.buildQueue}
                     />
                 ))}
@@ -196,12 +196,7 @@ function ArtistName({ name = "" }) {
     )
 }
 
-function TrackRow(props: {
-    track: Track
-    album: Album
-    artist: Artist
-    buildQueue: (from: string) => AudioQueue
-}) {
+function TrackRow(props: { track: Track; buildQueue: (from: string) => AudioQueue }) {
     const dispatch = useDispatch()
 
     const trackId = props.track.catalogueId ?? props.track.externalId

@@ -2,6 +2,7 @@ const defaultAlphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRS
 
 export class IdSequence {
     private digits: number[] = []
+
     constructor(private alphabet = defaultAlphabet) {}
 
     next(): string {

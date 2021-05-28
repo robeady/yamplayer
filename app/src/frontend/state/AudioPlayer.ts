@@ -23,7 +23,7 @@ export function audioQueue(current: string | null = null): AudioQueue {
 export class AudioPlayer {
     queue: AudioQueue = audioQueue()
     howl: Howl | null = null
-    _volume: number
+    volume: number
     muted = false
     /**
      * A counter to keep track of track loads, so that if the user skips while we're still loading a track,
@@ -36,7 +36,7 @@ export class AudioPlayer {
         private loadTrack: (trackId: string) => Promise<Uint8Array>,
         private emitEvent: (action: PlayerAction) => void,
     ) {
-        this._volume = initialVolume
+        this.volume = initialVolume
     }
 
     /** Play tracks, replacing the existing queue */
@@ -122,15 +122,10 @@ export class AudioPlayer {
         }
     }
 
-    /** Get the current volume */
-    volume() {
-        return this._volume
-    }
-
     /** Set the volume of the player */
     setVolume(volume: number) {
         this.howl?.volume(volume * HOWL_VOLUME_RATIO)
-        this._volume = volume
+        this.volume = volume
         this.emitEvent(player.volumeChanged({ muted: this.muted, volume }))
     }
 
@@ -138,7 +133,7 @@ export class AudioPlayer {
     toggleMute() {
         this.muted = !this.muted
         this.howl?.mute(this.muted)
-        this.emitEvent(player.volumeChanged({ muted: this.muted, volume: this._volume }))
+        this.emitEvent(player.volumeChanged({ muted: this.muted, volume: this.volume }))
     }
 
     private createHowlAndPlay(trackData: Uint8Array): Howl {
@@ -147,7 +142,7 @@ export class AudioPlayer {
         const howl = new Howl({
             src: url,
             format: "flac",
-            volume: this._volume * HOWL_VOLUME_RATIO,
+            volume: this.volume * HOWL_VOLUME_RATIO,
             mute: this.muted,
             autoplay: true,
             // TODO: on error skip next

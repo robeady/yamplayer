@@ -31,7 +31,7 @@ export const catalogueThunks = curriedAsyncThunks({
             fileReader.addEventListener("load", () => resolve(fileReader.result as string))
             fileReader.readAsText(file)
         })
-        return await api.extra.explorer.importItunesLibrary(fileContents)
+        return api.extra.explorer.importItunesLibrary(fileContents)
     },
     fetchSearchResults: api => api.extra.explorer.searchTracks,
 })

@@ -15,7 +15,7 @@ export function remote<T>(baseUrl: string): Remote<T> {
     return new Proxy(
         {},
         {
-            get: (_target, prop, _receiver) => {
+            get: (target, prop) => {
                 if (typeof prop !== "string") {
                     throw new TypeError(
                         "Can only call named functions on remote object. Tried to dereference property " +

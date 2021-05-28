@@ -27,6 +27,7 @@ export function DropdownMenu(props: { state: DropdownState; children: ReactNode 
                 onClick={close}
                 ref={setContainerElement}
                 style={popperState.styles.popper}
+                // eslint-disable-next-line react/jsx-props-no-spreading
                 {...popperState.attributes.popper}>
                 {props.children}
             </PopupContainer>

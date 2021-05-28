@@ -6,7 +6,7 @@ import Star from "../icons/star_rate.svg"
 import { colors } from "../styles"
 
 function CroppedStar(props: { className: string }) {
-    return <Star fill="inherit" className={props.className} viewBox={"4 4 16 16"} width={13} height={13} />
+    return <Star fill="inherit" className={props.className} viewBox="4 4 16 16" width={13} height={13} />
 }
 
 const rating = css``

@@ -120,15 +120,7 @@ export class Explorer {
     ): Promise<{ track: CataloguedTrack; album: CataloguedAlbum; artist: CataloguedArtist }> {
         const externalTrack = await this.service.lookupTrack(externalTrackId)
         const [matchingTrack = undefined] = await this.library.matchTracks([externalTrack.externalId])
-        if (matchingTrack !== undefined) {
-            // already in library, just ensure it's marked as saved
-            const [track, artist, album] = await Promise.all([
-                this.library.save(matchingTrack.catalogueId).then(_ => matchingTrack),
-                this.library.getArtist(matchingTrack.artistId),
-                this.library.getAlbum(matchingTrack.albumId),
-            ])
-            return { track, artist, album }
-        } else {
+        if (matchingTrack === undefined) {
             const [album, artist] = await Promise.all([
                 this.addAlbumForTrack(externalTrack.albumId),
                 this.addArtistForTrack(externalTrack.artistId),
@@ -139,6 +131,14 @@ export class Explorer {
                 artistId: artist.catalogueId,
             })
             return { track, album, artist }
+        } else {
+            // already in library, just ensure it's marked as saved
+            const [track, artist, album] = await Promise.all([
+                this.library.save(matchingTrack.catalogueId).then(_ => matchingTrack),
+                this.library.getArtist(matchingTrack.artistId),
+                this.library.getAlbum(matchingTrack.albumId),
+            ])
+            return { track, artist, album }
         }
     }
 
@@ -264,7 +264,7 @@ export class Explorer {
             title,
             albumName,
             artistName,
-            ...(durationSecs && {
+            ...(durationSecs !== undefined && {
                 minDurationSecs: Math.floor(durationSecs - 10),
                 maxDurationSecs: Math.ceil(durationSecs + 10),
             }),

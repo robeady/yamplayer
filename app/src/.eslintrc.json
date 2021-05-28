@@ -18,65 +18,91 @@
     "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/eslint-recommended",
-        "plugin:@typescript-eslint/recommended",
-        "plugin:@typescript-eslint/recommended-requiring-type-checking",
-        "plugin:react/recommended",
+        "plugin:@typescript-eslint/all",
+        "plugin:react/all",
         "plugin:react-hooks/recommended",
         "plugin:unicorn/recommended",
         "prettier"
     ],
     "rules": {
         // === enabling non-recommended vanilla eslint rules ===
-        "eqeqeq": "error",
-        "no-throw-literal": "error",
+        // "eqeqeq": "error",
+        // "no-throw-literal": "error",
 
-        // === enabling non-recommended ts lint rules ===
-        "@typescript-eslint/return-await": "error",
-        // "@typescript-eslint/no-unnecessary-condition": "error",
-        // "@typescript-eslint/array-type": "error",
-        // "@typescript-eslint/consistent-indexed-object-style": "error",
+        // === disabling stupid non-recommended vanilla eslint rules ====
+        "no-magic-numbers": "off",
+        "id-length": "off",
+        // doesn't understand TS
+        "no-useless-constructor": "off",
+        // ditto
+        "no-invalid-this": "off",
+        "max-lines": "off",
+        "no-ternary": "off",
+        "one-var": "off",
+        "prefer-template": "off",
+        "capitalized-comments": "off",
+        "init-declarations": "off",
+        "no-plusplus": "off",
+        "sort-keys": "off",
+        "no-warning-comments": "off",
+        "sort-imports": "off",
+        "no-use-before-define": "off",
+        "no-else-return": "off",
+        "no-bitwise": "off",
+        "no-inline-comments": "off",
+        // TODO: can we set it
+        "func-style": "off",
+        "no-shadow": "off",
+        "max-params": "off",
+        "max-lines-per-function": "off",
+        "multiline-comment-style": "off",
+        "lines-between-class-members": "off",
+        "max-statements": "off",
+        "no-undefined": "off",
+        "line-comment-position": "off",
+        "max-classes-per-file": "off",
+        "no-void": "off",
+        /*
+        "no-template-curly-in-string": "error",
+        "no-unreachable-loop": "error",
+        "no-unsafe-optional-chaining": "error",
+        "require-atomic-updates": "error",
+        "no-promise-executor-return": "error",
+        "class-methods-use-this": "error",
+        "default-case-last": "error",
+        "guard-for-in": "error",
+        "no-caller": "error",
+        "no-eval": "error",
+        "no-extend-native": "error",
+        "no-extra-bind": "error",
+        "no-extra-label": "error",
+        "no-implied-eval": "error",
 
-        "@typescript-eslint/array-type": "error",
-        "@typescript-eslint/ban-tslint-comment": "error",
-        "@typescript-eslint/class-literal-property-style": "error",
-        "@typescript-eslint/consistent-indexed-object-style": "error",
-        "@typescript-eslint/consistent-type-assertions": "error",
-        "@typescript-eslint/consistent-type-definitions": "error",
-        // I want this but too much churn for now
-        // "@typescript-eslint/consistent-type-imports": "error",
-        "@typescript-eslint/method-signature-style": "error",
-        "@typescript-eslint/no-base-to-string": "error",
-        "@typescript-eslint/no-confusing-non-null-assertion": "error",
-        "@typescript-eslint/no-dynamic-delete": "error",
-        "@typescript-eslint/no-extraneous-class": "error",
-        "@typescript-eslint/no-implicit-any-catch": ["error", { "allowExplicitAny": true }],
-        "@typescript-eslint/no-invalid-void-type": "error",
-        "@typescript-eslint/no-unnecessary-boolean-literal-compare": "error",
-        "@typescript-eslint/no-unnecessary-condition": "error",
-        "@typescript-eslint/no-unnecessary-qualifier": "error",
-        "@typescript-eslint/no-unnecessary-type-arguments": "error",
-        "@typescript-eslint/no-unnecessary-type-constraint": "error",
-        "@typescript-eslint/non-nullable-type-assertion-style": "error",
-        "@typescript-eslint/prefer-enum-initializers": "error",
-        "@typescript-eslint/prefer-for-of": "error",
-        "@typescript-eslint/prefer-function-type": "error",
-        "@typescript-eslint/prefer-includes": "error",
-        "@typescript-eslint/prefer-literal-enum-member": "error",
-        "@typescript-eslint/prefer-nullish-coalescing": "error",
-        "@typescript-eslint/prefer-optional-chain": "error",
-        "@typescript-eslint/prefer-reduce-type-parameter": "error",
-        "@typescript-eslint/prefer-string-starts-ends-with": "error",
-        "@typescript-eslint/prefer-ts-expect-error": "error",
-        "@typescript-eslint/promise-function-async": "error",
-        "@typescript-eslint/require-array-sort-compare": "error",
-        "@typescript-eslint/switch-exhaustiveness-check": "error",
-        "@typescript-eslint/type-annotation-spacing": "error",
-        "@typescript-eslint/typedef": "error",
-        "@typescript-eslint/unified-signatures": "error",
+no-labels
+no-lone-blocks
+no-new-func
+no-new-wrappers
+no-nonoctal-decimal-escape
+no-octal-escape
+no-param-reassign
+no-proto
+no-restricted-properties
+no-return-assign
+no-self-compare
+no-sequences
+no-unmodified-loop-condition
+no-useless-call
+no-useless-concat
+no-useless-return
+prefer-promise-reject-errors
+prefer-regex-literals
+radix
+require-await
+require-unicode-regexp
+yoda
+        */
 
         // === disabling stupid ts rules ===
-        // convered by TS
-        "@typescript-eslint/no-unused-vars": "off",
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/no-use-before-define": "off",
@@ -94,8 +120,42 @@
         // too annoying for obvious return types and react components
         "@typescript-eslint/explicit-module-boundary-types": "off",
 
+        // === disabling stupid non-recommended ts rules ===
+        // I want this but too much churn for now
+        "@typescript-eslint/consistent-type-imports": "off",
+        "@typescript-eslint/no-type-alias": "off",
+        "@typescript-eslint/sort-type-union-intersection-members": "off",
+        "@typescript-eslint/prefer-readonly-parameter-types": "off",
+        "@typescript-eslint/explicit-member-accessibility": "off",
+        "@typescript-eslint/no-magic-numbers": "off",
+        "@typescript-eslint/prefer-readonly": "off",
+        "@typescript-eslint/no-shadow": "off",
+        "@typescript-eslint/no-parameter-properties": "off",
+        "@typescript-eslint/no-confusing-void-expression": "off",
+        "@typescript-eslint/lines-between-class-members": "off",
+        "@typescript-eslint/naming-convention": "off",
+        "@typescript-eslint/member-ordering": "off",
+        "@typescript-eslint/no-implicit-any-catch": ["error", { "allowExplicitAny": true }],
+        "@typescript-eslint/init-declarations": "off",
+        "@typescript-eslint/strict-boolean-expressions": ["off", { "allowAny": true }],
+        "@typescript-eslint/no-unused-vars": [
+            "error",
+            { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+        ],
+
         // === disabling react rules ===
         "react/prop-types": "off",
+
+        // === disabling stupid non-recommended react rules ===
+        "react/no-multi-comp": "off",
+        "react/jsx-no-literals": "off",
+        "react/jsx-no-bind": "off",
+        "react/forbid-component-props": "off",
+        "react/jsx-sort-props": "off",
+        "react/jsx-filename-extension": "off",
+        "react/destructuring-assignment": "off",
+        "react/require-default-props": "off",
+        "react/jsx-max-depth": "off",
 
         // === disabling stupid unicorn rules ===
         // TODO: maybe restore this later because it'll help avoid index undefined ts errors

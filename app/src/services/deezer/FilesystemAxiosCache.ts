@@ -80,7 +80,7 @@ export class FilesystemAxiosCache {
         const replacementPairings = [replacement, ...disallowedCharsInWindowsFileNames].map(
             (original, i) => [original, replacement.repeat(i + 2)] as const,
         )
-        let sanitised = ""
+        let sanitised = key
         for (const [original, replacement] of replacementPairings) {
             sanitised = sanitised.replace(original, replacement)
         }

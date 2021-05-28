@@ -23,8 +23,8 @@ import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
 export type QueryBuilder = <T extends TableDefinition>(table: T) => InsertStage<T>
 
 export function queryBuilder(databaseHandle: DatabaseHandle): QueryBuilder {
-    return <T extends TableDefinition>(table: T) => {
-        return new SingleTableStageImpl<T>(
+    return <T extends TableDefinition>(table: T) =>
+        new SingleTableStageImpl<T>(
             new StageBackend(
                 {
                     databaseHandle,
@@ -36,7 +36,6 @@ export function queryBuilder(databaseHandle: DatabaseHandle): QueryBuilder {
                 null as any,
             ),
         )
-    }
 }
 
 const errorNoDatabase = () => {

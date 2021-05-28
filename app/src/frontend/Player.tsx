@@ -1,6 +1,5 @@
 import { css } from "linaria"
-import * as React from "react"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { MdRepeat, MdShuffle } from "react-icons/md"
 import { useDispatch, useSelector } from "react-redux"
 import { PlayPauseButton } from "./components/PlayPause"
@@ -14,7 +13,7 @@ import { audio } from "./state/actions"
 import { resolveCanonical } from "./state/catalogue"
 import { colors } from "./styles"
 
-const Player = () => {
+function Player() {
     return (
         <div
             className={css`
@@ -114,11 +113,11 @@ function PlayPause(props: { size: number }) {
     const status = useSelector(s => s.player.status)
     const dispatch = useDispatch()
     if (status.state === "stopped") {
-        return <PlayPauseButton icon="play" disabled {...props} />
+        return <PlayPauseButton icon="play" size={props.size} />
     } else if (status.state === "paused") {
-        return <PlayPauseButton icon="play" {...props} onClick={() => dispatch(audio.unpause())} />
+        return <PlayPauseButton icon="play" size={props.size} onClick={() => dispatch(audio.unpause())} />
     } else {
-        return <PlayPauseButton icon="pause" {...props} onClick={() => dispatch(audio.pause())} />
+        return <PlayPauseButton icon="pause" size={props.size} onClick={() => dispatch(audio.pause())} />
     }
 }
 

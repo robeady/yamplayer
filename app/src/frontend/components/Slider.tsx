@@ -48,6 +48,7 @@ const sliderProps: ReactSliderProps = {
 
 /** Slider with a value from 0 to 1 */
 export function Slider(props: { value: number | null; onChange: (value: number) => void }) {
+    /* eslint-disable react/jsx-props-no-spreading */
     return props.value === null ? (
         <ReactSlider {...sliderProps} className={className} value={0.5} disabled />
     ) : (
