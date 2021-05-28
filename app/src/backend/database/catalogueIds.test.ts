@@ -3,18 +3,20 @@ import { Timestamp } from "../../util/types"
 import { CatalogueIdGenerator, stringifyCatalogueId } from "./catalogueIds"
 
 test("it works", () => {
-    new CatalogueIdGenerator().generate()
+    expect(() => new CatalogueIdGenerator().generate()).not.toThrow()
 })
 
 test("it's fast", () => {
-    // expected to complete in <60ms
     const generator = new CatalogueIdGenerator()
+    const start = process.hrtime()
     for (let i = 0; i < 100_000; i++) {
         generator.generate()
     }
+    // expected to complete in <60ms
+    expect(process.hrtime(start)).toBeLessThan(0.06)
 })
 
-test("IDs generated in same millisecond use increment", () => {
+test("ids generated in same millisecond use increment", () => {
     const generator = new CatalogueIdGenerator(
         () => 0 as Timestamp,
         () => new Uint8Array(10),
