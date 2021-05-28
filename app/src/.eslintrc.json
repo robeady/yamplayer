@@ -25,7 +25,7 @@
         "prettier"
     ],
     "rules": {
-        // === disabling stupid non-recommended vanilla eslint rules ====
+        // === disabling non-recommended vanilla eslint rules ====
         // TODO: proper logging library should allow us to restore this
         "no-console": "off",
         "no-magic-numbers": "off",
@@ -63,7 +63,7 @@
         "consistent-return": "off",
         "default-case": "off",
 
-        // === disabling stupid ts rules ===
+        // === disabling ts rules ===
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/no-use-before-define": "off",
@@ -81,7 +81,7 @@
         // too annoying for obvious return types and react components
         "@typescript-eslint/explicit-module-boundary-types": "off",
 
-        // === disabling stupid non-recommended ts rules ===
+        // === disabling non-recommended ts rules ===
         // I want this but too much churn for now
         "@typescript-eslint/consistent-type-imports": "off",
         "@typescript-eslint/no-type-alias": "off",
@@ -107,7 +107,7 @@
         // === disabling react rules ===
         "react/prop-types": "off",
 
-        // === disabling stupid non-recommended react rules ===
+        // === disabling non-recommended react rules ===
         "react/no-multi-comp": "off",
         "react/jsx-no-literals": "off",
         "react/jsx-no-bind": "off",
@@ -118,7 +118,7 @@
         "react/require-default-props": "off",
         "react/jsx-max-depth": "off",
 
-        // === disabling stupid unicorn rules ===
+        // === disabling unicorn rules ===
         // TODO: maybe restore this later because it'll help avoid index undefined ts errors
         // "unicorn/no-for-loop": "error",
         "unicorn/prevent-abbreviations": "off",
