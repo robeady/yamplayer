@@ -176,7 +176,6 @@ export class Explorer {
             const matches = await this.searchForItunesTrack(track)
             if (matches.results.externalTrackIds.length === 0) {
                 // TODO: inform the user that we failed to match this track
-                continue
             } else {
                 const externalTrackId = matches.results.externalTrackIds[0]!
                 itunesTracksByExternalTrackId.set(externalTrackId, track)
@@ -300,5 +299,5 @@ export interface ImportItunesResult {
 }
 
 function removeStuffInBrackets(s: string): string {
-    return s.replace(/\[.*?]|\(.*?\)/g, "")
+    return s.replace(/\[.*?]|\(.*?\)/gu, "")
 }

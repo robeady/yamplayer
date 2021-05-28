@@ -42,10 +42,10 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
     reducers: {},
     extraReducers: builder =>
         builder
-            .addCase(catalogueThunks.getLibrary.fulfilled, (state, { payload }) => {
+            .addCase(catalogueThunks.getLibrary.fulfilled, (state, { payload }) =>
                 // TODO: should we be populating external ID pointers too?
-                return { ...state, ...payload }
-            })
+                ({ ...state, ...payload }),
+            )
             .addCase(
                 catalogueThunks.addToLibrary.fulfilled,
                 (state, { payload: { track, album, artist } }) => {

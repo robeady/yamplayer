@@ -7,10 +7,9 @@ export interface SqlDialect {
 }
 
 export class MySqlDialect implements SqlDialect {
-    convertSqlValueToJs = (sqlValue: unknown): unknown => {
+    convertSqlValueToJs = (sqlValue: unknown): unknown =>
         // TODO: verify that this is sensible
-        return sqlValue
-    }
+        sqlValue
 
     escapeJsValueToSql = (value: unknown): string => {
         if (Array.isArray(value)) {

@@ -7,6 +7,7 @@ import express from "express"
  * express instance has json middleware.
  */
 export function serve<T>(object: T) {
+    // eslint-disable-next-line new-cap
     return express.Router().post("/:method", async (req, res) => {
         const target = object as any
         const method = req.params.method!

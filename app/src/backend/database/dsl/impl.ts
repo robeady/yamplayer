@@ -128,56 +128,47 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
 
     renderer = new Renderer(this.state.databaseHandle.dialect)
 
-    where = (...args: unknown[]) => {
-        return this.withWhereFilter(f => {
+    where = (...args: unknown[]) =>
+        this.withWhereFilter(f => {
             if (f === undefined) {
                 return parseFilterArgs(this.selection, args)
             } else {
                 throw new DslMisuseError("where called multiple times")
             }
         })
-    }
 
-    on = (...args: unknown[]) => {
-        return this.withJoinFilter(f => {
+    on = (...args: unknown[]) =>
+        this.withJoinFilter(f => {
             if (f === undefined) {
                 return parseFilterArgs(this.selection, args)
             } else {
                 throw new DslMisuseError("on called multiple times")
             }
         })
-    }
 
-    and = (...args: unknown[]) => {
-        return this.andOr("and", args)
-    }
+    and = (...args: unknown[]) => this.andOr("and", args)
 
-    or = (...args: unknown[]) => {
-        return this.andOr("or", args)
-    }
+    or = (...args: unknown[]) => this.andOr("or", args)
 
-    private andOr = (connective: "and" | "or", ...args: unknown[]) => {
-        return this.withFilter(f => {
+    private andOr = (connective: "and" | "or", ...args: unknown[]) =>
+        this.withFilter(f => {
             if (f === undefined) {
                 throw new DslMisuseError(`${connective} called before where/join`)
             } else {
                 return { ...f, rest: [...f.rest, [connective, parseFilterArgs(this.selection, args)]] }
             }
         })
-    }
 
-    private withFilter = (f: (oldFilter?: Filter) => Filter) => {
-        return this.state.currentlyJoiningAgainstAlias === undefined
+    private withFilter = (f: (oldFilter?: Filter) => Filter) =>
+        this.state.currentlyJoiningAgainstAlias === undefined
             ? this.withWhereFilter(f)
             : this.withJoinFilter(f)
-    }
 
-    private withWhereFilter = (f: (oldFilter?: Filter) => Filter) => {
-        return new StageBackend<QueriedTables, Selection>(
+    private withWhereFilter = (f: (oldFilter?: Filter) => Filter) =>
+        new StageBackend<QueriedTables, Selection>(
             { ...this.state, filter: f(this.state.filter) },
             this.selection,
         )
-    }
 
     private withJoinFilter = (f: (oldFilter?: Filter) => Filter) => {
         if (this.state.currentlyJoiningAgainstAlias === undefined) {
@@ -206,7 +197,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         if (columns.length === 0) {
             throw new Error("joined table has zero columns")
         }
-        const tableAlias = columns[0]!.tableAlias
+        const { tableAlias } = columns[0]!
         if (tableAlias === this.primaryTableAlias) {
             throw new Error("joined table has same alias as initial table")
         }
@@ -231,40 +222,32 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         )
     }
 
-    select = <Selection extends SelectionFrom<QueriedTables>>(selection: Selection) => {
-        return new StageBackend<QueriedTables, Selection>(
+    select = <Selection extends SelectionFrom<QueriedTables>>(selection: Selection) =>
+        new StageBackend<QueriedTables, Selection>(
             { ...this.state, orderLimitOffset: { orderBy: [] } },
             selection,
         )
-    }
 
-    orderBy = (column: ColumnIn<QueriedTables> | AliasIn<Selection>, direction?: "ASC" | "DESC") => {
-        return this.thenBy(column, direction)
-    }
+    orderBy = (column: ColumnIn<QueriedTables> | AliasIn<Selection>, direction?: "ASC" | "DESC") =>
+        this.thenBy(column, direction)
 
-    thenBy = (column: ColumnIn<QueriedTables> | AliasIn<Selection>, direction?: "ASC" | "DESC") => {
-        return this.withOrderLimitOffset(olo => ({
+    thenBy = (column: ColumnIn<QueriedTables> | AliasIn<Selection>, direction?: "ASC" | "DESC") =>
+        this.withOrderLimitOffset(olo => ({
             ...olo,
             orderBy: [...olo.orderBy, { column, direction }],
         }))
-    }
 
-    limit = (limit: number) => {
-        return this.withOrderLimitOffset(olo => ({ ...olo, limit }))
-    }
-    offset = (offset: number) => {
-        return this.withOrderLimitOffset(olo => ({ ...olo, offset }))
-    }
+    limit = (limit: number) => this.withOrderLimitOffset(olo => ({ ...olo, limit }))
+    offset = (offset: number) => this.withOrderLimitOffset(olo => ({ ...olo, offset }))
 
-    private withOrderLimitOffset = (f: (oldOrderLimitOffset: OrderLimitOffset) => OrderLimitOffset) => {
-        return new StageBackend<QueriedTables, Selection>(
+    private withOrderLimitOffset = (f: (oldOrderLimitOffset: OrderLimitOffset) => OrderLimitOffset) =>
+        new StageBackend<QueriedTables, Selection>(
             { ...this.state, orderLimitOffset: f(this.state.orderLimitOffset) },
             this.selection,
         )
-    }
 
     render = () => {
-        const dialect = this.state.databaseHandle.dialect
+        const { dialect } = this.state.databaseHandle
 
         const selectionsSql = traverseSelection(this.selection, (keyPath, col) =>
             this.renderer.columnDefinitionSql(col, keyPath.length === 1 ? keyPath[0] : undefined),
@@ -386,17 +369,15 @@ class MultiTableStageImpl<QueriedTables extends TableDefinitions> implements OnS
         ...args: T
     ) => new MultiTableStageImpl<QueriedTables>(f(...args))
 
-    innerJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) => {
-        return new MultiTableStageImpl(this.backend.innerJoin<OtherTable>(otherTable))
-    }
+    innerJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) =>
+        new MultiTableStageImpl(this.backend.innerJoin<OtherTable>(otherTable))
     on = this.attach(this.backend.on)
     where = this.attach(this.backend.where)
     and = this.attach(this.backend.and)
     or = this.attach(this.backend.or)
 
-    select = <Selection extends SelectionFrom<QueriedTables>>(selection: Selection) => {
-        return new SelectedStageImpl(this.backend.select(selection))
-    }
+    select = <Selection extends SelectionFrom<QueriedTables>>(selection: Selection) =>
+        new SelectedStageImpl(this.backend.select(selection))
 
     orderBy = this.attach(this.backend.orderBy)
     thenBy = this.attach(this.backend.thenBy)
@@ -425,26 +406,22 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
     and = this.attach(this.backend.and)
     or = this.attach(this.backend.or)
 
-    innerJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) => {
-        return new MultiTableStageImpl(this.backend.innerJoin<OtherTable>(otherTable))
-    }
+    innerJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) =>
+        new MultiTableStageImpl(this.backend.innerJoin<OtherTable>(otherTable))
     orderBy = this.attach(this.backend.orderBy)
     thenBy = this.attach(this.backend.thenBy)
     limit: any = this.attach(this.backend.limit)
     offset: any = this.attach(this.backend.offset)
 
-    select = <Selection extends SelectionFrom<QueriedTablesFromSingle<QueriedTable>>>(
-        selection: Selection,
-    ) => {
-        return new SelectedStageImpl(this.backend.select(selection))
-    }
+    select = <Selection extends SelectionFrom<QueriedTablesFromSingle<QueriedTable>>>(selection: Selection) =>
+        new SelectedStageImpl(this.backend.select(selection))
     fetch = this.backend.fetch
     fetchOne = this.backend.fetchOne
     asTable = this.backend.asTable
     render = this.backend.render
 
     truncate = () => {
-        const dialect = this.backend.state.databaseHandle.dialect
+        const { dialect } = this.backend.state.databaseHandle
         const tableNameSql = this.backend.primaryTableName
             .map(part => dialect.escapeIdentifier(part))
             .join(".")
@@ -644,7 +621,7 @@ class Renderer {
                 throw new Error(`table ${tableAlias} is not a real table`)
             }
 
-            sql += ` ${this.joinTypeSql(joinType)} ${this.realTableSql(tableOrigin)} AS ${this.escapeId(
+            sql += ` ${joinTypeSql(joinType)} ${this.realTableSql(tableOrigin)} AS ${this.escapeId(
                 tableAlias,
             )}`
             const filter: Filter | undefined = joinFiltersByAlias[tableAlias]
@@ -663,8 +640,8 @@ class Renderer {
             const orderBySql = orderBy
                 .map(entry =>
                     typeof entry.column === "string"
-                        ? this.escapeId(entry.column) + this.orderDirectionSql(entry.direction)
-                        : this.columnDefinitionSql(entry.column) + this.orderDirectionSql(entry.direction),
+                        ? this.escapeId(entry.column) + orderDirectionSql(entry.direction)
+                        : this.columnDefinitionSql(entry.column) + orderDirectionSql(entry.direction),
                 )
                 .join(", ")
             sql += ` ORDER BY ${orderBySql}`
@@ -676,19 +653,6 @@ class Renderer {
             sql += ` OFFSET ${this.escape(offset)}`
         }
         return sql
-    }
-
-    orderDirectionSql(direction: undefined | "ASC" | "DESC") {
-        switch (direction) {
-            case undefined:
-                return ""
-            case "ASC":
-                return " ASC"
-            case "DESC":
-                return " DESC"
-            default:
-                unreachable(direction)
-        }
     }
 
     whereSql(filter: Filter | undefined) {
@@ -708,29 +672,12 @@ class Renderer {
         if (typeof filterComponent === "boolean") {
             return this.escape(filterComponent)
         } else if (filterComponent.type === "element") {
-            const opSql = this.filterOperatorSql(filterComponent.op)
+            const opSql = filterOperatorSql(filterComponent.op)
             const leftSql = this.expressionSql(filterComponent.left)
             const rightSql = this.expressionSql(filterComponent.right)
             return `${leftSql} ${opSql} ${rightSql}`
         } else {
             return `(${this.filterSql(filterComponent)})`
-        }
-    }
-
-    filterOperatorSql(op: SqlOperator): string {
-        switch (op) {
-            case "=":
-                return "="
-            case "<>":
-                return "<>"
-            case "IN":
-                return "IN"
-            case "IS":
-                return "IS"
-            case "IS NOT":
-                return "IS NOT"
-            default:
-                unreachable(op)
         }
     }
 
@@ -744,17 +691,47 @@ class Renderer {
         }
     }
 
-    joinTypeSql(joinType: JoinType): string {
-        switch (joinType) {
-            case "inner":
-                return "INNER JOIN"
-            default:
-                unreachable(joinType)
-        }
-    }
-
     realTableSql(tableOrigin: RealTableOrigin) {
         return tableOrigin.name.map(part => this.escapeId(part)).join(".")
+    }
+}
+
+function orderDirectionSql(direction: undefined | "ASC" | "DESC") {
+    switch (direction) {
+        case undefined:
+            return ""
+        case "ASC":
+            return " ASC"
+        case "DESC":
+            return " DESC"
+        default:
+            unreachable(direction)
+    }
+}
+
+function filterOperatorSql(op: SqlOperator): string {
+    switch (op) {
+        case "=":
+            return "="
+        case "<>":
+            return "<>"
+        case "IN":
+            return "IN"
+        case "IS":
+            return "IS"
+        case "IS NOT":
+            return "IS NOT"
+        default:
+            unreachable(op)
+    }
+}
+
+function joinTypeSql(joinType: JoinType): string {
+    switch (joinType) {
+        case "inner":
+            return "INNER JOIN"
+        default:
+            unreachable(joinType)
     }
 }
 

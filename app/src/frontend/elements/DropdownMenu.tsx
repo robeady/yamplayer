@@ -81,7 +81,7 @@ export function useDropdownMenu() {
             setContainerElement: (e: HTMLElement | null) => {
                 if (e !== null) setContainerElement(e)
             },
-            open: !!menuOpen,
+            open: menuOpen,
             close,
         },
     }

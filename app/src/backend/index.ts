@@ -1,5 +1,4 @@
 import express from "express"
-import { promises as fs } from "fs"
 import { AddressInfo } from "net"
 import { DeezerApiClient } from "../services/deezer"
 import { Resolver } from "../services/plugins"
@@ -9,24 +8,6 @@ import { LibraryStore } from "./library"
 import { serve } from "./rpc/server"
 
 type Server = import("http").Server
-
-interface LibrarySeedFile {
-    externalTrackIds: string[]
-}
-
-async function _loadLibrarySeed(): Promise<LibrarySeedFile> {
-    const seedFileName = "librarySeed.json"
-    try {
-        const seedFile = await fs.readFile(seedFileName)
-        return JSON.parse(seedFile.toString())
-    } catch (error: unknown) {
-        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-            console.log(`no ${seedFileName} file present`)
-            return { externalTrackIds: [] }
-        }
-        throw error
-    }
-}
 
 async function main(): Promise<AddressInfo> {
     const app = express()

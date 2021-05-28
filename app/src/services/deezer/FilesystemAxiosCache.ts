@@ -75,7 +75,17 @@ export class FilesystemAxiosCache {
     private getFilePath(key: string): string {
         // bijective sanitization function to avoid erroneous collisions
         // TODO: may need expansion as I hit more URLs
-        const disallowedCharsInWindowsFileNames = [/\//g, /:/g, /\?/g, /"/g, /</g, />/g, /\\/g, /\|/g, /\*/g]
+        const disallowedCharsInWindowsFileNames = [
+            /\//gu,
+            /:/gu,
+            /\?/gu,
+            /"/gu,
+            /</gu,
+            />/gu,
+            /\\/gu,
+            /\|/gu,
+            /\*/gu,
+        ]
         const replacement = "_"
         const replacementPairings = [replacement, ...disallowedCharsInWindowsFileNames].map(
             (original, i) => [original, replacement.repeat(i + 2)] as const,

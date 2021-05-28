@@ -16,7 +16,7 @@
         }
     },
     "extends": [
-        "eslint:recommended",
+        "eslint:all",
         "plugin:@typescript-eslint/eslint-recommended",
         "plugin:@typescript-eslint/all",
         "plugin:react/all",
@@ -25,11 +25,9 @@
         "prettier"
     ],
     "rules": {
-        // === enabling non-recommended vanilla eslint rules ===
-        // "eqeqeq": "error",
-        // "no-throw-literal": "error",
-
         // === disabling stupid non-recommended vanilla eslint rules ====
+        // TODO: proper logging library should allow us to restore this
+        "no-console": "off",
         "no-magic-numbers": "off",
         "id-length": "off",
         // doesn't understand TS
@@ -50,64 +48,27 @@
         "no-else-return": "off",
         "no-bitwise": "off",
         "no-inline-comments": "off",
-        // TODO: can we set it
         "func-style": "off",
         "no-shadow": "off",
         "max-params": "off",
         "max-lines-per-function": "off",
         "multiline-comment-style": "off",
+        "line-comment-position": "off",
         "lines-between-class-members": "off",
         "max-statements": "off",
         "no-undefined": "off",
-        "line-comment-position": "off",
         "max-classes-per-file": "off",
         "no-void": "off",
-        /*
-        "no-template-curly-in-string": "error",
-        "no-unreachable-loop": "error",
-        "no-unsafe-optional-chaining": "error",
-        "require-atomic-updates": "error",
-        "no-promise-executor-return": "error",
-        "class-methods-use-this": "error",
-        "default-case-last": "error",
-        "guard-for-in": "error",
-        "no-caller": "error",
-        "no-eval": "error",
-        "no-extend-native": "error",
-        "no-extra-bind": "error",
-        "no-extra-label": "error",
-        "no-implied-eval": "error",
-
-no-labels
-no-lone-blocks
-no-new-func
-no-new-wrappers
-no-nonoctal-decimal-escape
-no-octal-escape
-no-param-reassign
-no-proto
-no-restricted-properties
-no-return-assign
-no-self-compare
-no-sequences
-no-unmodified-loop-condition
-no-useless-call
-no-useless-concat
-no-useless-return
-prefer-promise-reject-errors
-prefer-regex-literals
-radix
-require-await
-require-unicode-regexp
-yoda
-        */
+        "no-await-in-loop": "off",
+        "consistent-return": "off",
+        "default-case": "off",
 
         // === disabling stupid ts rules ===
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/no-use-before-define": "off",
         "@typescript-eslint/no-explicit-any": "off",
-        // TODO: maybe we can keep the below for most files
+        // TODO: maybe we can keep the below for most files that don't handle any
         "@typescript-eslint/no-unsafe-argument": "off",
         "@typescript-eslint/no-unsafe-member-access": "off",
         "@typescript-eslint/no-unsafe-assignment": "off",
@@ -137,7 +98,7 @@ yoda
         "@typescript-eslint/member-ordering": "off",
         "@typescript-eslint/no-implicit-any-catch": ["error", { "allowExplicitAny": true }],
         "@typescript-eslint/init-declarations": "off",
-        "@typescript-eslint/strict-boolean-expressions": ["off", { "allowAny": true }],
+        "@typescript-eslint/strict-boolean-expressions": ["error", { "allowAny": true }],
         "@typescript-eslint/no-unused-vars": [
             "error",
             { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
@@ -164,7 +125,7 @@ yoda
         "unicorn/prefer-ternary": "warn",
         // for now we use null because optional properties are easily forgotten
         "unicorn/no-null": "off",
-        // not useless for destructuring
+        // not useless for array destructuring in TS
         "unicorn/no-useless-undefined": "off",
         "unicorn/filename-case": ["error", { "cases": { "camelCase": true, "pascalCase": true } }],
         "unicorn/no-nested-ternary": "off",
