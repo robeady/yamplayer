@@ -1,3 +1,4 @@
+import globalAxios from "axios"
 import express from "express"
 import { DeezerApiClient } from "../services/deezer"
 import { Resolver } from "../services/plugins/resolver"
@@ -25,6 +26,19 @@ async function main(): Promise<ListeningExpress> {
 
     app.use("/api/library", serve(library))
     app.use("/api/explorer", serve(explorer))
+
+    app.get("/api/proxy", async (req, res) => {
+        const url = req.query.url as string
+        try {
+            const response = await globalAxios.get(url, { responseType: "stream" })
+            response.data.pipe(res)
+        } catch (error: any) {
+            // on async handlers express won't do any error handling by default,
+            // let's take care of it ourselves.
+            console.error(error)
+            res.status(500).json(`${error?.name || "Error"}: ${error?.message || JSON.stringify(error)}`)
+        }
+    })
 
     return listen(app, 8280, "127.0.0.1")
 }

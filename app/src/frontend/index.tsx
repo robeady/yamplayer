@@ -22,8 +22,8 @@ require("./styles/global")
 /* eslint-enable unicorn/prefer-module, @typescript-eslint/no-require-imports */
 
 async function loadTrackData(explorerClient: Remote<Explorer>, track: Track) {
-    const url = await explorerClient.resolveTrackUrl(track.externalId)
-    const response = await fetch(url)
+    const query = new URLSearchParams({ url: await explorerClient.resolveTrackUrl(track.externalId) })
+    const response = await fetch(`/api/proxy?${query}`)
     const buffer = await response.arrayBuffer()
     const array = new Uint8Array(buffer)
     defaultDecoder.decodeTrackInPlace(track.externalId, array)
