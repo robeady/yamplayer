@@ -9,6 +9,7 @@ import { LeftNav } from "./components/Navigation"
 import { LibraryTracks } from "./LibraryTracks"
 import Player, { NowPlaying } from "./Player"
 import { catalogue } from "./state/actions"
+import { colors } from "./styles"
 import { TrackSearch } from "./TrackSearch"
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
                 <footer
                     className={css`
                         border-top: 1px solid gainsboro;
+                        background: ${colors.gray1};
                     `}>
                     <Player />
                 </footer>

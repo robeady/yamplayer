@@ -12,6 +12,7 @@ export function LeftNav() {
             className={css`
                 width: 200px;
                 padding-top: 24px;
+                background: ${colors.gray1};
                 border-right: 1px solid ${colors.gray2};
                 overflow: auto;
             `}>
