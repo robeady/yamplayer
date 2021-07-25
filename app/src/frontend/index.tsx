@@ -31,7 +31,7 @@ async function loadTrackData(explorerClient: Remote<Explorer>, track: Track) {
 }
 
 function setupStore() {
-    const backendUrl = "http://127.0.0.1:8280"
+    const backendUrl = "api"
     const explorer = remote<Explorer>(`${backendUrl}/explorer`)
     // eslint bug: it doesn't recognise this tying-the-knot pattern
     let audioPlayer: AudioPlayer // eslint-disable-line prefer-const

@@ -1,5 +1,5 @@
 import { ExternalAlbum, ExternalArtist, ExternalTrack, SearchResults } from "../model"
-import { Decoder } from "./plugins"
+import { Decoder } from "./plugins/decoder"
 
 export interface TrackSearchQuery {
     title?: string

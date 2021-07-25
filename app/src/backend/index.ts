@@ -1,6 +1,6 @@
 import express from "express"
 import { DeezerApiClient } from "../services/deezer"
-import { Resolver } from "../services/plugins"
+import { Resolver } from "../services/plugins/resolver"
 import { listen, ListeningExpress } from "../util/express"
 import { MariaDB } from "./database/handle"
 import { Explorer } from "./explorer"
@@ -23,8 +23,8 @@ async function main(): Promise<ListeningExpress> {
     // )
     const explorer = new Explorer(library, deezerApiClient, new Resolver())
 
-    app.use("/library", serve(library))
-    app.use("/explorer", serve(explorer))
+    app.use("/api/library", serve(library))
+    app.use("/api/explorer", serve(explorer))
 
     return listen(app, 8280, "127.0.0.1")
 }

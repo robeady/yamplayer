@@ -20,56 +20,30 @@ const appConfig = {
         modules: ["node_modules"],
         extensions: [".ts", ".tsx", ".js", ".jsx"],
     },
-    target: "electron-renderer",
     module: {
         rules: [
             {
                 test: /\.[jt]sx?$/,
                 exclude: /node_modules/,
                 use: [
-                    {
-                        loader: "babel-loader",
-                    },
-                    {
-                        loader: "linaria/loader",
-                        options: {
-                            sourceMap: DEV,
-                            displayName: DEV,
-                        },
-                    },
+                    { loader: "babel-loader" },
+                    { loader: "linaria/loader", options: { sourceMap: DEV, displayName: DEV } },
                 ],
             },
             {
                 test: /\.css$/,
                 use: [
-                    {
-                        loader: MiniCssExtractPlugin.loader,
-                        options: {
-                            hmr: DEV,
-                        },
-                    },
-                    {
-                        loader: "css-loader",
-                        options: {
-                            sourceMap: DEV,
-                        },
-                    },
+                    { loader: MiniCssExtractPlugin.loader, options: { hmr: DEV } },
+                    { loader: "css-loader", options: { sourceMap: DEV } },
                 ],
             },
             {
                 test: /\.svg$/,
                 use: [
-                    {
-                        loader: "babel-loader",
-                    },
+                    { loader: "babel-loader" },
                     {
                         loader: "react-svg-loader",
-                        options: {
-                            jsx: true, // true outputs JSX tags
-                            svgo: {
-                                plugins: [{ removeViewBox: false }],
-                            },
-                        },
+                        options: { jsx: true, svgo: { plugins: [{ removeViewBox: false }] } },
                     },
                 ],
             },
@@ -84,14 +58,11 @@ const appConfig = {
 }
 
 const developmentConfig = {
-    output: {
-        publicPath: "http://localhost:8180/",
+    devServer: {
+        contentBase: "src/frontend/public",
+        proxy: { "/api": "http://localhost:8280" },
     },
-    resolve: {
-        alias: {
-            "react-dom": "@hot-loader/react-dom",
-        },
-    },
+    resolve: { alias: { "react-dom": "@hot-loader/react-dom" } },
     plugins: [new ForkTsCheckerWebpackPlugin(), new webpack.NamedModulesPlugin()],
     devtool: "eval-source-map",
 }

@@ -4,7 +4,7 @@
     "license": "MIT",
     "scripts": {
         "electron:build:FORGOT_WHAT_THIS_DOES": "cross-env NODE_ENV=development webpack",
-        "electron:serve-hot": "cross-env NODE_ENV=development webpack-dev-server --hot --port 8180",
+        "frontend:serve-hot": "cross-env NODE_ENV=development webpack-dev-server --hot --port 8180",
         "electron:start": "cross-env NODE_ENV=development electron src/main.js",
         "backend:start": "ts-node-dev --type-check --no-notify src/backend/index.ts",
         "test": "jest",
@@ -12,7 +12,7 @@
         "format": "prettier --write --ignore-path .gitignore \"**/*.{js,ts,tsx,json}\"",
         "format:check": "prettier --check --ignore-path .gitignore \"**/*.{js,ts,tsx,json}\"",
         "typecheck": "tsc --noEmit",
-        "start": "concurrently -k \"yarn:backend:start\" \"yarn:electron:serve-hot\" \"yarn:electron:start\"",
+        "start": "concurrently -k \"yarn:backend:start\" \"yarn:frontend:serve-hot\"",
         "frontend:build": "cross-env NODE_ENV=production webpack"
     },
     "dependencies": {
