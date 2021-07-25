@@ -6,6 +6,7 @@ import { Album, Artist, Track } from "../../model"
 import { Dict } from "../../util/types"
 import { Col, DotDotDot, Flex, Row, Subheading } from "../elements"
 import { DropdownMenu, DropdownMenuItem, useDropdownMenu } from "../elements/DropdownMenu"
+import { SubtleLink } from "../elements/SubtleLink"
 import { formatTime } from "../formatting"
 import { audio, catalogue, view } from "../state/actions"
 import { AudioQueue } from "../state/AudioPlayer"
@@ -149,7 +150,7 @@ function FullSizeAlbumCell(props: { album: Album; artist: Artist }) {
                 height={230}
             />
             <Col>
-                <AlbumTitle title={props.album.title} />
+                <AlbumTitle album={props.album} />
                 <ArtistName name={props.artist.name} />
             </Col>
         </AlbumArtistCol>
@@ -177,15 +178,20 @@ function SmallAlbumCell(props: { album: Album; artist: Artist }) {
                     margin-top: -1px; // shift up
                     line-height: 1.4;
                 `}>
-                <AlbumTitle title={props.album.title} />
+                <AlbumTitle album={props.album} />
                 <ArtistName name={props.artist.name} />
             </Col>
         </AlbumArtistCol>
     )
 }
 
-function AlbumTitle({ title = "" }) {
-    return <DotDotDot className={css``}>{title}</DotDotDot>
+function AlbumTitle(props: { album: Album }) {
+    return (
+        <SubtleLink to={`/library/album/${props.album.catalogueId}`}>
+            {" "}
+            <DotDotDot className={css``}>{props.album.title}</DotDotDot>
+        </SubtleLink>
+    )
 }
 
 function ArtistName({ name = "" }) {
