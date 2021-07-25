@@ -17,7 +17,7 @@ const createWindow = () => {
         },
     })
 
-    mainWindow.loadFile(path.join(__dirname, `frontend/index.${process.env.NODE_ENV}.html`))
+    mainWindow.loadFile(path.join(__dirname, `frontend/public/index.electron.html`))
 
     mainWindow.on("closed", () => {
         mainWindow = null
