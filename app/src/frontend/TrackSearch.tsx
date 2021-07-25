@@ -31,7 +31,7 @@ export function TrackSearch() {
         searchQuery ? s.catalogue.searchResultsByQuery[searchQuery] : undefined,
     )
     useEffect(() => {
-        if (searchResults === undefined) {
+        if (searchResults === undefined && searchQuery) {
             void dispatch(catalogue.fetchSearchResults(searchQuery))
         }
     }, [dispatch, searchQuery, searchResults])
