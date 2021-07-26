@@ -22,3 +22,7 @@ export const DotDotDot = styled.div`
     text-overflow: ellipsis;
     white-space: nowrap;
 `
+
+export const Heading = styled.div`
+    font-size: ${fontSizes.heading};
+`

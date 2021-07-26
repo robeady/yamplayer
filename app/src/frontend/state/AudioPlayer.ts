@@ -1,27 +1,11 @@
 import { Howl } from "howler"
 import { player, PlayerAction } from "./actions"
+import { AudioQueue, emptyAudioQueue } from "./queue"
 
 const HOWL_VOLUME_RATIO = 0.25
 
-export interface AudioQueue {
-    /** The currently playing (or paused) track ID */
-    current: string | null
-    /**
-     * Track IDs that have finished playing, with most recent last. Note that this is not the same as the
-     * playback history because if the user skips backwards, the relevant tracks will move from `previous`
-     * into `current` or `next`
-     */
-    previous: string[]
-    /** Track IDs up next, with soonest first */
-    next: string[]
-}
-
-export function audioQueue(current: string | null = null): AudioQueue {
-    return { current, previous: [], next: [] }
-}
-
 export class AudioPlayer {
-    queue: AudioQueue = audioQueue()
+    queue: AudioQueue = emptyAudioQueue()
     howl: Howl | null = null
     volume: number
     muted = false

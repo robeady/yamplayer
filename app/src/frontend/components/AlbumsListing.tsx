@@ -1,18 +1,17 @@
 import { css } from "linaria"
 import { styled } from "linaria/lib/react"
 import React, { useMemo } from "react"
-import { useDispatch, useSelector } from "react-redux"
+import { useSelector } from "react-redux"
 import { Album, Artist, Track } from "../../model"
 import { Dict } from "../../util/types"
 import { Col, DotDotDot, Flex, Row, Subheading } from "../elements"
-import { DropdownMenu, DropdownMenuItem, useDropdownMenu } from "../elements/DropdownMenu"
+import { useDropdownMenu } from "../elements/DropdownMenu"
 import { SubtleLink } from "../elements/SubtleLink"
-import { formatTime } from "../formatting"
-import { audio, catalogue, view } from "../state/actions"
-import { AudioQueue } from "../state/AudioPlayer"
 import { resolveCanonical } from "../state/catalogue"
+import { AudioQueue, buildAudioQueue } from "../state/queue"
 import { colors, fontSizes } from "../styles"
-import { TrackRating } from "./Rating"
+import { AlbumImage } from "./AlbumImage"
+import { TrackTable, TrackTableColumn, TrackTableHeader } from "./AlbumTrackTable"
 
 interface AlbumRowData {
     tracks: Track[]
@@ -44,27 +43,7 @@ function assembleRows(trackIds: string[], allTracks: Dict<string | Track>) {
     return rows
 }
 
-function buildQueue(rows: AlbumRowData[], playFromTrackId: string): AudioQueue {
-    // 'playFromTrackId' appears somewhere in rows
-    // we scan through all the tracks in order and build a queue
-    const previous: string[] = []
-    const next: string[] = []
-    let target = previous
-    for (const row of rows) {
-        for (const track of row.tracks) {
-            // TODO is it ok to just check catalogue ID here?
-            const id = track.catalogueId ?? track.externalId
-            if (id === playFromTrackId) {
-                target = next
-            }
-            target.push(id)
-        }
-    }
-    if (next.length === 0) {
-        throw new Error("could not find track to play from")
-    }
-    return { previous, current: null, next }
-}
+const tableCols: TrackTableColumn[] = ["#", "title", "rating", "duration"]
 
 /** This component shows a table of tracks, but where consecutive tracks from the same album are grouped together. */
 export function AlbumsListing(props: { trackIds: string[] }) {
@@ -73,7 +52,15 @@ export function AlbumsListing(props: { trackIds: string[] }) {
     const rows = useMemo(() => assembleRows(props.trackIds, allTracks), [allTracks, props.trackIds])
     return (
         <div>
-            <Headings />
+            <Row>
+                <Subheading>
+                    <Row className={css`height: 30px;`}>
+                        <AlbumArtistCol>Artist / Album</AlbumArtistCol>
+                    </Row>
+                </Subheading>
+                <TrackTableHeader cols={tableCols} />
+            </Row>
+
             {rows.map(({ tracks, albumId }, i) => (
                 <AlbumRow
                     key={
@@ -81,28 +68,23 @@ export function AlbumsListing(props: { trackIds: string[] }) {
                     }
                     tracks={tracks}
                     albumId={albumId}
-                    buildQueue={tid => buildQueue(rows, tid)}
+                    buildTrackQueue={tid =>
+                        buildAudioQueue(
+                            rows.flatMap(r => r.tracks).map(t => t.catalogueId ?? t.externalId),
+                            tid,
+                        )
+                    }
                 />
             ))}
         </div>
     )
 }
 
-function Headings() {
-    return (
-        <Subheading>
-            <Row className={css`height: 30px;`}>
-                <AlbumArtistCol>Artist / Album</AlbumArtistCol>
-                <TrackNumCol>#</TrackNumCol>
-                <TrackCol>Track</TrackCol>
-                <RatingCol>Rating</RatingCol>
-                <LengthCol>Length</LengthCol>
-            </Row>
-        </Subheading>
-    )
-}
-
-function AlbumRow(props: { tracks: Track[]; albumId: string; buildQueue: (from: string) => AudioQueue }) {
+function AlbumRow(props: {
+    tracks: Track[]
+    albumId: string
+    buildTrackQueue: (fromTrackId: string) => AudioQueue
+}) {
     const fullSizeThreshold = 9
     const album = useSelector(s => resolveCanonical(s.catalogue.albums, props.albumId))
     const artist = useSelector(s =>
@@ -122,15 +104,7 @@ function AlbumRow(props: { tracks: Track[]; albumId: string; buildQueue: (from: 
             ) : (
                 <SmallAlbumCell album={album} artist={artist} />
             )}
-            <Col className={css`width: 100%; padding: 10px 0;`}>
-                {props.tracks.map(track => (
-                    <TrackRow
-                        key={track.catalogueId ?? track.externalId}
-                        track={track}
-                        buildQueue={props.buildQueue}
-                    />
-                ))}
-            </Col>
+            <TrackTable tracks={props.tracks} cols={tableCols} buildTrackQueue={props.buildTrackQueue} />
         </Flex>
     )
 }
@@ -143,12 +117,7 @@ function FullSizeAlbumCell(props: { album: Album; artist: Artist }) {
                 padding-top: 6px;
                 overflow: hidden;
             `}>
-            <img
-                className={css`border-radius: 10px;`}
-                src={props.album.coverImageUrl ?? undefined}
-                width={230}
-                height={230}
-            />
+            <AlbumImage album={props.album} size={230} />
             <Col>
                 <AlbumTitle album={props.album} />
                 <ArtistName name={props.artist.name} />
@@ -166,12 +135,7 @@ function SmallAlbumCell(props: { album: Album; artist: Artist }) {
                 align-items: center;
                 overflow: hidden;
             `}>
-            <img
-                className={css`border-radius: 3px;`}
-                src={props.album.coverImageUrl ?? undefined}
-                width={36}
-                height={36}
-            />
+            <AlbumImage album={props.album} size={36} />
             <Col
                 className={css`
                     overflow: hidden;
@@ -202,66 +166,4 @@ function ArtistName({ name = "" }) {
     )
 }
 
-function TrackRow(props: { track: Track; buildQueue: (from: string) => AudioQueue }) {
-    const dispatch = useDispatch()
-
-    const trackId = props.track.catalogueId ?? props.track.externalId
-    const selected = useSelector(s => s.view.selectedTrackId)
-    const TrackComponent = selected === trackId ? SelectedTrackFlex : TrackFlex
-
-    const { state, show } = useDropdownMenu()
-
-    return (
-        <>
-            <DropdownMenu state={state}>
-                <DropdownMenuItem onClick={() => dispatch(audio.playLater([trackId]))}>
-                    Play later
-                </DropdownMenuItem>
-            </DropdownMenu>
-            <TrackComponent
-                onContextMenu={show}
-                onMouseDown={() => dispatch(view.selectedTrackChanged(trackId))}
-                onDoubleClick={() => dispatch(audio.play(props.buildQueue(trackId)))}
-                className={css``}>
-                <TrackNumCol>{props.track.trackNumber}</TrackNumCol>
-                <TrackCol>{props.track.title}</TrackCol>
-                <RatingCol>
-                    <TrackRating
-                        rating={props.track.rating}
-                        enabled={props.track.catalogueId !== null}
-                        onRate={newRating => dispatch(catalogue.setTrackRating({ trackId, newRating }))}
-                    />
-                </RatingCol>
-                <LengthCol>{formatTime(props.track.durationSecs)}</LengthCol>
-            </TrackComponent>
-        </>
-    )
-}
-
-const TrackFlex = styled.div`
-    display: flex;
-    align-items: center;
-    padding: 2px 4px 3px;
-    border-radius: 6px;
-    &:last-child {
-        border-bottom: 0;
-    }
-    &:hover {
-        background: ${colors.gray1};
-    }
-`
-
-const SelectedTrackFlex = styled(TrackFlex)`
-    background: ${colors.purple9};
-    &:hover {
-        background: ${colors.purple8};
-    }
-`
-
-const TableCol = styled.div`padding-right: 20px;`
-
-const AlbumArtistCol = styled(TableCol)`flex: 0 0 274px;`
-const TrackNumCol = styled(TableCol)`flex: 0 0 40px; text-align: right; color: ${colors.gray6};`
-const TrackCol = styled(TableCol)`flex: 0 0 500px;`
-const RatingCol = styled(TableCol)`flex: 0 0 100px;`
-const LengthCol = styled(TableCol)`flex: 0 0 100px;`
+const AlbumArtistCol = styled.div`flex: 0 0 274px; padding-right: 20px;`

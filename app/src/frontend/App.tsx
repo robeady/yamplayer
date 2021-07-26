@@ -7,6 +7,7 @@ import { HashRouter, Route, Switch } from "react-router-dom"
 import { ImportItunesResult } from "../backend/explorer"
 import { LeftNav } from "./components/Navigation"
 import { LibraryTracks } from "./LibraryTracks"
+import { AlbumPage } from "./pages/AlbumPage"
 import Player, { NowPlaying } from "./Player"
 import { catalogue } from "./state/actions"
 import { colors } from "./styles"
@@ -59,6 +60,10 @@ function Main() {
                     <Route path="/library/tracks">
                         <LibraryTracks />
                     </Route>
+                    <Route
+                        path="/library/album/:albumId"
+                        render={routeProps => <AlbumPage albumId={routeProps.match.params.albumId} />}
+                    />
                     <Route path="/import">
                         <Import />
                     </Route>

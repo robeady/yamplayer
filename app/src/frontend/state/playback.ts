@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit"
 import { Fraction } from "../../util/types"
 import { PA } from "./actions"
-import { audioQueue, AudioQueue } from "./AudioPlayer"
+import { AudioQueue, emptyAudioQueue } from "./queue"
 
 interface PlayerState {
     status: PlaybackStatus
@@ -20,7 +20,7 @@ const initialState: PlayerState = {
     status: { state: "stopped" },
     volume: 0.2,
     muted: false,
-    queue: audioQueue(),
+    queue: emptyAudioQueue(),
 }
 
 export const playerSlice = createSlice({
