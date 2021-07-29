@@ -10,9 +10,10 @@ import {
     Track,
 } from "../model"
 import { Service, TrackResolver } from "../services"
-import { ItunesTrack, parseItunesLibraryXml } from "../services/apple/itunes"
+import { parseItunesLibraryXml } from "../services/apple/itunes"
 import { Dict, Int } from "../util/types"
 import { LibraryStore } from "./library"
+import { matchItunesLibrary } from "./matching"
 
 export interface LibraryContents {
     tracks: Dict<CataloguedTrack>
@@ -163,33 +164,21 @@ export class Explorer {
     }
 
     async importItunesLibrary(itunesLibraryXml: string): Promise<ImportItunesResult> {
-        // TODO: some error handling
         const itunesLibraryContents = parseItunesLibraryXml(itunesLibraryXml)
-        // hmm, we really shouldn't be seeing duplicates here, maybe that should produce a warning
-        const itunesTracksByExternalTrackId = new Map<string, ItunesTrack>()
-        // TODO: for now we limit import to 200 tracks
-        for (const track of itunesLibraryContents.tracks
-            // order by date added, descending
-            .sort((t1, t2) => (t2.dateAdded ?? 0) - (t1.dateAdded ?? 0))
-            // take first 200 tracks, for the time being
-            .slice(0, 200)) {
-            const matches = await this.searchForItunesTrack(track)
-            if (matches.results.externalTrackIds.length === 0) {
-                // TODO: inform the user that we failed to match this track
-            } else {
-                const externalTrackId = matches.results.externalTrackIds[0]!
-                itunesTracksByExternalTrackId.set(externalTrackId, track)
-            }
-        }
 
-        for (const track of await this.library.matchTracks([...itunesTracksByExternalTrackId.keys()])) {
+        const matchedTracksByExternalId = await matchItunesLibrary(itunesLibraryContents, this.service)
+
+        const matchedExternalIds = [...Object.keys(matchedTracksByExternalId)]
+
+        for (const track of await this.library.matchTracks(matchedExternalIds)) {
             // TODO: could we update metadata and stuff? rating? added timestamp?
-            itunesTracksByExternalTrackId.delete(track.externalId)
+            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+            delete matchedTracksByExternalId[track.externalId]
         }
         // now externalTrackIds only contains IDs of new tracks to catalogue
 
         const externalTracks = await Promise.all(
-            [...itunesTracksByExternalTrackId.keys()].map(async tid => this.service.lookupTrack(tid)),
+            matchedExternalIds.map(async tid => this.service.lookupTrack(tid)),
         )
 
         const externalAlbumIds = new Set(externalTracks.map(t => t.albumId))
@@ -234,7 +223,7 @@ export class Explorer {
             externalTracks.map(async t =>
                 this.library.addTrack({
                     ...t,
-                    rating: itunesTracksByExternalTrackId.get(t.externalId)!.rating ?? null,
+                    rating: matchedTracksByExternalId[t.externalId]!.itunesTrack.rating ?? null,
                     albumId: albumIdsByExternalId.get(t.albumId)!,
                     artistId: artistIdsByExternalId.get(t.artistId)!,
                 }),
@@ -256,31 +245,6 @@ export class Explorer {
             },
         }
     }
-
-    private async searchForItunesTrack({ title, albumName, artistName, durationSecs }: ItunesTrack) {
-        // this code was inspired by a previous effort, search_dz.py
-        const query = {
-            title,
-            albumName,
-            artistName,
-            ...(durationSecs !== undefined && {
-                minDurationSecs: Math.floor(durationSecs - 10),
-                maxDurationSecs: Math.ceil(durationSecs + 10),
-            }),
-        }
-        const matches = await this.service.searchTracks(query)
-        if (matches.results.externalTrackIds.length > 0) {
-            return matches
-        }
-
-        // if no match, try removing stuff in brackets in the song or album title
-        const query2 = {
-            ...query,
-            title: removeStuffInBrackets(query.title),
-            albumName: removeStuffInBrackets(query.albumName),
-        }
-        return this.service.searchTracks(query2)
-    }
 }
 
 export interface ImportItunesResult {
@@ -296,8 +260,4 @@ export interface ImportItunesResult {
         artists: CataloguedArtist[]
         playlists: Playlist[]
     }
-}
-
-function removeStuffInBrackets(s: string): string {
-    return s.replace(/\[.*?]|\(.*?\)/gu, "")
 }

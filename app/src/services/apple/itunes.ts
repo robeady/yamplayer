@@ -8,9 +8,11 @@ export interface ItunesLibraryContents {
 }
 
 export interface ItunesTrack {
+    id: number
     title: string
     artistName: string
     albumName: string
+    albumArtist?: string
     durationSecs?: number
     rating?: Fraction
     playCount?: number
@@ -34,9 +36,11 @@ export function parseItunesLibraryXml(xmlContents: string): ItunesLibraryContent
     const parsed = parse(xmlContents) as any
     const tracks = Object.entries(parsed.Tracks).map(([, data]: [string, any]) => {
         const result: ItunesTrack = {
+            id: data["Track ID"],
             title: data.Name,
             artistName: data.Artist,
             albumName: data.Album,
+            albumArtist: data["Album Artist"],
             durationSecs: "Total Time" in data ? data["Total Time"] / 1000 : undefined,
             rating: "Rating" in data && !data["Rating Computed"] ? data.Rating / 100 : undefined,
             playCount: data["Play Count"],

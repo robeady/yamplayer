@@ -122,6 +122,9 @@
         // === disabling unicorn rules ===
         // TODO: maybe restore this later because it'll help avoid index undefined ts errors
         // "unicorn/no-for-loop": "error",
+        "unicorn/no-array-for-each": "off", // complains about my stream forEach
+        "unicorn/no-array-callback-reference": "off", // forbids typescript type guard filter functions
+        "unicorn/prefer-module": "off", // somtimes you have to...
         "unicorn/prevent-abbreviations": "off",
         "unicorn/prefer-ternary": "warn",
         // for now we use null because optional properties are easily forgotten
@@ -138,10 +141,11 @@
         "unicorn/prefer-node-protocol": "off",
 
         // === jest ===
-        "jest/expect-expect": ["error", { "assertFunctionNames": ["expect*"] }],
+        "jest/expect-expect": ["warn", { "assertFunctionNames": ["expect*"] }],
         "jest/prefer-expect-assertions": "off",
         "jest/no-hooks": "off",
         "jest/require-top-level-describe": "off",
-        "jest/consistent-test-it": ["error", { "withinDescribe": "test" }]
+        "jest/consistent-test-it": ["error", { "withinDescribe": "test" }],
+        "jest/unbound-method": "off" // dupe
     }
 }
