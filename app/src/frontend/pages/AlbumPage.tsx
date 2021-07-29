@@ -69,7 +69,7 @@ function AlbumSummary(props: AlbumProps) {
 
 function AlbumStats(props: { tracks: Track[] }) {
     const numTracks = props.tracks.length
-    const totalMinutes = sumBy(props.tracks, t => t.durationSecs / 60)
+    const totalMinutes = Math.ceil(sumBy(props.tracks, t => t.durationSecs / 60))
     return (
         <div className={css`color: ${colors.gray6};`}>
             {numTracks} tracks, {totalMinutes} minutes.
