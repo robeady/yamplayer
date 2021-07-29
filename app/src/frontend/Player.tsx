@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { PlayPauseButton } from "./components/PlayPause"
 import { Slider } from "./components/Slider"
 import { VolumeControl } from "./components/Volume"
-import { Col, DotDotDot, Flex, Noverflow } from "./elements"
+import { DotDotDot, Flex, Noverflow } from "./elements"
 import { formatTime } from "./formatting"
 import SkipNext from "./icons/skip_next.svg"
 import SkipPrevious from "./icons/skip_previous.svg"
@@ -63,10 +63,10 @@ function PlayingTrack() {
 
 function ControlsAndProgressBar() {
     return (
-        <Col>
+        <div className={css`display: flex; flex-direction: column;`}>
             <PlayPauseSkipControls />
             <ProgressBar />
-        </Col>
+        </div>
     )
 }
 
@@ -89,11 +89,7 @@ function PlayPauseSkipControls() {
                 height={36}
                 fill="slategray"
             />
-            <div
-                className={css`
-                    margin-left: 12px;
-                    margin-right: 12px;
-                `}>
+            <div className={css`margin-left: 12px; margin-right: 12px;`}>
                 <PlayPause size={32} />
             </div>
             <SkipNext

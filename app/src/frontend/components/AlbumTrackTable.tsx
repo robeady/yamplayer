@@ -126,7 +126,7 @@ function TrackRowColumn(props: { col: TrackTableColumn; track: Track }) {
 const TrackFlex = styled.div`
     display: flex;
     align-items: center;
-    padding: 2px 4px 3px;
+    padding: 2px 0 3px;
     border-radius: 6px;
     &:last-child {
         border-bottom: 0;

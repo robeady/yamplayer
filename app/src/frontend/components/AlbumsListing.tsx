@@ -4,7 +4,7 @@ import React, { useMemo } from "react"
 import { useSelector } from "react-redux"
 import { Album, Artist, Track } from "../../model"
 import { Dict } from "../../util/types"
-import { Col, DotDotDot, Flex, Row, Subheading } from "../elements"
+import { DotDotDot, Flex, Row, Subheading } from "../elements"
 import { useDropdownMenu } from "../elements/DropdownMenu"
 import { SubtleLink } from "../elements/SubtleLink"
 import { resolveCanonical } from "../state/catalogue"
@@ -53,7 +53,7 @@ export function AlbumsListing(props: { trackIds: string[] }) {
     return (
         <div>
             <Row>
-                <Subheading>
+                <Subheading className={css`width: ${albumArtistColWidth};`}>
                     <Row className={css`height: 30px;`}>
                         <AlbumArtistCol>Artist / Album</AlbumArtistCol>
                     </Row>
@@ -118,10 +118,10 @@ function FullSizeAlbumCell(props: { album: Album; artist: Artist }) {
                 overflow: hidden;
             `}>
             <AlbumImage album={props.album} size={230} />
-            <Col>
+            <div>
                 <AlbumTitle album={props.album} />
                 <ArtistName name={props.artist.name} />
-            </Col>
+            </div>
         </AlbumArtistCol>
     )
 }
@@ -136,7 +136,7 @@ function SmallAlbumCell(props: { album: Album; artist: Artist }) {
                 overflow: hidden;
             `}>
             <AlbumImage album={props.album} size={36} />
-            <Col
+            <div
                 className={css`
                     overflow: hidden;
                     margin-top: -1px; // shift up
@@ -144,7 +144,7 @@ function SmallAlbumCell(props: { album: Album; artist: Artist }) {
                 `}>
                 <AlbumTitle album={props.album} />
                 <ArtistName name={props.artist.name} />
-            </Col>
+            </div>
         </AlbumArtistCol>
     )
 }
@@ -166,4 +166,6 @@ function ArtistName({ name = "" }) {
     )
 }
 
-const AlbumArtistCol = styled.div`flex: 0 0 274px; padding-right: 20px;`
+const albumArtistColWidth = "274px"
+
+const AlbumArtistCol = styled.div`flex: 0 0 ${albumArtistColWidth}; padding-right: 20px;`

@@ -3,7 +3,7 @@ import React, { useState } from "react"
 import { useSelector } from "react-redux"
 import { AlbumsListing } from "./components/AlbumsListing"
 import { TrackListing } from "./components/TrackListing"
-import { Col, Row } from "./elements"
+import { Row } from "./elements"
 
 export function LibraryTracks() {
     const allTracks = useSelector(s => s.catalogue.tracks)
@@ -14,7 +14,7 @@ export function LibraryTracks() {
     const [view, setView] = useState("playlist" as "playlist" | "tracks")
     const ListComponent = view === "playlist" ? AlbumsListing : TrackListing
     return (
-        <Col>
+        <div>
             <Row className={css`padding-bottom: 25px; align-items: center; gap: 10px;`}>
                 <span>View:</span>
                 <select value={view} onChange={e => setView(e.target.value as any)}>
@@ -23,6 +23,6 @@ export function LibraryTracks() {
                 </select>
             </Row>
             <ListComponent trackIds={libraryTrackIds} />
-        </Col>
+        </div>
     )
 }

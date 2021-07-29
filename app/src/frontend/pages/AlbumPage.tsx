@@ -6,7 +6,7 @@ import { Link } from "react-router-dom"
 import { Album, Track } from "../../model"
 import { AlbumImage } from "../components/AlbumImage"
 import { TrackTable, TrackTableColumn, TrackTableHeader } from "../components/AlbumTrackTable"
-import { Col, Heading, Row } from "../elements"
+import { Heading, Row } from "../elements"
 import { resolveCanonical } from "../state/catalogue"
 import { buildAudioQueue } from "../state/queue"
 import { colors } from "../styles"
@@ -36,7 +36,7 @@ export function AlbumPage(props: { albumId: string }) {
 function AlbumDetail(props: AlbumProps) {
     const tableCols: TrackTableColumn[] = ["#", "title", "artist", "duration"]
     return (
-        <Col className={css`flex: 1;`}>
+        <div className={css`flex: 1;`}>
             <AlbumTitle title={props.album.title} />
             <AlbumArtist />
             <TrackTableHeader cols={tableCols} />
@@ -50,17 +50,17 @@ function AlbumDetail(props: AlbumProps) {
                     )
                 }
             />
-        </Col>
+        </div>
     )
 }
 
 function AlbumSummary(props: AlbumProps) {
     return (
-        <Col className={css`flex: 0 0 400px;`}>
+        <div className={css`flex: 0 0 400px;`}>
             <AlbumImage album={props.album} size={250} />
             <AlbumStats tracks={props.tracks} />
             <AlbumBlurb />
-        </Col>
+        </div>
     )
 }
 
