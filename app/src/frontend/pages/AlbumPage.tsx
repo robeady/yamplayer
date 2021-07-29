@@ -1,5 +1,5 @@
 import { css } from "linaria"
-import { sumBy } from "lodash"
+import { sortBy, sumBy } from "lodash"
 import React from "react"
 import { useSelector } from "react-redux"
 import { Link } from "react-router-dom"
@@ -21,8 +21,11 @@ export function AlbumPage(props: { albumId: string }) {
     const album = useSelector(s => resolveCanonical(s.catalogue.albums, props.albumId))
     // const artist = useSelector(s => resolveCanonical(s.catalogue.artists, album.))
     const tracks = useSelector(s =>
-        Object.values(s.catalogue.tracks).filter(
-            (t): t is Track => typeof t !== "string" && t.albumId === props.albumId,
+        sortBy(
+            Object.values(s.catalogue.tracks).filter(
+                (t): t is Track => typeof t !== "string" && t.albumId === props.albumId,
+            ),
+            t => t.trackNumber,
         ),
     )
     return (
