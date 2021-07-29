@@ -80,12 +80,10 @@ function AlbumStats(props: { tracks: Track[] }) {
 function AlbumBlurb() {
     return (
         <p className={css`font-size: 14px;`}>
-            Back to Black is the second and final studio album by English singer and songwriter Amy Winehouse,
-            released on 27 October 2006 by Island Records. Winehouse predominantly based the album on her
-            tumultuous relationship with then-ex-boyfriend and future husband Blake Fielder-Civil, who
-            temporarily left her to pursue his previous ex-girlfriend. Their short-lived separation spurred
-            her to create an album that explores themes of guilt, grief, infidelity and heartbreak in a
-            relationship.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
+            labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+            nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit
+            esse cillum dolore eu fugiat nulla pariatur
         </p>
     )
 }
