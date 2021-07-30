@@ -24,7 +24,7 @@ export function TrackRating(props: {
                     // TODO: find a better component. this one is not controlled so if onRate fails it's not possible to alter the rating
                     initialRating={(props.rating ?? 0) * 5}
                     onChange={newRating => props.onRate(newRating / 5)}
-                    emptySymbol={<CroppedStar className={css`fill: hsla(0, 0%, 50%, 20%);`} />}
+                    emptySymbol={<CroppedStar className={css`fill: white;`} />}
                     fullSymbol={
                         <CroppedStar
                             className={css`
