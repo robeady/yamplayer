@@ -1,4 +1,5 @@
 import { parse } from "plist"
+import { isNotUndefined } from "../../util"
 import { isoToTimestamp } from "../../util/time"
 import { Fraction, Timestamp } from "../../util/types"
 
@@ -34,20 +35,24 @@ export function parseItunesLibraryXml(xmlContents: string): ItunesLibraryContent
     // Genre
     // Kind
     const parsed = parse(xmlContents) as any
-    const tracks = Object.entries(parsed.Tracks).map(([, data]: [string, any]) => {
-        const result: ItunesTrack = {
-            id: data["Track ID"],
-            title: data.Name,
-            artistName: data.Artist,
-            albumName: data.Album,
-            albumArtist: data["Album Artist"],
-            durationSecs: "Total Time" in data ? data["Total Time"] / 1000 : undefined,
-            rating: "Rating" in data && !data["Rating Computed"] ? data.Rating / 100 : undefined,
-            playCount: data["Play Count"],
-            dateAdded: "Date Added" in data ? isoToTimestamp(data["Date Added"]) : undefined,
-        }
-        return result
-    })
+    const tracks = Object.entries(parsed.Tracks)
+        .map(([, data]: [string, any]) => {
+            const result: ItunesTrack = {
+                id: data["Track ID"],
+                title: data.Name,
+                artistName: data.Artist,
+                albumName: data.Album,
+                albumArtist: data["Album Artist"],
+                durationSecs: "Total Time" in data ? data["Total Time"] / 1000 : undefined,
+                rating: "Rating" in data && !data["Rating Computed"] ? data.Rating / 100 : undefined,
+                playCount: data["Play Count"],
+                dateAdded: "Date Added" in data ? isoToTimestamp(data["Date Added"]) : undefined,
+            }
+            // filter out apple music garbage
+            if (!(result.playCount ?? 0) && data["Playlist Only"]) return undefined
+            return result
+        })
+        .filter(isNotUndefined)
     const playlists = Object.entries(parsed.Playlists)
         .map(([, data]: [string, any]) => {
             const name = data.Name as string
