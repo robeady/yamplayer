@@ -17,7 +17,7 @@
     },
     "dependencies": {
         "@popperjs/core": "^2.9.2",
-        "@reduxjs/toolkit": "^1.5.0",
+        "@reduxjs/toolkit": "^1.6.1",
         "@types/plist": "^3.0.2",
         "@types/sqlstring": "^2.2.1",
         "axios": "^0.19.2",
@@ -62,7 +62,7 @@
         "@types/lodash": "^4.14.108",
         "@types/react": "^16.9.19",
         "@types/react-dom": "^16.9.5",
-        "@types/react-redux": "^7.1.16",
+        "@types/react-redux": "^7.1.18",
         "@types/react-router-dom": "^5.1.5",
         "@types/react-slider": "^1.0.0",
         "@types/tough-cookie": "^2.3.6",
