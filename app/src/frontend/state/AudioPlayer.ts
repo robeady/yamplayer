@@ -77,7 +77,7 @@ export class AudioPlayer {
 
     /** Skips to the next track in the queue */
     skipNext() {
-        this.unloadHowlThenPlayNext()
+        this.playNextFromQueue()
     }
 
     /** Gets the position in seconds from the start of the current track, or null if nothing is playing */
@@ -133,18 +133,14 @@ export class AudioPlayer {
             // hmm. when skipping a playing song (and calling howl.unload) we often seem to get onloaderror messages of the form 'Decoding audio data failed.'
             onloaderror: (id, e) => console.error(e),
             onplayerror: (id, e) => console.error(e),
-            onend: () => this.unloadHowlThenPlayNext(),
+            onend: () => this.playNextFromQueue(),
         })
         return howl
     }
 
-    private unloadHowlThenPlayNext() {
+    private playNextFromQueue() {
         this.howl?.unload()
         this.howl = null
-        this.playNextFromQueue()
-    }
-
-    private playNextFromQueue() {
         const nextTrackId = this.queue.next.shift()
         this.queue.current = nextTrackId ?? null
         this.emitEvent(player.queueChanged(this.copyOfQueue()))
