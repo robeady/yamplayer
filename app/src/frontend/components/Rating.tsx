@@ -28,9 +28,9 @@ export function TrackRating(props: {
                     fullSymbol={
                         <CroppedStar
                             className={css`
-                                fill: hsla(0, 0%, 50%, 55%);
+                                fill: ${colors.gray3};
                                 .${rating}:hover & {
-                                    fill: ${colors.purple4};
+                                    fill: ${colors.purple5};
                                 }
                             `}
                         />

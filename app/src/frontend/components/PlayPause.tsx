@@ -21,7 +21,7 @@ export function PlayPauseButton(props: { icon: "play" | "pause"; size: number; o
                 color: white;
                 line-height: 0;
                 &:hover {
-                    background: ${colors.purple4};
+                    background: ${colors.purple6};
                 }
             `}
             onClick={props.onClick}>

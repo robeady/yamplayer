@@ -39,24 +39,24 @@ const tailwindCoolGrey = {
 }
 
 const purples = {
-    /** Primary text hover */
-    purple2: "hsl(280, 75%, 40%)",
-    /** Primary text */
-    purple3: "hsl(280, 75%, 50%)",
-    /** Primary hover */
-    purple4: "hsl(280, 75%, 55%)",
+    /** Selected row */
+    purple1: "hsl(280, 50%, 93%)",
+    /** Selected row hover */
+    purple2: "hsl(280, 50%, 88%)",
     /** Primary */
     purple5: "hsl(280, 75%, 65%)",
-    /** Selected row hover */
-    purple8: "hsl(280, 50%, 88%)",
-    /** Selected row */
-    purple9: "hsl(280, 50%, 93%)",
+    /** Primary hover */
+    purple6: "hsl(280, 75%, 55%)",
+    /** Primary text */
+    purple7: "hsl(280, 75%, 50%)",
+    /** Primary text hover */
+    purple8: "hsl(280, 75%, 40%)",
 }
 
 export const colors = {
     ...tailwindCoolGrey,
     ...purples,
-    link: purples.purple3,
+    link: purples.purple7,
 }
 
 export const shadows = {

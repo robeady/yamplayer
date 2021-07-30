@@ -81,15 +81,15 @@ function NavItem(props: { link: string; text: string }) {
                 border-left: 5px solid transparent;
             `}
             activeClassName={css`
-                color: ${colors.purple3};
+                color: ${colors.purple7};
                 border-color: ${colors.purple5};
                 svg {
                     color: ${colors.purple5};
                 }
                 &:hover {
-                    color: ${colors.purple2};
+                    color: ${colors.purple8};
                     svg {
-                        color: ${colors.purple4};
+                        color: ${colors.purple6};
                     }
                 }
             `}>

@@ -23,14 +23,14 @@ const classNameIfEnabled = css`
         background: ${colors.purple5};
     }
     &:hover .${trackClassName}-0, &:active .${trackClassName}-0 {
-        background: ${colors.purple4};
+        background: ${colors.purple6};
     }
 `
 const thumbClassName = css`
     background: ${colors.purple5};
     .${classNameIfEnabled}:hover &,
     .${classNameIfEnabled}:active & {
-        background: ${colors.purple4};
+        background: ${colors.purple6};
     }
     padding: 7px;
     border-radius: 50%;

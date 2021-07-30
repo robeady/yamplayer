@@ -137,9 +137,9 @@ const TrackFlex = styled.div`
 `
 
 const SelectedTrackFlex = styled(TrackFlex)`
-    background: ${colors.purple9};
+    background: ${colors.purple1};
     &:hover {
-        background: ${colors.purple8};
+        background: ${colors.purple2};
     }
 `
 const TableCol = styled.div`padding-right: 20px;`
