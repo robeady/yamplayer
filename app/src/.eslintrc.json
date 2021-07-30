@@ -26,6 +26,11 @@
         "prettier"
     ],
     "rules": {
+        // the general idea here is to turn on as many things as practical,
+        // but to set severity to 'warn' for issues that appear for incomplete code
+        // then in the editor I run eslint in quiet mode to hide these
+        // ideally there'd be a way to show these warnings after code is wrtitten but I haven't found one yet...
+        //
         // === disabling non-recommended vanilla eslint rules ====
         // TODO: proper logging library should allow us to restore this
         "no-console": "off",
@@ -63,6 +68,8 @@
         "no-await-in-loop": "off",
         "consistent-return": "off",
         "default-case": "off",
+        "class-methods-use-this": "warn",
+        "no-continue": "off",
 
         // === disabling ts rules ===
         "@typescript-eslint/explicit-function-return-type": "off",
@@ -118,6 +125,8 @@
         "react/destructuring-assignment": "off",
         "react/require-default-props": "off",
         "react/jsx-max-depth": "off",
+
+        "react-hooks/exhaustive-deps": "error",
 
         // === disabling unicorn rules ===
         // TODO: maybe restore this later because it'll help avoid index undefined ts errors

@@ -122,7 +122,7 @@ function ProgressBar() {
     const duration = useSelector(s =>
         s.player.queue.current === null
             ? null
-            : resolveCanonical(s.catalogue.tracks, s.player.queue.current).durationSecs,
+            : resolveCanonical(s.catalogue.tracks, s.player.queue.current)?.durationSecs,
     )
     const refreshIntervalMillis = 500
 

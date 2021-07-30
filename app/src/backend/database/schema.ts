@@ -31,7 +31,8 @@ const migration0: DatabaseMigration = {
         externalId VARCHAR(50) NOT NULL,
         title VARCHAR(255) NOT NULL,
         coverImageUrl VARCHAR(2000),
-        releaseDate VARCHAR(10)
+        releaseDate VARCHAR(10),
+        numTracks SMALLINT
     );
 
     CREATE TABLE artist (

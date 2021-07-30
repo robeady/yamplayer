@@ -1,4 +1,4 @@
-import { forEach } from "lodash"
+import { forEach, keyBy } from "lodash"
 import {
     Album,
     Artist,
@@ -70,6 +70,51 @@ export class Explorer {
 
     async getLibrary(): Promise<LibraryContents> {
         return this.library.list()
+    }
+
+    async getAlbum(albumId: string): Promise<{ album: Album; tracks: Track[] }> {
+        if (albumId.includes(":")) {
+            const external = await this.service.lookupAlbumAndTracks(albumId)
+            const [internal] = await this.library.matchAlbums([albumId])
+            const internalTracks = keyBy(
+                await this.library.matchTracks(external.tracks.map(t => t.externalId)),
+                t => t.externalId,
+            )
+            return {
+                album: {
+                    ...external.album,
+                    catalogueId: internal?.catalogueId ?? null,
+                    cataloguedTimestamp: internal?.cataloguedTimestamp ?? null,
+                },
+                tracks: external.tracks.map(t => ({
+                    ...t,
+                    ...internalTracks[t.externalId],
+                    // ugh, we need explicit nulls for these if there was no internal track that matched
+                    catalogueId: internalTracks[t.externalId]?.catalogueId ?? null,
+                    cataloguedTimestamp: internalTracks[t.externalId]?.cataloguedTimestamp ?? null,
+                    savedTimestamp: internalTracks[t.externalId]?.savedTimestamp ?? null,
+                })),
+            }
+        } else {
+            const internal = await this.library.getAlbumAndTracks(albumId)
+            // there might be more tracks in the album not in our library
+            // TODO: maybe we should store the number of tracks & discs in the album table
+            // so we don't always have to do an external lookup
+            const external = await this.service.lookupAlbumAndTracks(internal.album.externalId)
+            // we don't update the internal tracks with external information here. could this lead to weird inconsistencies?
+            const combinedTracks: Track[] = [
+                ...internal.tracks,
+                ...external.tracks
+                    .filter(et => !internal.tracks.some(it => it.externalId === et.externalId))
+                    .map(et => ({
+                        ...et,
+                        catalogueId: null,
+                        cataloguedTimestamp: null,
+                        savedTimestamp: null,
+                    })),
+            ]
+            return { album: internal.album, tracks: combinedTracks }
+        }
     }
 
     async searchTracks(query: string): Promise<MatchedSearchResults> {

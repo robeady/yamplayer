@@ -43,8 +43,10 @@ function setupStore() {
     })
     audioPlayer = new AudioPlayer(
         0.2,
-        async trackId =>
-            loadTrackData(explorer, resolveCanonical(store.getState().catalogue.tracks, trackId)),
+        trackId => {
+            const track = resolveCanonical(store.getState().catalogue.tracks, trackId)
+            return track && loadTrackData(explorer, track)
+        },
         store.dispatch,
     )
     return store

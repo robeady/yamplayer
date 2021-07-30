@@ -1,6 +1,13 @@
 import { mapValues, size } from "lodash"
 import { Dict } from "../../../util/types"
-import { ColumnDefinition, Origin, RealTableOrigin, SubqueryOrigin, TableDefinition } from "./definitions"
+import {
+    ColumnDefinition,
+    Origin,
+    RealTableOrigin,
+    SubqueryOrigin,
+    TableDefinition,
+    TableDefinitions,
+} from "./definitions"
 import { SqlDialect } from "./dialect"
 import { DslMisuseError, Todo as TodoError } from "./errors"
 import {
@@ -10,13 +17,11 @@ import {
     ExecResult,
     InsertStage,
     InsertTypeFor,
-    KeyByAlias,
     OnStage,
     OrderStage,
     QueriedTablesFromSingle,
     RowTypeFrom,
     SelectionFrom,
-    TableDefinitions,
 } from "./stages"
 import { COLUMN_DEFINITION, RAW_SQL } from "./symbols"
 
@@ -88,7 +93,7 @@ type SqlOperator = typeof sqlOperators[number]
 
 type Expression = { type: "literal"; literal: unknown } | { type: "column"; definition: ColumnDefinition }
 
-type JoinType = "inner"
+type JoinType = "inner" | "left" | "right"
 
 interface JoinInfo {
     joinedTablesByAlias: Record<string, [JoinType, TableDefinition]>
@@ -188,11 +193,13 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         )
     }
 
-    join = (_otherTable: TableDefinition) => {
-        throw new Error("TODO: support auto joins")
-    }
+    innerJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) => this.join(otherTable, "inner")
 
-    innerJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) => {
+    leftJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) => this.join(otherTable, "left")
+
+    rightJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) => this.join(otherTable, "right")
+
+    private join = <OtherTable extends TableDefinition>(otherTable: OtherTable, joinType: JoinType) => {
         const columns = Object.values(otherTable)
         if (columns.length === 0) {
             throw new Error("joined table has zero columns")
@@ -204,15 +211,12 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
         if (tableAlias in this.state.joinedTablesByAlias) {
             throw new Error("joined table has same alias as another joined table")
         }
-        return new StageBackend<
-            QueriedTables & KeyByAlias<OtherTable>,
-            QueriedTables & KeyByAlias<OtherTable>
-        >(
+        return new StageBackend<any, any>(
             {
                 ...this.state,
                 joinedTablesByAlias: {
                     ...this.state.joinedTablesByAlias,
-                    [tableAlias]: ["inner", otherTable],
+                    [tableAlias]: [joinType, otherTable],
                 },
                 currentlyJoiningAgainstAlias: tableAlias,
                 // clear some params explicitly (although they shouldn't be set) so the types work out
@@ -368,7 +372,14 @@ class MultiTableStageImpl<QueriedTables extends TableDefinitions> implements OnS
     ) => new MultiTableStageImpl<QueriedTables>(f(...args))
 
     innerJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) =>
-        new MultiTableStageImpl(this.backend.innerJoin<OtherTable>(otherTable))
+        new MultiTableStageImpl(this.backend.innerJoin<OtherTable>(otherTable)) as any
+
+    leftJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) =>
+        new MultiTableStageImpl(this.backend.leftJoin<OtherTable>(otherTable)) as any
+
+    rightJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) =>
+        new MultiTableStageImpl(this.backend.rightJoin<OtherTable>(otherTable)) as any
+
     on = this.attach(this.backend.on)
     where = this.attach(this.backend.where)
     and = this.attach(this.backend.and)
@@ -404,7 +415,14 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
     or = this.attach(this.backend.or)
 
     innerJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) =>
-        new MultiTableStageImpl(this.backend.innerJoin<OtherTable>(otherTable))
+        new MultiTableStageImpl(this.backend.innerJoin<OtherTable>(otherTable)) as any
+
+    leftJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) =>
+        new MultiTableStageImpl(this.backend.leftJoin<OtherTable>(otherTable)) as any
+
+    rightJoin = <OtherTable extends TableDefinition>(otherTable: OtherTable) =>
+        new MultiTableStageImpl(this.backend.rightJoin<OtherTable>(otherTable)) as any
+
     orderBy = this.attach(this.backend.orderBy)
     thenBy = this.attach(this.backend.thenBy)
     limit: any = this.attach(this.backend.limit)
@@ -727,6 +745,10 @@ function joinTypeSql(joinType: JoinType): string {
     switch (joinType) {
         case "inner":
             return "INNER JOIN"
+        case "left":
+            return "LEFT JOIN"
+        case "right":
+            return "RIGHT JOIN"
         default:
             unreachable(joinType)
     }

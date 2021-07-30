@@ -50,6 +50,7 @@ test("fetch search results", async () => {
         coverImageUrl:
             "https://cdns-images.dzcdn.net/images/cover/4d00a7848dc8af475973ff1761ad828d/250x250-000000-80-0-0.jpg",
         releaseDate: null,
+        numTracks: null,
     })
     expect(results.artists["dz:13"]).toStrictEqual({
         externalId: "dz:13",
@@ -82,6 +83,7 @@ test("fetch album", async () => {
         releaseDate: "2001-03-07",
         coverImageUrl:
             "https://e-cdns-images.dzcdn.net/images/cover/2e018122cb56986277102d2041a592c8/250x250-000000-80-0-0.jpg",
+        numTracks: 14,
     })
 })
 

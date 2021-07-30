@@ -56,6 +56,7 @@ const purples = {
 export const colors = {
     ...tailwindCoolGrey,
     ...purples,
+    link: purples.purple3,
 }
 
 export const shadows = {

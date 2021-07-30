@@ -9,6 +9,7 @@ interface CatalogueState {
     albums: Dict<Album | string>
     artists: Dict<Artist | string>
     playlists: Dict<Playlist>
+    libraryLoaded: boolean
 }
 
 const initialState: CatalogueState = {
@@ -17,10 +18,12 @@ const initialState: CatalogueState = {
     albums: {},
     artists: {},
     playlists: {},
+    libraryLoaded: false,
 }
 
 export const catalogueThunks = curriedAsyncThunks({
     getLibrary: api => api.extra.explorer.getLibrary,
+    getAlbum: api => api.extra.explorer.getAlbum,
     addToLibrary: api => api.extra.explorer.addTrack,
     unsaveTrack: api => api.extra.explorer.unsave,
     setTrackRating: api => api.extra.explorer.setTrackRating,
@@ -42,10 +45,28 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
     reducers: {},
     extraReducers: builder =>
         builder
-            .addCase(catalogueThunks.getLibrary.fulfilled, (state, { payload }) =>
-                // TODO: should we be populating external ID pointers too?
-                ({ ...state, ...payload }),
+            .addCase(
+                catalogueThunks.getLibrary.fulfilled,
+                (state, { payload }): CatalogueState =>
+                    // TODO: should we be populating external ID pointers too?
+                    ({ ...state, ...payload, libraryLoaded: true }),
             )
+            .addCase(catalogueThunks.getAlbum.fulfilled, (state, { payload: { album, tracks } }) => {
+                if (album.catalogueId === null) {
+                    state.albums[album.externalId] = album
+                } else {
+                    state.albums[album.catalogueId] = album
+                    state.albums[album.externalId] = album.catalogueId
+                }
+                for (const track of tracks) {
+                    if (track.catalogueId === null) {
+                        state.tracks[track.externalId] = track
+                    } else {
+                        state.tracks[track.catalogueId] = track
+                        state.tracks[track.externalId] = track.catalogueId
+                    }
+                }
+            })
             .addCase(
                 catalogueThunks.addToLibrary.fulfilled,
                 (state, { payload: { track, album, artist } }) => {
@@ -85,13 +106,13 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
             }),
 })
 
-export function resolveCanonical<T>(dict: Dict<T | string>, id: string): T {
+export function resolveCanonical<T>(dict: Dict<T | string>, id: string): T | undefined {
     let r: string | T = id
     while (typeof r === "string") {
         // TODO: handle cycles
         const next: string | undefined | T = dict[r]
         if (next === undefined) {
-            throw new Error(`${r} not found when resolving id ${id}`)
+            return undefined
         }
         r = next
     }

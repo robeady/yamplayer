@@ -23,6 +23,7 @@ function assembleRows(trackIds: string[], allTracks: Dict<string | Track>) {
     const rows: AlbumRowData[] = []
     for (const trackId of trackIds) {
         const canonicalTrack = resolveCanonical(allTracks, trackId)
+        if (canonicalTrack === undefined) continue
         if (canonicalTrack.albumId === lastAlbumId) {
             // append to the last row
             rows[rows.length - 1]!.tracks.push(canonicalTrack)
@@ -86,9 +87,13 @@ function AlbumRow(props: {
     buildTrackQueue: (fromTrackId: string) => AudioQueue
 }) {
     const fullSizeThreshold = 9
-    const album = useSelector(s => resolveCanonical(s.catalogue.albums, props.albumId))
-    const artist = useSelector(s =>
-        resolveCanonical(s.catalogue.artists, props.tracks[0]!.artistId /* TODO: get album primary artist */),
+    const album = useSelector(s => resolveCanonical(s.catalogue.albums, props.albumId)!)
+    const artist = useSelector(
+        s =>
+            resolveCanonical(
+                s.catalogue.artists,
+                props.tracks[0]!.artistId /* TODO: get album primary artist */,
+            )!,
     )
     const { show } = useDropdownMenu()
 

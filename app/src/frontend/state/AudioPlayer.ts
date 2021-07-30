@@ -17,7 +17,7 @@ export class AudioPlayer {
 
     constructor(
         initialVolume: number,
-        private loadTrack: (trackId: string) => Promise<Uint8Array>,
+        private loadTrack: (trackId: string) => Promise<Uint8Array> | undefined,
         private emitEvent: (action: PlayerAction) => void,
     ) {
         this.volume = initialVolume
@@ -153,22 +153,29 @@ export class AudioPlayer {
         } else {
             const load = ++this.load
             this.emitEvent(player.playbackLoading())
-            this.loadTrack(nextTrackId)
-                .then(trackData => {
-                    if (this.load === load) {
-                        this.howl = this.createHowlAndPlay(trackData)
-                        this.emitEvent(
-                            player.playbackResumed({
-                                sinceMillis: performance.now(),
-                                positionAtTimestamp: 0,
-                            }),
-                        )
-                    }
-                })
-                .catch(error => {
-                    console.error(`error loading track ${nextTrackId}: ${error}`)
-                    this.playNextFromQueue()
-                })
+            const promise = this.loadTrack(nextTrackId)
+            if (promise === undefined) {
+                // unavailable, skip next
+                console.error(`error loading track ${nextTrackId}: unknown track`)
+                this.playNextFromQueue()
+            } else {
+                promise
+                    .then(trackData => {
+                        if (this.load === load) {
+                            this.howl = this.createHowlAndPlay(trackData)
+                            this.emitEvent(
+                                player.playbackResumed({
+                                    sinceMillis: performance.now(),
+                                    positionAtTimestamp: 0,
+                                }),
+                            )
+                        }
+                    })
+                    .catch(error => {
+                        console.error(`error loading track ${nextTrackId}: ${error}`)
+                        this.playNextFromQueue()
+                    })
+            }
         }
     }
 

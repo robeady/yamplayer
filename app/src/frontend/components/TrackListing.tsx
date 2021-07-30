@@ -4,6 +4,7 @@ import React from "react"
 import Rating from "react-rating"
 import { useDispatch, useSelector } from "react-redux"
 import { Album, Track } from "../../model"
+import { isNotUndefined } from "../../util"
 import PlayArrow from "../icons/play_arrow.svg"
 import Star from "../icons/star_rate.svg"
 import { audio, catalogue } from "../state/actions"
@@ -14,12 +15,15 @@ export function TrackListing(props: { trackIds: string[] }) {
     const allAlbums = useSelector(s => s.catalogue.albums)
     const allArtists = useSelector(s => s.catalogue.artists)
     const dispatch = useDispatch()
-    const tracksToList = props.trackIds.map(trackId => {
-        const track = resolveCanonical(allTracks, trackId)
-        const artist = resolveCanonical(allArtists, track.artistId)
-        const album = resolveCanonical(allAlbums, track.albumId)
-        return { trackId, track, artist, album }
-    })
+    const tracksToList = props.trackIds
+        .map(trackId => {
+            const track = resolveCanonical(allTracks, trackId)
+            if (track === undefined) return undefined
+            const artist = resolveCanonical(allArtists, track.artistId)!
+            const album = resolveCanonical(allAlbums, track.albumId)!
+            return { trackId, track, artist, album }
+        })
+        .filter(isNotUndefined)
 
     return (
         <div className={css`font-size: 14px;`}>
@@ -156,7 +160,7 @@ function PlayCircle(props: { displayed: boolean; size: number }) {
 }
 
 function SaveButton(props: { trackId: string }) {
-    const track = useSelector(s => resolveCanonical(s.catalogue.tracks, props.trackId))
+    const track = useSelector(s => resolveCanonical(s.catalogue.tracks, props.trackId)!)
     const dispatch = useDispatch()
     return track.savedTimestamp === null ? (
         <button type="button" onClick={() => dispatch(catalogue.addToLibrary(track.externalId))}>

@@ -1,4 +1,13 @@
-import { ColumnDefinition, Origin, SqlType, SubqueryOrigin, TableDefinition } from "./definitions"
+import {
+    ColumnDefinition,
+    NullableTable,
+    NullableTables,
+    Origin,
+    SqlType,
+    SubqueryOrigin,
+    TableDefinition,
+    TableDefinitions,
+} from "./definitions"
 import { PHANTOM_INSTANCE } from "./symbols"
 
 export interface ExecResult {
@@ -77,10 +86,6 @@ type LiftPropsOf<QueriedTables> = {
     [TableAlias in keyof QueriedTables]: PropOf<QueriedTables[TableAlias]>
 }
 
-export type TableDefinitions = {
-    [TableAlias in string]: TableDefinition<Origin, TableAlias>
-}
-
 export type QueriedTablesFromSingle<QueriedTable extends TableDefinition> = Record<
     PropOf<QueriedTable>["tableAlias"],
     QueriedTable
@@ -118,7 +123,7 @@ export type InsertTypeFor<Table extends TableDefinition> = {
     }
 
 type ColumnsWithoutDefaultsIn<Table extends TableDefinition> = {
-    [ColumnName in keyof Table]: Table[ColumnName]["hasDefault"] extends false ? ColumnName : never
+    [ColumnName in keyof Table]: Table[ColumnName]["hasDefault"] extends true ? never : ColumnName
 }[keyof Table]
 
 export interface InsertStage<QueriedTable extends TableDefinition>
@@ -150,6 +155,28 @@ export interface JoinStage<QueriedTables extends TableDefinitions> {
     >(
         otherTable: OtherTable,
     ) => OnStage<QueriedTables & KeyByAlias<OtherTable>>
+
+    leftJoin: <
+        OtherTableOrigin extends Origin,
+        OtherTable extends TableDefinition<
+            OtherTableOrigin,
+            string,
+            Record<string, ColumnDefinition<OtherTableOrigin>>
+        >
+    >(
+        otherTable: OtherTable,
+    ) => OnStage<QueriedTables & KeyByAlias<NullableTable<OtherTable>>>
+
+    rightJoin: <
+        OtherTableOrigin extends Origin,
+        OtherTable extends TableDefinition<
+            OtherTableOrigin,
+            string,
+            Record<string, ColumnDefinition<OtherTableOrigin>>
+        >
+    >(
+        otherTable: OtherTable,
+    ) => OnStage<NullableTables<QueriedTables> & KeyByAlias<OtherTable>>
 }
 
 export interface FilteredStage<QueriedTables extends TableDefinitions>

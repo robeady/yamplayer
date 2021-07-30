@@ -6,5 +6,5 @@ export const string = col<string>()
 export const boolean = col<boolean>()
 
 function col<T>() {
-    return columnType(sqlType<T>(), false, undefined)
+    return columnType(sqlType<T>(), false as const, undefined)
 }

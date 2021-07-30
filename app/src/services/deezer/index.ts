@@ -3,6 +3,7 @@ import { setupCache } from "axios-cache-adapter"
 import Bottleneck from "bottleneck"
 import { ExternalAlbum, ExternalArtist, ExternalTrack, SearchResults } from "../../model"
 import { Dict } from "../../util/types"
+import { parseExternalId } from "../ids"
 import { Service, TrackSearchQuery } from "../index"
 import { FilesystemAxiosCache } from "./FilesystemAxiosCache"
 
@@ -12,6 +13,7 @@ type MaybeEntityNotFoundResponse = Partial<typeof import("./entityNotFoundRespon
 
 type TrackResponse = typeof import("./trackResponse.json") & MaybeEntityNotFoundResponse
 type AlbumResponse = typeof import("./albumResponse.json") & MaybeEntityNotFoundResponse
+type AlbumTracksResponse = typeof import("./albumTracksResponse.json") & MaybeEntityNotFoundResponse
 type ArtistResponse = typeof import("./artistResponse.json") & MaybeEntityNotFoundResponse
 
 export class DeezerApiClient implements Service {
@@ -63,12 +65,13 @@ export class DeezerApiClient implements Service {
     }
 
     async lookupTrack(id: string): Promise<ExternalTrack> {
-        const rawId = stripDeezerPrefix(id)
+        const rawId = parseExternalId(id, "dz")
         const response = await this.httpGet<TrackResponse>(`track/${rawId}`)
         if (response.data.error) {
             throw new Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
         }
         const track = response.data
+        // _KeepTrackParsingInSync_
         return {
             externalId: id,
             albumId: `dz:${track.album.id}`,
@@ -83,22 +86,60 @@ export class DeezerApiClient implements Service {
     }
 
     async lookupAlbum(id: string): Promise<ExternalAlbum> {
-        const rawId = stripDeezerPrefix(id)
+        const rawId = parseExternalId(id, "dz")
         const response = await this.httpGet<AlbumResponse>(`album/${rawId}`)
         if (response.data.error) {
             throw new Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
         }
         const album = response.data
         return {
+            // _KeepAlbumParsingInSync_
             externalId: id,
             title: album.title,
             coverImageUrl: album.cover_medium,
             releaseDate: album.release_date,
+            numTracks: album.nb_tracks,
+        }
+    }
+
+    async lookupAlbumAndTracks(id: string): Promise<{ album: ExternalAlbum; tracks: ExternalTrack[] }> {
+        const rawId = parseExternalId(id, "dz")
+        const [albumResponse, tracksResponse] = await Promise.all([
+            this.httpGet<AlbumResponse>(`album/${rawId}`),
+            this.httpGet<AlbumTracksResponse>(`album/${rawId}/tracks`),
+        ])
+        if (albumResponse.data.error || tracksResponse.data.error) {
+            throw new Error(`album ${id} not found: ${JSON.stringify(albumResponse.data.error)}`)
+        }
+
+        const album = albumResponse.data
+        const tracks = tracksResponse.data.data
+        return {
+            // _KeepAlbumParsingInSync_
+            album: {
+                externalId: id,
+                title: album.title,
+                coverImageUrl: album.cover_medium,
+                releaseDate: album.release_date,
+                numTracks: album.nb_tracks,
+            },
+            // _KeepTrackParsingInSync_
+            tracks: tracks.map(track => ({
+                externalId: `dz:${track.id}`,
+                albumId: id,
+                artistId: `dz:${track.artist.id}`,
+                title: track.title,
+                trackNumber: track.track_position,
+                discNumber: track.disk_number,
+                durationSecs: track.duration,
+                isrc: track.isrc || null, // never observed this to be absent but this seems a safe approach
+                rating: null,
+            })),
         }
     }
 
     async lookupArtist(id: string): Promise<ExternalArtist> {
-        const rawId = stripDeezerPrefix(id)
+        const rawId = parseExternalId(id, "dz")
         const response = await this.httpGet<ArtistResponse>(`artist/${rawId}`)
         if (response.data.error) {
             throw new Error(`artist ${id} not found: ${JSON.stringify(response.data.error)}`)
@@ -151,6 +192,7 @@ export class DeezerApiClient implements Service {
                 title: item.album.title,
                 coverImageUrl: item.album.cover_medium,
                 releaseDate: null,
+                numTracks: null,
             }
             artists[externalArtistId] = {
                 externalId: externalArtistId,
@@ -183,12 +225,4 @@ function buildSearchQuery(query: TrackSearchQuery): string {
     return Object.entries(query)
         .map(([k, v]) => `${(deezerSearchQueryNameMap as any)[k]}:${JSON.stringify(v)}`)
         .join(" ")
-}
-
-function stripDeezerPrefix(id: string) {
-    if (id.startsWith("dz:")) {
-        return id.slice(3)
-    } else {
-        throw new Error(id + " is not a deezer ID")
-    }
 }

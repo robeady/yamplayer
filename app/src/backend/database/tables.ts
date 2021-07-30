@@ -22,6 +22,7 @@ export const album = table("album", {
     title: string,
     coverImageUrl: string.orNull(),
     releaseDate: string.orNull(),
+    numTracks: number.orNull(),
 })
 
 export const artist = table("artist", {

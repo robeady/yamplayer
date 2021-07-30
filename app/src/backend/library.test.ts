@@ -51,6 +51,7 @@ describe("library store tests", () => {
             title: "2",
             coverImageUrl: "2",
             releaseDate: "2",
+            numTracks: 1,
         })
         const track = await library.addTrack({
             externalId: "1",
@@ -90,6 +91,7 @@ describe("library store tests", () => {
                     title: "2",
                     coverImageUrl: "2",
                     releaseDate: "2",
+                    numTracks: 1,
                 },
             },
             artists: {

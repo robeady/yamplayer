@@ -51,6 +51,7 @@ export interface ExternalAlbum {
     title: string
     coverImageUrl: string | null
     releaseDate: string | null
+    numTracks: Int | null
 }
 
 export interface CataloguedArtist extends Artist {

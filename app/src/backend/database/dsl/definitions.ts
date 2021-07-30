@@ -7,7 +7,7 @@ interface ColumnType<T, HasDefault, References> extends ColumnDetails<T, HasDefa
      *
      * Although SQL lets you omit NULL column values from INSERT statements, using NULL as the default value
      * even if you didn't specify this when creating the table, this library requires you to opt in to this
-     * behaviour by calling hasDefault(), because it may be desirable to require code to explicitly set
+     * behaviour by calling withDefault(), because it may be desirable to require code to explicitly set
      * nullable fields to null.
      */
     orNull: () => ColumnType<T | null, HasDefault, References>
@@ -64,6 +64,10 @@ export interface SubqueryOrigin {
     render: () => { sql: string }
 }
 
+export type TableDefinitions = {
+    [TableAlias in string]: TableDefinition<Origin, TableAlias>
+}
+
 export type TableDefinition<
     TableOrigin extends Origin = Origin,
     TableAlias extends string = string,
@@ -73,6 +77,32 @@ export type TableDefinition<
         [ColumnName in string]: ColumnDefinition<TableOrigin, unknown, boolean, TableAlias, ColumnName>
     }
 > = Columns
+
+export type NullColumn<C extends ColumnDefinition> = C extends ColumnDefinition<
+    infer O,
+    infer T,
+    infer H,
+    infer A,
+    infer N
+>
+    ? ColumnDefinition<O, null, H, A, N>
+    : never
+
+/** After a left join, the right table becomes nullable */
+export type NullableTable<T extends TableDefinition> =
+    | T
+    | {
+          [ColumnName in keyof T]: NullColumn<T[ColumnName]>
+      }
+
+/** After a right join, all the tables on the left become nullable */
+export type NullableTables<T extends TableDefinitions> =
+    | T
+    | {
+          [TableAlias in keyof T]: {
+              [ColumnName in keyof T[TableAlias]]: NullColumn<T[TableAlias][ColumnName]>
+          }
+      }
 
 export interface ColumnDefinition<
     TableOrigin extends Origin = Origin,

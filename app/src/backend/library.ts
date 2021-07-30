@@ -88,6 +88,21 @@ export class LibraryStore {
         )
     }
 
+    async getAlbumAndTracks(catalogueId: string) {
+        const { album, track } = tables
+        const r = await this.query(album)
+            .leftJoin(track)
+            .on(track.albumId, "=", album.id)
+            .where(album.id, "=", parseCatalogueId(catalogueId))
+            .fetch()
+        return {
+            album: mapAlbum(r[0]!.album),
+            tracks: r
+                .map(r => (r.track.id === null ? null : mapTrack(r.track)))
+                .filter((t): t is CataloguedTrack => t !== null),
+        }
+    }
+
     async getArtist(catalogueId: string) {
         return mapArtist(
             await this.query(tables.artist)
@@ -148,6 +163,7 @@ export class LibraryStore {
                 coverImageUrl: externalAlbum.coverImageUrl,
                 releaseDate: externalAlbum.releaseDate,
                 externalId: externalAlbum.externalId,
+                numTracks: externalAlbum.numTracks,
             })
             .execute()
 
@@ -178,6 +194,7 @@ export class LibraryStore {
               ).map(element => mapTrack(element))
     }
 
+    /** No order guarantee */
     async matchAlbums(externalAlbumIds: string[]): Promise<CataloguedAlbum[]> {
         return externalAlbumIds.length === 0
             ? []
@@ -224,6 +241,7 @@ function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): CataloguedA
         coverImageUrl: albumFromDb.coverImageUrl,
         releaseDate: albumFromDb.releaseDate,
         cataloguedTimestamp: extractTimestamp(albumFromDb.id),
+        numTracks: albumFromDb.numTracks,
     }
 }
 
