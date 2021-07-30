@@ -28,7 +28,7 @@ const tailwindCoolGrey = {
     gray3: "#D1D5DB",
     /** Icons next to secondary text */
     gray4: "#9CA3AF",
-    /** Filled standalone icons */
+    /** Filled standalone icons, even less important text */
     gray5: "#6B7280",
     /** Secondary text, unfilled standalone icons */
     gray6: "#4B5563",

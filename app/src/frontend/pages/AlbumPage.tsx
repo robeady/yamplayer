@@ -8,6 +8,7 @@ import { AlbumImage } from "../components/AlbumImage"
 import { TrackTable, TrackTableColumn, TrackTableHeader } from "../components/AlbumTrackTable"
 import { Heading, Row } from "../elements"
 import { LinkButton } from "../elements/LinkButton"
+import { plural } from "../elements/plural"
 import { catalogue } from "../state/actions"
 import { resolveCanonical } from "../state/catalogue"
 import { buildAudioQueue } from "../state/queue"
@@ -105,7 +106,7 @@ function WholeAlbumToggle(props: { showingAllTracks: boolean; setShowingAllTrack
 
 function AlbumSummary(props: AlbumProps) {
     return (
-        <div className={css`flex: 0 0 400px;`}>
+        <div className={css`flex: 0 0 300px; padding-right: 50px;`}>
             <AlbumImage album={props.album} size={250} />
             <AlbumStats tracks={props.tracks} />
             <AlbumBlurb />
@@ -117,8 +118,8 @@ function AlbumStats(props: { tracks: Track[] }) {
     const numTracks = props.tracks.length
     const totalMinutes = Math.ceil(sumBy(props.tracks, t => t.durationSecs / 60))
     return (
-        <div className={css`color: ${colors.gray6};`}>
-            {numTracks} tracks, {totalMinutes} minutes.
+        <div className={css`color: ${colors.gray5}; padding-top: 16px;`}>
+            {numTracks} {plural(numTracks, "track")}, {totalMinutes} {plural(totalMinutes, "minute")}.
         </div>
     )
 }
@@ -138,5 +139,9 @@ function AlbumTitle(props: { title: string }) {
     return <Heading>{props.title}</Heading>
 }
 function AlbumArtist() {
-    return <Link to={`/library/artist/{"catalogueId"}`}>Some Body</Link>
+    return (
+        <div className={css`padding-bottom: 16px;`}>
+            <Link to={`/library/artist/{"catalogueId"}`}>Some Body</Link>
+        </div>
+    )
 }
