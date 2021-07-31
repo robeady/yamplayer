@@ -11,7 +11,7 @@ import { resolveCanonical } from "../state/catalogue"
 import { AudioQueue, buildAudioQueue } from "../state/queue"
 import { colors, fontSizes } from "../styles"
 import { AlbumImage } from "./AlbumImage"
-import { TrackTable, TrackTableColumn, TrackTableHeader } from "./AlbumTrackTable"
+import { StickyTrackTableHeader, TrackTable, TrackTableColumn, TrackTableHeadings } from "./AlbumTrackTable"
 
 interface AlbumRowData {
     tracks: Track[]
@@ -53,14 +53,14 @@ export function AlbumsListing(props: { trackIds: string[] }) {
     const rows = useMemo(() => assembleRows(props.trackIds, allTracks), [allTracks, props.trackIds])
     return (
         <div>
-            <Row>
+            <StickyTrackTableHeader>
                 <Subheading className={css`width: ${albumArtistColWidth};`}>
                     <Row className={css`height: 30px;`}>
-                        <AlbumArtistCol>Artist / Album</AlbumArtistCol>
+                        <AlbumArtistCol>Album / Artist</AlbumArtistCol>
                     </Row>
                 </Subheading>
-                <TrackTableHeader cols={tableCols} />
-            </Row>
+                <TrackTableHeadings cols={tableCols} />
+            </StickyTrackTableHeader>
 
             {rows.map(({ tracks, albumId }, i) => (
                 <AlbumRow
@@ -100,6 +100,7 @@ function AlbumRow(props: {
     return (
         <Flex
             className={css`
+                // TODO: we need a colour halfway between gray1 and gray2 for this border
                 border-bottom: 1px solid ${colors.gray2};
                 font-size: ${fontSizes.tableContent};
             `}

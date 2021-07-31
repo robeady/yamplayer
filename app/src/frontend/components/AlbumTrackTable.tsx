@@ -14,7 +14,16 @@ import { TrackRating } from "./Rating"
 
 export type TrackTableColumn = "#" | "title" | "artist" | "duration" | "rating"
 
-export function TrackTableHeader(props: { cols: TrackTableColumn[] }) {
+export const StickyTrackTableHeader = styled.div`
+    display: flex;
+    border-bottom: 1px solid ${colors.gray2};
+    position: sticky;
+    top: 0px;
+    background: white;
+    padding: 8px 0 0;
+`
+
+export function TrackTableHeadings(props: { cols: TrackTableColumn[] }) {
     return (
         <Subheading>
             <Row className={css`height: 30px;`}>

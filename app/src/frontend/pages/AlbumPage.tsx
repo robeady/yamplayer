@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { Link } from "react-router-dom"
 import { Album, Track } from "../../model"
 import { AlbumImage } from "../components/AlbumImage"
-import { TrackTable, TrackTableColumn, TrackTableHeader } from "../components/AlbumTrackTable"
+import { TrackTable, TrackTableColumn, TrackTableHeadings } from "../components/AlbumTrackTable"
 import { Heading, Row } from "../elements"
 import { LinkButton } from "../elements/LinkButton"
 import { plural } from "../elements/plural"
@@ -72,7 +72,7 @@ function AlbumDetail(
         <div className={css`flex: 1;`}>
             <AlbumTitle title={props.album.title} />
             <AlbumArtist />
-            <TrackTableHeader cols={tableCols} />
+            <TrackTableHeadings cols={tableCols} />
             <TrackTable
                 tracks={props.tracks}
                 cols={tableCols}

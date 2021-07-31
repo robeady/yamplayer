@@ -48,7 +48,7 @@ function Main() {
                 className={css`
                     flex: 1;
                     overflow-y: auto;
-                    padding: 16px;
+                    padding: 0 16px;
                 `}>
                 <Switch>
                     <Route path="/now-playing">
