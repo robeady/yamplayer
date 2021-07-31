@@ -24,7 +24,9 @@ class RandomProvider {
             this.randomBufferOffset = 0
             Crypto.randomFillSync(this.randomBuffer)
         }
-        return this.randomBuffer.slice(this.randomBufferOffset, RANDOM_BYTES)
+        const randomBytes = this.randomBuffer.slice(this.randomBufferOffset, RANDOM_BYTES)
+        this.randomBufferOffset += RANDOM_BYTES
+        return randomBytes
     }
 }
 
@@ -57,10 +59,10 @@ export class CatalogueIdGenerator {
      *     m=millisecond timestamp (48 bits);
      *     v=UUID version (4 bits, 0b0100)
      *     r=random (12 bits)
-     *     a=UUID variant 1 indicator (2 bits 0b10) then 2 bits random, with 0 as the MSB to guarantee room to increment
+     *     a=UUID variant 1 indicator (2 bits 0b10) then 2 bits random
      *     r=remaining random (60 bits)
      *
-     * Ignoring bits fixed by UUIDv4, we have 48 timestamp bits, 12 counter bits and 60 random bits
+     * Ignoring bits fixed by UUIDv4, we have 48 timestamp bits and 74 random bits
      */
     generate(): CatalogueId {
         const bytes = new Uint8Array(LENGTH_BYTES)
