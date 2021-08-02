@@ -9,7 +9,10 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "useDefineForClassFields": true,
-        "noUncheckedIndexedAccess": true
+        "noUncheckedIndexedAccess": true,
+        // this plugin is brought by the vscode styled components extension.
+        // unfortunately it reports spurious syntax errors for valid code.
+        "plugins": [{ "name": "typescript-styled-plugin", "validate": false }]
     },
     "include": ["./src/**/*"]
 }
