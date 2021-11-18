@@ -71,11 +71,22 @@ export class DeezerApiClient implements Service {
             throw new Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
         }
         const track = response.data
+
+        // here's some overly cautious code to figure out the artists
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        let artistIds = (track.contributors ?? [])
+            .filter(c => c.type === "artist" /* maybe not necessary but let's be sure */)
+            .map(c => deezerId(c.id))
+        if (artistIds.length === 0) {
+            // not sure if this can happen either
+            artistIds = [deezerId(track.artist.id)]
+        }
+
         // _KeepTrackParsingInSync_
         return {
             externalId: id,
-            albumId: `dz:${track.album.id}`,
-            artistId: `dz:${track.artist.id}`,
+            albumId: deezerId(track.album.id),
+            artistIds,
             title: track.title,
             trackNumber: track.track_position,
             discNumber: track.disk_number,
@@ -95,6 +106,7 @@ export class DeezerApiClient implements Service {
         return {
             // _KeepAlbumParsingInSync_
             externalId: id,
+            artistId: deezerId(album.artist.id),
             title: album.title,
             coverImageUrl: album.cover_medium,
             releaseDate: album.release_date,
@@ -102,7 +114,9 @@ export class DeezerApiClient implements Service {
         }
     }
 
-    async lookupAlbumAndTracks(id: string): Promise<{ album: ExternalAlbum; tracks: ExternalTrack[] }> {
+    async lookupAlbumEtc(
+        id: string,
+    ): Promise<{ album: ExternalAlbum; tracks: ExternalTrack[]; artists: ExternalArtist[] }> {
         const rawId = parseExternalId(id, "dz")
         const [albumResponse, tracksResponse] = await Promise.all([
             this.httpGet<AlbumResponse>(`album/${rawId}`),
@@ -118,6 +132,7 @@ export class DeezerApiClient implements Service {
             // _KeepAlbumParsingInSync_
             album: {
                 externalId: id,
+                artistId: deezerId(album.artist.id),
                 title: album.title,
                 coverImageUrl: album.cover_medium,
                 releaseDate: album.release_date,
@@ -125,9 +140,9 @@ export class DeezerApiClient implements Service {
             },
             // _KeepTrackParsingInSync_
             tracks: tracks.map(track => ({
-                externalId: `dz:${track.id}`,
+                externalId: deezerId(track.id),
                 albumId: id,
-                artistId: `dz:${track.artist.id}`,
+                artistIds: [deezerId(track.artist.id)], // _Contributors_ only available if we query track individually
                 title: track.title,
                 trackNumber: track.track_position,
                 discNumber: track.disk_number,
@@ -135,6 +150,14 @@ export class DeezerApiClient implements Service {
                 isrc: track.isrc || null, // never observed this to be absent but this seems a safe approach
                 rating: null,
             })),
+            artists: [
+                // _KeepArtistParsingInSync_
+                {
+                    externalId: deezerId(album.artist.id),
+                    name: album.artist.name,
+                    imageUrl: album.artist.picture_medium,
+                },
+            ],
         }
     }
 
@@ -145,6 +168,7 @@ export class DeezerApiClient implements Service {
             throw new Error(`artist ${id} not found: ${JSON.stringify(response.data.error)}`)
         }
         const artist = response.data
+        // _KeepArtistParsingInSync_
         return {
             externalId: id,
             name: artist.name,
@@ -172,14 +196,15 @@ export class DeezerApiClient implements Service {
         const albums = {} as Dict<ExternalAlbum>
 
         for (const item of payload.data) {
-            const externalTrackId = `dz:${item.id}`
-            const externalAlbumId = `dz:${item.album.id}`
-            const externalArtistId = `dz:${item.artist.id}`
+            const externalTrackId = deezerId(item.id)
+            const externalAlbumId = deezerId(item.album.id)
+            const externalArtistId = deezerId(item.artist.id)
             resultExternalTrackIds.push(externalTrackId)
+            // _KeepTrackParsingInSync_
             tracks[externalTrackId] = {
                 externalId: externalTrackId,
                 albumId: externalAlbumId,
-                artistId: externalArtistId,
+                artistIds: [externalArtistId], // _Contributors_
                 durationSecs: item.duration,
                 title: item.title,
                 trackNumber: null,
@@ -187,13 +212,16 @@ export class DeezerApiClient implements Service {
                 isrc: null,
                 rating: null,
             }
+            // _KeepAlbumParsingInSync_
             albums[externalAlbumId] = {
                 externalId: externalAlbumId,
+                artistId: externalArtistId,
                 title: item.album.title,
                 coverImageUrl: item.album.cover_medium,
                 releaseDate: null,
                 numTracks: null,
             }
+            // _KeepArtistParsingInSync_
             artists[externalArtistId] = {
                 externalId: externalArtistId,
                 name: item.artist.name,
@@ -225,4 +253,8 @@ function buildSearchQuery(query: TrackSearchQuery): string {
     return Object.entries(query)
         .map(([k, v]) => `${(deezerSearchQueryNameMap as any)[k]}:${JSON.stringify(v)}`)
         .join(" ")
+}
+
+function deezerId(id: string | number) {
+    return `dz:${id}`
 }

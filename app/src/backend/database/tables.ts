@@ -5,7 +5,6 @@ export const track = table("track", {
     id: binary,
     externalId: string,
     albumId: binary,
-    artistId: binary,
     title: string,
     trackNumber: number.orNull(),
     discNumber: number.orNull(),
@@ -16,8 +15,15 @@ export const track = table("track", {
     savedTimestamp: number.orNull(),
 })
 
+export const trackArtist = table("trackArtist", {
+    trackId: binary,
+    artistId: binary,
+    priority: number,
+})
+
 export const album = table("album", {
     id: binary,
+    artistId: binary,
     externalId: string,
     title: string,
     coverImageUrl: string.orNull(),

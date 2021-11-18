@@ -49,7 +49,12 @@ export interface FilterFunction<QueriedTables extends TableDefinitions, ReturnTy
             [TableAlias in keyof QueriedTables]?: Partial<RowTypeFrom<QueriedTables[TableAlias]>>
         },
     ): ReturnType
-    <T>(column: ColumnIn<QueriedTables>, operator: "=" | "IS" | "IS NOT", value: T): ReturnType
+    <T>(
+        column: ColumnOfType<ColumnIn<QueriedTables>, T>,
+        operator: "=" | "IS" | "IS NOT",
+        value: T | ColumnOfType<ColumnIn<QueriedTables>, T>,
+    ): ReturnType
+    <T>(column: ColumnOfType<ColumnIn<QueriedTables>, T>, operator: "IN", value: T[]): ReturnType
 }
 
 // export interface GeneralJoinStage<QueriedTables extends TableDefinitions> {
@@ -79,6 +84,8 @@ export interface FilterFunction<QueriedTables extends TableDefinitions, ReturnTy
 // }
 
 export type ReferencesIn<QueriedTables extends TableDefinitions> = ColumnIn<QueriedTables>["references"]
+
+export type ColumnOfType<C, T> = C extends ColumnDefinition<Origin, T> ? C : never
 
 export type ColumnIn<QueriedTables> = PropOf<LiftPropsOf<QueriedTables>>
 export type PropOf<T> = T[keyof T]
@@ -130,7 +137,7 @@ export interface InsertStage<QueriedTable extends TableDefinition>
     extends FilterTableStage<QueriedTable>,
         JoinStage<QueriedTablesFromSingle<QueriedTable>> {
     truncate: () => ExecuteStage
-    insert: (row: InsertTypeFor<QueriedTable>) => ExecuteStage
+    insert: (rows: InsertTypeFor<QueriedTable> | InsertTypeFor<QueriedTable>[]) => ExecuteStage
 }
 
 export interface OnStage<QueriedTables extends TableDefinitions> {

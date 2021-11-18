@@ -1,3 +1,4 @@
+import { map } from "lodash"
 import {
     CataloguedAlbum,
     CataloguedArtist,
@@ -12,6 +13,7 @@ import { Dict, Fraction, Timestamp } from "../util/types"
 import {
     CatalogueIdGenerator,
     CatalogueIdString,
+    CATALOGUE_ID_LENGTH_BYTES,
     extractTimestamp,
     parseCatalogueId,
     stringifyCatalogueId,
@@ -45,29 +47,65 @@ export class LibraryStore {
         await Promise.all(Object.values(tables).map(async table => this.query(table).truncate().execute()))
     }
 
-    async list(): Promise<LibraryContents> {
-        const { track, artist, album, playlist } = tables
-        const rows = await this.query(track)
+    async list(filter: { albumId?: string; trackSaved?: boolean } = {}): Promise<LibraryContents> {
+        const { track, trackArtist, artist, album } = tables
+        let query = this.query(track)
             .innerJoin(album)
             .on(album.id, "=", track.albumId)
+            .innerJoin(trackArtist)
+            .on(trackArtist.trackId, "=", track.id)
             .innerJoin(artist)
-            .on(artist.id, "=", track.artistId)
-            .where(track.savedTimestamp, "IS NOT", null)
-            .fetch()
+            .on(trackArtist.artistId, "=", artist.id)
+            .where({})
+        if (filter.albumId !== undefined) {
+            query = query.and(album.id, "=", parseCatalogueId(filter.albumId))
+        }
+        if (filter.trackSaved !== undefined) {
+            query = query.and(track.savedTimestamp, filter.trackSaved ? "IS NOT" : "IS", null)
+        }
+        const rows = await query.fetch()
 
         const tracks = {} as Dict<CataloguedTrack>
         const artists = {} as Dict<CataloguedArtist>
         const albums = {} as Dict<CataloguedAlbum>
+
         for (const row of rows) {
-            const mappedTrack = mapTrack(row.track)
+            // _Slow_ we do some unnecessary mapping here for tracks/artists/albums already encountered
+            // we could do less work by mapping the IDs first and checking if they've been seen already
+            const mappedTrack = mapTrackExceptArtistIds(row.track)
+            let existingTrack = tracks[mappedTrack.catalogueId]
+            if (existingTrack === undefined) {
+                existingTrack = mappedTrack
+                tracks[mappedTrack.catalogueId] = mappedTrack
+            }
+            // _Slow_ we might have seen the album/artist before too but oh well
             const mappedAlbum = mapAlbum(row.album)
-            const mappedArtist = mapArtist(row.artist)
-            tracks[mappedTrack.catalogueId] = mappedTrack
             albums[mappedAlbum.catalogueId] = mappedAlbum
+            const mappedArtist = mapArtist(row.artist)
             artists[mappedArtist.catalogueId] = mappedArtist
+            existingTrack.artistIds.push(mappedArtist.catalogueId)
         }
 
-        const playlistRows = await this.query(playlist).fetch()
+        // it would be unusual but maybe there are some extra artists that don't appear in any of the tracks
+        const unretrievedAlbumArtists = map(albums, a => a.artistId)
+            .filter(artistId => !(artistId in artists))
+            .map(parseCatalogueId)
+        if (unretrievedAlbumArtists.length > 0) {
+            console.log(`performing extra query for ${unretrievedAlbumArtists.length} album artists`)
+            const albumArtistRows = await this.query(artist)
+                .where(artist.id, "IN", unretrievedAlbumArtists)
+                .fetch()
+            for (const r of albumArtistRows) {
+                const mapped = mapArtist(r)
+                artists[mapped.catalogueId] = mapped
+            }
+        }
+
+        return { tracks, artists, albums }
+    }
+
+    async listPlaylists() {
+        const playlistRows = await this.query(tables.playlist).fetch()
         const playlists = {} as Dict<Playlist>
         for (const row of playlistRows) {
             const playlist = {
@@ -76,8 +114,7 @@ export class LibraryStore {
             }
             playlists[playlist.catalogueId] = playlist
         }
-
-        return { tracks, artists, albums, playlists }
+        return playlists
     }
 
     async getAlbum(catalogueId: string) {
@@ -88,27 +125,25 @@ export class LibraryStore {
         )
     }
 
-    async getAlbumAndTracks(catalogueId: string) {
-        const { album, track } = tables
-        const r = await this.query(album)
-            .leftJoin(track)
-            .on(track.albumId, "=", album.id)
-            .where(album.id, "=", parseCatalogueId(catalogueId))
-            .fetch()
-        return {
-            album: mapAlbum(r[0]!.album),
-            tracks: r
-                .map(r => (r.track.id === null ? null : mapTrack(r.track)))
-                .filter((t): t is CataloguedTrack => t !== null),
-        }
-    }
-
     async getArtist(catalogueId: string) {
         return mapArtist(
             await this.query(tables.artist)
                 .where({ id: parseCatalogueId(catalogueId) })
                 .fetchOne(),
         )
+    }
+
+    /** Returns all of the requested artists that exist. No guarantees on the ordering of the result. */
+    async getArtists(catalogueIds: string[]) {
+        return (
+            await this.query(tables.artist)
+                .where(
+                    tables.artist.id,
+                    "IN",
+                    catalogueIds.map(c => parseCatalogueId(c)),
+                )
+                .fetch()
+        ).map(a => mapArtist(a))
     }
 
     async save(trackCatalogueId: string) {
@@ -128,7 +163,8 @@ export class LibraryStore {
     async addTrack(trackPointingToInternalArtistAndAlbum: ExternalTrack): Promise<CataloguedTrack> {
         const now = this.now()
         const id = this.idGenerator.generate()
-        await this.query(tables.track)
+
+        const trackInsert = this.query(tables.track)
             .insert({
                 id,
                 title: trackPointingToInternalArtistAndAlbum.title,
@@ -136,7 +172,6 @@ export class LibraryStore {
                 discNumber: trackPointingToInternalArtistAndAlbum.discNumber,
                 externalId: trackPointingToInternalArtistAndAlbum.externalId,
                 albumId: parseCatalogueId(trackPointingToInternalArtistAndAlbum.albumId),
-                artistId: parseCatalogueId(trackPointingToInternalArtistAndAlbum.artistId),
                 savedTimestamp: now,
                 durationSecs: trackPointingToInternalArtistAndAlbum.durationSecs,
                 isrc: trackPointingToInternalArtistAndAlbum.isrc,
@@ -144,6 +179,19 @@ export class LibraryStore {
                 rating: trackPointingToInternalArtistAndAlbum.rating,
             })
             .execute()
+
+        const artistsInsert = this.query(tables.trackArtist)
+            .insert(
+                trackPointingToInternalArtistAndAlbum.artistIds.map((a, i) => ({
+                    artistId: parseCatalogueId(a),
+                    trackId: id,
+                    priority: i,
+                })),
+            )
+            .execute()
+
+        await Promise.all([trackInsert, artistsInsert])
+
         return {
             ...trackPointingToInternalArtistAndAlbum,
             catalogueId: stringifyCatalogueId(id),
@@ -153,21 +201,26 @@ export class LibraryStore {
         }
     }
 
-    async addAlbum(externalAlbum: ExternalAlbum): Promise<CataloguedAlbum> {
+    async addAlbum(albumPointingToInternalArtist: ExternalAlbum): Promise<CataloguedAlbum> {
         const now = this.now()
         const id = this.idGenerator.generate()
         await this.query(tables.album)
             .insert({
                 id,
-                title: externalAlbum.title,
-                coverImageUrl: externalAlbum.coverImageUrl,
-                releaseDate: externalAlbum.releaseDate,
-                externalId: externalAlbum.externalId,
-                numTracks: externalAlbum.numTracks,
+                artistId: parseCatalogueId(albumPointingToInternalArtist.artistId),
+                title: albumPointingToInternalArtist.title,
+                coverImageUrl: albumPointingToInternalArtist.coverImageUrl,
+                releaseDate: albumPointingToInternalArtist.releaseDate,
+                externalId: albumPointingToInternalArtist.externalId,
+                numTracks: albumPointingToInternalArtist.numTracks,
             })
             .execute()
 
-        return { ...externalAlbum, catalogueId: stringifyCatalogueId(id), cataloguedTimestamp: now }
+        return {
+            ...albumPointingToInternalArtist,
+            catalogueId: stringifyCatalogueId(id),
+            cataloguedTimestamp: now,
+        }
     }
 
     async addArtist(externalArtist: ExternalArtist): Promise<CataloguedArtist> {
@@ -185,13 +238,25 @@ export class LibraryStore {
     }
 
     async matchTracks(externalTrackIds: string[]): Promise<CataloguedTrack[]> {
-        return externalTrackIds.length === 0
-            ? []
-            : (
-                  await this.query(tables.track)
-                      .where(tables.track.externalId, "IN", externalTrackIds)
-                      .fetch()
-              ).map(element => mapTrack(element))
+        if (externalTrackIds.length === 0) return []
+        const rows = await this.query(tables.track)
+            .innerJoin(tables.trackArtist)
+            .on(tables.trackArtist.trackId, "=", tables.track.id)
+            .where(tables.track.externalId, "IN", externalTrackIds)
+            .fetch()
+
+        const tracks = {} as Dict<CataloguedTrack>
+        for (const row of rows) {
+            const mappedTrack = mapTrackExceptArtistIds(row.track)
+            let existingTrack = tracks[mappedTrack.catalogueId]
+            if (existingTrack === undefined) {
+                existingTrack = mappedTrack
+                tracks[mappedTrack.catalogueId] = mappedTrack
+            }
+            existingTrack.artistIds.push(stringifyCatalogueId(row.trackArtist.artistId))
+        }
+
+        return Object.values(tracks)
     }
 
     /** No order guarantee */
@@ -236,6 +301,7 @@ export class LibraryStore {
 function mapAlbum(albumFromDb: RowTypeFrom<typeof tables["album"]>): CataloguedAlbum {
     return {
         catalogueId: stringifyCatalogueId(albumFromDb.id),
+        artistId: stringifyCatalogueId(albumFromDb.artistId),
         externalId: albumFromDb.externalId,
         title: albumFromDb.title,
         coverImageUrl: albumFromDb.coverImageUrl,
@@ -255,11 +321,11 @@ function mapArtist(artistFromDb: RowTypeFrom<typeof tables["artist"]>): Catalogu
     }
 }
 
-function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): CataloguedTrack {
+function mapTrackExceptArtistIds(trackFromDb: RowTypeFrom<typeof tables["track"]>): CataloguedTrack {
     return {
         catalogueId: stringifyCatalogueId(trackFromDb.id),
         albumId: stringifyCatalogueId(trackFromDb.albumId),
-        artistId: stringifyCatalogueId(trackFromDb.artistId),
+        artistIds: [],
         externalId: trackFromDb.externalId,
         title: trackFromDb.title,
         trackNumber: trackFromDb.trackNumber,
@@ -270,4 +336,18 @@ function mapTrack(trackFromDb: RowTypeFrom<typeof tables["track"]>): CataloguedT
         cataloguedTimestamp: extractTimestamp(trackFromDb.id),
         savedTimestamp: trackFromDb.savedTimestamp as Timestamp,
     }
+}
+
+function parseCatalogueIdList(idList: Buffer): string[] {
+    let i = 0
+    const parts = []
+    while (i < idList.length) {
+        parts.push(idList.slice(i, (i += CATALOGUE_ID_LENGTH_BYTES)))
+    }
+    if (i > idList.length) {
+        throw new Error(
+            `id list ${idList} length is ${idList.length} and not a multiple of ${CATALOGUE_ID_LENGTH_BYTES}`,
+        )
+    }
+    return parts.map(stringifyCatalogueId)
 }

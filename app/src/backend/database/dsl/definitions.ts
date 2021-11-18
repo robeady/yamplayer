@@ -68,19 +68,19 @@ export type TableDefinitions = {
     [TableAlias in string]: TableDefinition<Origin, TableAlias>
 }
 
+export type ColumnDefinitions<TableOrigin extends Origin, TableAlias> = {
+    [ColumnName in string]: ColumnDefinition<TableOrigin, unknown, boolean, TableAlias, ColumnName>
+}
+
 export type TableDefinition<
     TableOrigin extends Origin = Origin,
     TableAlias extends string = string,
-    Columns extends {
-        [ColumnName in string]: ColumnDefinition<TableOrigin, unknown, boolean, TableAlias, ColumnName>
-    } = {
-        [ColumnName in string]: ColumnDefinition<TableOrigin, unknown, boolean, TableAlias, ColumnName>
-    }
+    Columns extends ColumnDefinitions<TableOrigin, TableAlias> = ColumnDefinitions<TableOrigin, TableAlias>
 > = Columns
 
 export type NullColumn<C extends ColumnDefinition> = C extends ColumnDefinition<
     infer O,
-    infer T,
+    unknown,
     infer H,
     infer A,
     infer N
@@ -146,5 +146,38 @@ export function table<TableName extends string, Columns extends Record<string, C
         type: columnDetails.type,
         hasDefault: columnDetails.hasDefault,
         references: columnDetails.references,
+    }))
+}
+
+export function alias<
+    O extends Origin,
+    A extends string,
+    C extends ColumnDefinitions<O, A>,
+    B extends string
+>(
+    table: TableDefinition<O, A, C>,
+    alias: B,
+): TableDefinition<
+    O,
+    B,
+    {
+        [ColumnName in keyof C & string]: ColumnDefinition<
+            O,
+            C[ColumnName]["type"][typeof PHANTOM_INSTANCE],
+            C[ColumnName]["hasDefault"],
+            B, // this is the bit we changed
+            ColumnName,
+            C[ColumnName]["references"]
+        >
+    }
+> {
+    return mapValues(table, columnDef => ({
+        [COLUMN_DEFINITION]: true,
+        tableOrigin: columnDef.tableOrigin,
+        tableAlias: alias,
+        columnName: columnDef.columnName as any, // no idea why TS doesn't like this field
+        type: columnDef.type,
+        hasDefault: columnDef.hasDefault,
+        references: columnDef.references,
     }))
 }

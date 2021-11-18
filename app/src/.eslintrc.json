@@ -70,6 +70,7 @@
         "default-case": "off",
         "class-methods-use-this": "warn",
         "no-continue": "off",
+        "no-param-reassign": "off",
 
         // === disabling ts rules ===
         "@typescript-eslint/explicit-function-return-type": "off",

@@ -12,7 +12,9 @@ export interface TrackSearchQuery {
 export interface Service {
     lookupTrack: (externalId: string) => Promise<ExternalTrack>
     lookupAlbum: (externalId: string) => Promise<ExternalAlbum>
-    lookupAlbumAndTracks: (externalId: string) => Promise<{ album: ExternalAlbum; tracks: ExternalTrack[] }>
+    lookupAlbumEtc: (
+        externalId: string,
+    ) => Promise<{ album: ExternalAlbum; tracks: ExternalTrack[]; artists: ExternalArtist[] }>
     lookupArtist: (externalId: string) => Promise<ExternalArtist>
     searchTracks: (query: string | TrackSearchQuery) => Promise<SearchResults>
 }

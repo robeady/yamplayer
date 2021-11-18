@@ -28,6 +28,7 @@ const classNameIfEnabled = css`
 `
 const thumbClassName = css`
     background: ${colors.purple5};
+
     .${classNameIfEnabled}:hover &,
     .${classNameIfEnabled}:active & {
         background: ${colors.purple6};

@@ -38,7 +38,7 @@ function PlayingTrack() {
         s => playingTrack && resolveCanonical(s.catalogue.albums, playingTrack.albumId),
     )
     const playingArtist = useSelector(
-        s => playingTrack && resolveCanonical(s.catalogue.artists, playingTrack.artistId),
+        s => playingTrack && resolveCanonical(s.catalogue.artists, playingTrack.artistIds[0]!),
     )
 
     return nowPlayingTrackId === null ? (

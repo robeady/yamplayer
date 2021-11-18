@@ -36,7 +36,7 @@ test("fetch search results", async () => {
     expect(results.tracks["dz:854914332"]).toStrictEqual({
         externalId: "dz:854914332",
         albumId: "dz:127270232",
-        artistId: "dz:13",
+        artistIds: ["dz:13"],
         title: "Darkness",
         discNumber: null,
         trackNumber: null,
@@ -47,6 +47,7 @@ test("fetch search results", async () => {
     expect(results.albums["dz:127270232"]).toStrictEqual({
         externalId: "dz:127270232",
         title: "Music To Be Murdered By",
+        artistId: "dz:13",
         coverImageUrl:
             "https://cdns-images.dzcdn.net/images/cover/4d00a7848dc8af475973ff1761ad828d/250x250-000000-80-0-0.jpg",
         releaseDate: null,
@@ -65,7 +66,7 @@ test("fetch track", async () => {
     expect(result).toStrictEqual({
         externalId: "dz:3135553",
         albumId: "dz:302127",
-        artistId: "dz:27",
+        artistIds: ["dz:27"],
         title: "One More Time",
         durationSecs: 320,
         isrc: "GBDUW0000053",
@@ -83,6 +84,7 @@ test("fetch album", async () => {
         releaseDate: "2001-03-07",
         coverImageUrl:
             "https://e-cdns-images.dzcdn.net/images/cover/2e018122cb56986277102d2041a592c8/250x250-000000-80-0-0.jpg",
+        artistId: "dz:27",
         numTracks: 14,
     })
 })

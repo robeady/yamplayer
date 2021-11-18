@@ -8,8 +8,7 @@ export type CatalogueIdString = string
 
 const VERSION_INDEX = 6
 const VARIANT_INDEX = 8
-const LENGTH_BYTES = 16
-const RANDOM_BYTES = 10
+export const CATALOGUE_ID_LENGTH_BYTES = 16
 
 // random generation inspired by https://github.com/aarondcohen/id128/blob/814797e191095141da1bc553fc4ec92baaf0146a/src/common/random-bytes.js
 const RANDOM_BUFFER_SIZE = 4096 /* typical page size */ - 96 /* Empty buffer overhead */
@@ -20,12 +19,12 @@ class RandomProvider {
     private randomBufferOffset = RANDOM_BUFFER_SIZE
 
     get10RandomBytes = () => {
-        if (this.randomBufferOffset + RANDOM_BYTES >= RANDOM_BUFFER_SIZE) {
+        if (this.randomBufferOffset + 10 >= RANDOM_BUFFER_SIZE) {
             this.randomBufferOffset = 0
             Crypto.randomFillSync(this.randomBuffer)
         }
-        const randomBytes = this.randomBuffer.slice(this.randomBufferOffset, RANDOM_BYTES)
-        this.randomBufferOffset += RANDOM_BYTES
+        const randomBytes = this.randomBuffer.slice(this.randomBufferOffset, this.randomBufferOffset + 10)
+        this.randomBufferOffset += 10
         return randomBytes
     }
 }
@@ -35,23 +34,28 @@ const UINT8_MAX = 0b1111_1111
 
 export class CatalogueIdGenerator {
     private lastTimestamp: number | undefined
-    private lastId = new Uint8Array(LENGTH_BYTES)
+    private lastId = new Uint8Array(CATALOGUE_ID_LENGTH_BYTES)
 
     // TODO: probably simpler to make this just a module with a generate function
     constructor(
         private now: () => Timestamp = unixNow,
         private get10RandomBytes: () => Uint8Array = new RandomProvider().get10RandomBytes,
+        private increment = false,
     ) {}
 
     /**
      * Generates a 16 byte catalogue ID.
      *
      * Catalogue IDs are valid v4 format UUIDs, but the first 48 bits are set to the millisecond timestamp
-     * since unix epoch. Furthermore, when generating an ID for the same millisecond timestamp as last time,
-     * the trailing random part is simply incremented rather than generating new random bits.
+     * since unix epoch.
+     *
+     * Furthermore, when generating an ID for the same millisecond timestamp as last time, the generator can
+     * be configured to increment the random part rather than generating new random bits.
      *
      * This construction means that typically IDs will be lexicographically ordered by creation time, which is
      * good for database storage as primary keys with a b-tree index, much better than purely random IDs.
+     *
+     * Also, it saves storing the creation timestamp separately.
      *
      * Format: mmmmmmmm-mmmm-vrrr-arrr-rrrrrrrrrrrr
      *
@@ -65,14 +69,14 @@ export class CatalogueIdGenerator {
      * Ignoring bits fixed by UUIDv4, we have 48 timestamp bits and 74 random bits
      */
     generate(): CatalogueId {
-        const bytes = new Uint8Array(LENGTH_BYTES)
+        const bytes = new Uint8Array(CATALOGUE_ID_LENGTH_BYTES)
 
         const timestamp = this.now()
 
-        if (timestamp === this.lastTimestamp) {
+        if (this.increment && timestamp === this.lastTimestamp) {
             // copy the last ID and increment the random part after the variant by 1
             bytes.set(this.lastId)
-            for (let i = LENGTH_BYTES - 1; i > VARIANT_INDEX; i--) {
+            for (let i = CATALOGUE_ID_LENGTH_BYTES - 1; i > VARIANT_INDEX; i--) {
                 if (bytes[i] === UINT8_MAX) {
                     bytes[i] = 0
                 } else {

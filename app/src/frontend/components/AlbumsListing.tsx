@@ -92,7 +92,7 @@ function AlbumRow(props: {
         s =>
             resolveCanonical(
                 s.catalogue.artists,
-                props.tracks[0]!.artistId /* TODO: get album primary artist */,
+                props.tracks[0]!.artistIds[0]! /* TODO: get album primary artist */,
             )!,
     )
     const { show } = useDropdownMenu()

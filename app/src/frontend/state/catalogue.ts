@@ -69,13 +69,15 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
             })
             .addCase(
                 catalogueThunks.addToLibrary.fulfilled,
-                (state, { payload: { track, album, artist } }) => {
+                (state, { payload: { track, album, artists } }) => {
                     state.tracks[track.catalogueId] = track
                     state.tracks[track.externalId] = track.catalogueId
                     state.albums[album.catalogueId] = album
                     state.albums[album.externalId] = album.catalogueId
-                    state.artists[artist.catalogueId] = artist
-                    state.artists[artist.externalId] = artist.catalogueId
+                    for (const artist of artists) {
+                        state.artists[artist.catalogueId] = artist
+                        state.artists[artist.externalId] = artist.catalogueId
+                    }
                 },
             )
             .addCase(catalogueThunks.unsaveTrack.fulfilled, (state, { meta: { arg: trackId } }) => {

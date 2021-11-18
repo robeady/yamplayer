@@ -40,7 +40,7 @@ describe("library store tests", () => {
     })
 
     test("initially empty", async () => {
-        const expected: LibraryContents = { tracks: {}, albums: {}, artists: {}, playlists: {} }
+        const expected: LibraryContents = { tracks: {}, albums: {}, artists: {} }
         expect(await library.list()).toStrictEqual(expected)
     })
 
@@ -48,6 +48,7 @@ describe("library store tests", () => {
         const artist = await library.addArtist({ externalId: "3", name: "3", imageUrl: "3" })
         const album = await library.addAlbum({
             externalId: "2",
+            artistId: artist.catalogueId,
             title: "2",
             coverImageUrl: "2",
             releaseDate: "2",
@@ -56,7 +57,7 @@ describe("library store tests", () => {
         const track = await library.addTrack({
             externalId: "1",
             albumId: album.catalogueId,
-            artistId: artist.catalogueId,
+            artistIds: [artist.catalogueId],
             title: "1",
             trackNumber: 1,
             discNumber: 1,
@@ -65,29 +66,30 @@ describe("library store tests", () => {
             rating: 2,
         })
         expect(track.albumId).toBe(album.catalogueId)
-        expect(track.artistId).toBe(artist.catalogueId)
-        expect(await library.list()).toStrictEqual({
+        expect(track.artistIds).toStrictEqual([artist.catalogueId])
+        const expectedContents: LibraryContents = {
             tracks: {
                 [track.catalogueId]: {
                     catalogueId: track.catalogueId,
                     externalId: "1",
                     albumId: album.catalogueId,
-                    artistId: artist.catalogueId,
+                    artistIds: [artist.catalogueId],
                     title: "1",
                     trackNumber: 1,
                     discNumber: 1,
                     durationSecs: 0,
                     isrc: null,
-                    savedTimestamp: 0,
+                    savedTimestamp: 0 as Timestamp,
                     rating: 2,
-                    cataloguedTimestamp: 0,
+                    cataloguedTimestamp: 0 as Timestamp,
                 },
             },
             albums: {
                 [album.catalogueId]: {
                     catalogueId: album.catalogueId,
-                    cataloguedTimestamp: 0,
+                    cataloguedTimestamp: 0 as Timestamp,
                     externalId: "2",
+                    artistId: artist.catalogueId,
                     title: "2",
                     coverImageUrl: "2",
                     releaseDate: "2",
@@ -97,24 +99,18 @@ describe("library store tests", () => {
             artists: {
                 [artist.catalogueId]: {
                     catalogueId: artist.catalogueId,
-                    cataloguedTimestamp: 0,
+                    cataloguedTimestamp: 0 as Timestamp,
                     externalId: "3",
                     name: "3",
                     imageUrl: "3",
                 },
             },
-            playlists: {},
-        })
+        }
+        expect(await library.list()).toStrictEqual(expectedContents)
     })
 
     test("can list added playlists", async () => {
         const playlist = await library.addPlaylist({ name: "pl1" })
-        const expected: LibraryContents = {
-            tracks: {},
-            albums: {},
-            artists: {},
-            playlists: { [playlist.catalogueId]: playlist },
-        }
-        expect(await library.list()).toStrictEqual(expected)
+        expect(await library.listPlaylists()).toStrictEqual({ [playlist.catalogueId]: playlist })
     })
 })

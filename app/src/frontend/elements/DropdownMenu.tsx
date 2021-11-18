@@ -65,12 +65,15 @@ export function useDropdownMenu() {
                 e.preventDefault()
                 positionRef.current = {
                     getBoundingClientRect: () => ({
+                        x,
+                        y,
                         width: 0,
                         height: 0,
                         top: y,
                         bottom: y,
                         left: x,
                         right: x,
+                        toJSON: undefined as any,
                     }),
                 }
             }

@@ -19,7 +19,12 @@ export interface LibraryContents {
     tracks: Dict<CataloguedTrack>
     albums: Dict<CataloguedAlbum>
     artists: Dict<CataloguedArtist>
-    playlists: Dict<Playlist>
+}
+
+export interface AlbumEtc {
+    album: Album
+    tracks: Track[]
+    artists: Artist[]
 }
 
 export class Explorer {
@@ -39,7 +44,7 @@ export class Explorer {
             externalTrackIds.map(async tid => explorer.service.lookupTrack(tid)),
         )
         const externalAlbumIds = new Set(externalTracks.map(t => t.albumId))
-        const externalArtistIds = new Set(externalTracks.map(t => t.artistId))
+        const externalArtistIds = new Set(externalTracks.flatMap(t => t.artistIds))
         const externalAlbums = await Promise.all(
             [...externalAlbumIds].map(async aid => explorer.service.lookupAlbum(aid)),
         )
@@ -48,15 +53,19 @@ export class Explorer {
         )
 
         const addedArtists = await Promise.all(externalArtists.map(async a => explorer.library.addArtist(a)))
-        const addedAlbums = await Promise.all(externalAlbums.map(async a => explorer.library.addAlbum(a)))
         const artistIdsByExternalId = Object.fromEntries(addedArtists.map(a => [a.externalId, a.catalogueId]))
+        const addedAlbums = await Promise.all(
+            externalAlbums.map(async a =>
+                explorer.library.addAlbum({ ...a, artistId: artistIdsByExternalId[a.artistId]! }),
+            ),
+        )
         const albumIdsByExternalId = Object.fromEntries(addedAlbums.map(a => [a.externalId, a.catalogueId]))
         await Promise.all(
             externalTracks.map(async t =>
                 explorer.library.addTrack({
                     ...t,
                     albumId: albumIdsByExternalId[t.albumId]!,
-                    artistId: artistIdsByExternalId[t.artistId]!,
+                    artistIds: t.artistIds.map(a => artistIdsByExternalId[a]!),
                 }),
             ),
         )
@@ -69,13 +78,18 @@ export class Explorer {
     }
 
     async getLibrary(): Promise<LibraryContents> {
-        return this.library.list()
+        return this.library.list({ trackSaved: true })
     }
 
-    async getAlbum(albumId: string): Promise<{ album: Album; tracks: Track[] }> {
+    /** Fetches an album and associated tracks and artists. Includes tracks not in the library. */
+    async getAlbum(albumId: string): Promise<AlbumEtc> {
         if (albumId.includes(":")) {
-            const external = await this.service.lookupAlbumAndTracks(albumId)
-            const [internal] = await this.library.matchAlbums([albumId])
+            const external = await this.service.lookupAlbumEtc(albumId)
+            const [internalAlbum] = await this.library.matchAlbums([albumId])
+            const internalArtists = keyBy(
+                await this.library.matchArtists(external.artists.map(a => a.externalId)),
+                a => a.externalId,
+            )
             const internalTracks = keyBy(
                 await this.library.matchTracks(external.tracks.map(t => t.externalId)),
                 t => t.externalId,
@@ -83,8 +97,8 @@ export class Explorer {
             return {
                 album: {
                     ...external.album,
-                    catalogueId: internal?.catalogueId ?? null,
-                    cataloguedTimestamp: internal?.cataloguedTimestamp ?? null,
+                    catalogueId: internalAlbum?.catalogueId ?? null,
+                    cataloguedTimestamp: internalAlbum?.cataloguedTimestamp ?? null,
                 },
                 tracks: external.tracks.map(t => ({
                     ...t,
@@ -94,26 +108,35 @@ export class Explorer {
                     cataloguedTimestamp: internalTracks[t.externalId]?.cataloguedTimestamp ?? null,
                     savedTimestamp: internalTracks[t.externalId]?.savedTimestamp ?? null,
                 })),
+                artists: external.artists.map(a => ({
+                    ...a,
+                    catalogueId: internalArtists[a.externalId]?.catalogueId ?? null,
+                    cataloguedTimestamp: internalArtists[a.externalId]?.cataloguedTimestamp ?? null,
+                })),
             }
         } else {
-            const internal = await this.library.getAlbumAndTracks(albumId)
+            const internal = await this.library.list({ albumId })
             // there might be more tracks in the album not in our library
-            // TODO: maybe we should store the number of tracks & discs in the album table
-            // so we don't always have to do an external lookup
-            const external = await this.service.lookupAlbumAndTracks(internal.album.externalId)
-            // we don't update the internal tracks with external information here. could this lead to weird inconsistencies?
-            const combinedTracks: Track[] = [
-                ...internal.tracks,
-                ...external.tracks
-                    .filter(et => !internal.tracks.some(it => it.externalId === et.externalId))
-                    .map(et => ({
-                        ...et,
-                        catalogueId: null,
-                        cataloguedTimestamp: null,
-                        savedTimestamp: null,
-                    })),
-            ]
-            return { album: internal.album, tracks: combinedTracks }
+            const tracks = Object.values(internal.tracks)
+            const album = Object.values(internal.albums)[0]!
+            if (album.numTracks === tracks.length) {
+                return { album, artists: Object.values(internal.artists), tracks }
+            } else {
+                const external = await this.service.lookupAlbumEtc(album.externalId)
+                // we don't update the internal tracks with external information here. could this lead to weird inconsistencies?
+                const combinedTracks: Track[] = [
+                    ...tracks,
+                    ...external.tracks
+                        .filter(et => !tracks.some(it => it.externalId === et.externalId))
+                        .map(et => ({
+                            ...et,
+                            catalogueId: null,
+                            cataloguedTimestamp: null,
+                            savedTimestamp: null,
+                        })),
+                ]
+                return { album, tracks: combinedTracks, artists: Object.values(internal.artists) }
+            }
         }
     }
 
@@ -163,28 +186,29 @@ export class Explorer {
 
     async addTrack(
         externalTrackId: string,
-    ): Promise<{ track: CataloguedTrack; album: CataloguedAlbum; artist: CataloguedArtist }> {
+    ): Promise<{ track: CataloguedTrack; album: CataloguedAlbum; artists: CataloguedArtist[] }> {
         const externalTrack = await this.service.lookupTrack(externalTrackId)
+        // TODO: maybe the service can return artist & album information in that call
         const [matchingTrack = undefined] = await this.library.matchTracks([externalTrack.externalId])
         if (matchingTrack === undefined) {
-            const [album, artist] = await Promise.all([
+            const [album, artists] = await Promise.all([
                 this.addAlbumForTrack(externalTrack.albumId),
-                this.addArtistForTrack(externalTrack.artistId),
+                this.addArtistsForTrack(externalTrack.artistIds),
             ])
             const track = await this.library.addTrack({
                 ...externalTrack,
                 albumId: album.catalogueId,
-                artistId: artist.catalogueId,
+                artistIds: artists.map(a => a.catalogueId),
             })
-            return { track, album, artist }
+            return { track, album, artists }
         } else {
             // already in library, just ensure it's marked as saved
-            const [track, artist, album] = await Promise.all([
-                this.library.save(matchingTrack.catalogueId).then(_ => matchingTrack),
-                this.library.getArtist(matchingTrack.artistId),
+            const [, artists, album] = await Promise.all([
+                this.library.save(matchingTrack.catalogueId),
+                this.library.getArtists(matchingTrack.artistIds),
                 this.library.getAlbum(matchingTrack.albumId),
             ])
-            return { track, artist, album }
+            return { track: matchingTrack, album, artists }
         }
     }
 
@@ -198,14 +222,21 @@ export class Explorer {
         }
     }
 
-    private async addArtistForTrack(externalArtistId: string) {
-        const [matchingArtist = undefined] = await this.library.matchArtists([externalArtistId])
-        if (matchingArtist === undefined) {
-            const externalArtist = await this.service.lookupArtist(externalArtistId)
-            return this.library.addArtist(externalArtist)
-        } else {
-            return matchingArtist
-        }
+    /** Returns an array of artists, one per external artist ID, in the same order as the input */
+    private async addArtistsForTrack(externalArtistIds: string[]): Promise<CataloguedArtist[]> {
+        const matchingArtists = await this.library.matchArtists(externalArtistIds)
+        return Promise.all(
+            externalArtistIds.map(externalId => {
+                const match = matchingArtists.find(m => m.externalId === externalId)
+                if (match === undefined) {
+                    return this.service
+                        .lookupArtist(externalId)
+                        .then(async externalArtist => this.library.addArtist(externalArtist))
+                } else {
+                    return match
+                }
+            }),
+        )
     }
 
     async importItunesLibrary(itunesLibraryXml: string): Promise<ImportItunesResult> {
@@ -227,7 +258,7 @@ export class Explorer {
         )
 
         const externalAlbumIds = new Set(externalTracks.map(t => t.albumId))
-        const externalArtistIds = new Set(externalTracks.map(t => t.artistId))
+        const externalArtistIds = new Set(externalTracks.flatMap(t => t.artistIds))
 
         const albumIdsByExternalId = new Map<string, string>()
         const artistIdsByExternalId = new Map<string, string>()
@@ -270,7 +301,7 @@ export class Explorer {
                     ...t,
                     rating: matchedTracksByExternalId[t.externalId]!.itunesTrack.rating ?? null,
                     albumId: albumIdsByExternalId.get(t.albumId)!,
-                    artistId: artistIdsByExternalId.get(t.artistId)!,
+                    artistIds: t.artistIds.map(a => artistIdsByExternalId.get(a)!),
                 }),
             ),
         )

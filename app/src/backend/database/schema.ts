@@ -15,19 +15,25 @@ const migration0: DatabaseMigration = {
         id BINARY(16) PRIMARY KEY,
         externalId VARCHAR(50) NOT NULL,
         albumId BINARY(16) NOT NULL REFERENCES album (id),
-        artistId BINARY(16) NOT NULL REFERENCES artist (id),
         title VARCHAR(255) NOT NULL,
-        trackNumber INTEGER NOT NULL,
-        discNumber INTEGER NOT NULL,
+        trackNumber SMALLINT NOT NULL,
+        discNumber TINYINT NOT NULL,
         isrc CHAR(12),
-        durationSecs DOUBLE PRECISION NOT NULL,
+        durationSecs FLOAT NOT NULL,
         savedTimestamp BIGINT NOT NULL,
         playCount INTEGER NOT NULL,
-        rating DOUBLE PRECISION
+        rating FLOAT
+    );
+
+    CREATE TABLE trackArtist (
+        trackId BINARY(16) NOT NULL REFERENCES track (id),
+        artistId BINARY(16) NOT NULL REFERENCES artist (id),
+        priority TINYINT NOT NULL -- 0 is the primary artist on a track
     );
 
     CREATE TABLE album (
         id BINARY(16) PRIMARY KEY,
+        artistId BINARY(16) NOT NULL REFERENCES artist(id),
         externalId VARCHAR(50) NOT NULL,
         title VARCHAR(255) NOT NULL,
         coverImageUrl VARCHAR(2000),
@@ -48,13 +54,13 @@ const migration0: DatabaseMigration = {
     );
 
     CREATE TABLE playlistEntry (
-        id BINARY(16) NOT NULL REFERENCES playlist (id),
+        playlistId BINARY(16) NOT NULL REFERENCES playlist (id),
         trackId BINARY(16) NOT NULL REFERENCES track (id)
     );
     `,
 
     sqlBackwards: sql`
-    DROP TABLE IF EXISTS track, album, artist, playlist, playlistEntry;
+    DROP TABLE IF EXISTS track, trackArtist, album, artist, playlist, playlistEntry;
     `,
 }
 

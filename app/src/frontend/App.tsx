@@ -1,4 +1,3 @@
-import { isFulfilled } from "@reduxjs/toolkit"
 import { css } from "linaria"
 import React, { useEffect, useState } from "react"
 import { hot } from "react-hot-loader/root"
@@ -87,11 +86,8 @@ function Import() {
                     const file = e.target.files?.[0]
                     if (!file) return
                     dispatch(catalogue.importItunesLibrary(file))
-                        .then(r => {
-                            if (isFulfilled(r)) {
-                                setUploadStats(r.payload.stats)
-                            }
-                        })
+                        .unwrap()
+                        .then(r => setUploadStats(r.stats))
                         .catch(error => console.error(error) /* _Toast_? */)
                     e.target.value = ""
                 }}

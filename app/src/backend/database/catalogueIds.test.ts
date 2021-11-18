@@ -13,14 +13,15 @@ test("benchmark: it's fast", () => {
         generator.generate()
     }
     const [secs, nanos] = process.hrtime(start)
-    // normally expected to complete in 60ms
-    expect(secs + nanos / 1e9).toBeLessThan(0.1)
+    // normally expected to complete in 100ms
+    expect(secs + nanos / 1e9).toBeLessThan(0.2)
 })
 
-test("ids generated in same millisecond use increment", () => {
+test("ids generated in same millisecond use increment iff configured", () => {
     const generator = new CatalogueIdGenerator(
         () => 0 as Timestamp,
         () => new Uint8Array(10),
+        true,
     )
     expect(generator.generate()).toStrictEqual(
         new Uint8Array([0, 0, 0, 0, 0, 0, 64, 0, 128, 0, 0, 0, 0, 0, 0, 0]),
@@ -30,6 +31,17 @@ test("ids generated in same millisecond use increment", () => {
     )
     expect(generator.generate()).toStrictEqual(
         new Uint8Array([0, 0, 0, 0, 0, 0, 64, 0, 128, 0, 0, 0, 0, 0, 0, 2]),
+    )
+
+    const nonIncrementingGenerator = new CatalogueIdGenerator(
+        () => 0 as Timestamp,
+        () => new Uint8Array(10),
+    )
+    expect(nonIncrementingGenerator.generate()).toStrictEqual(
+        new Uint8Array([0, 0, 0, 0, 0, 0, 64, 0, 128, 0, 0, 0, 0, 0, 0, 0]),
+    )
+    expect(nonIncrementingGenerator.generate()).toStrictEqual(
+        new Uint8Array([0, 0, 0, 0, 0, 0, 64, 0, 128, 0, 0, 0, 0, 0, 0, 0]),
     )
 })
 

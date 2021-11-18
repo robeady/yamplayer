@@ -27,7 +27,7 @@ export interface Track extends ExternalTrack {
 export interface ExternalTrack {
     externalId: string
     albumId: string
-    artistId: string
+    artistIds: string[]
     title: string
     trackNumber: Int | null
     discNumber: Int | null
@@ -48,6 +48,7 @@ export interface Album extends ExternalAlbum {
 
 export interface ExternalAlbum {
     externalId: string
+    artistId: string
     title: string
     coverImageUrl: string | null
     releaseDate: string | null

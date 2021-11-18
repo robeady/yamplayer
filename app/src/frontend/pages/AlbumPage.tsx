@@ -23,14 +23,10 @@ interface AlbumProps {
 export function AlbumPage(props: { albumId: string }) {
     const dispatch = useDispatch()
     const album = useSelector(s => resolveCanonical(s.catalogue.albums, props.albumId))
-    useEffect(() => {
-        dispatch(catalogue.getAlbum(props.albumId))
-            .unwrap()
-            // TODO: some kind of toast
-            .catch(error => console.error(error))
-    }, [dispatch, props.albumId])
+    const albumArtist = useSelector(s => album && resolveCanonical(s.catalogue.artists, album.artistId))
 
-    // const artist = useSelector(s => resolveCanonical(s.catalogue.artists, album.))
+    // if album and artist are present, and we have as many tracks as the album says it contains,
+    // and we have the artists for all the albums, then we don't need to fetch anything
 
     const [showingAllTracks, setShowingAllTracks] = useState(false)
 
@@ -44,11 +40,33 @@ export function AlbumPage(props: { albumId: string }) {
         ),
     )
 
+    const trackArtists = useSelector(s =>
+        Object.fromEntries(
+            tracks.flatMap(t => t.artistIds).map(a => [a, resolveCanonical(s.catalogue.artists, a)]),
+        ),
+    )
+
+    const tracksToShow = showingAllTracks ? tracks : tracks.filter(t => t.savedTimestamp !== null)
+
+    // TODO: this will fetch what's needed to show whole album even if user doesn't ask for that
+    const haveAllData =
+        album !== undefined &&
+        albumArtist !== undefined &&
+        tracks.length === album.numTracks &&
+        Object.values(trackArtists).every(a => a !== undefined)
+
+    useEffect(() => {
+        if (!haveAllData) {
+            dispatch(catalogue.getAlbum(props.albumId))
+                .unwrap()
+                // TODO: _Toast_
+                .catch(error => console.error(error))
+        }
+    }, [dispatch, props.albumId, haveAllData])
+
     if (album === undefined) {
         return null
     }
-
-    const tracksToShow = showingAllTracks ? tracks : tracks.filter(t => t.savedTimestamp !== null)
 
     return (
         <Row>

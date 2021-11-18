@@ -443,7 +443,7 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
         return this.executeStage(`TRUNCATE TABLE ${tableNameSql}`)
     }
 
-    insert = (row: InsertTypeFor<QueriedTable>) => {
+    insert = (rows: InsertTypeFor<QueriedTable> | InsertTypeFor<QueriedTable>[]) => {
         const {
             state: {
                 primaryTable,
@@ -451,21 +451,45 @@ class SingleTableStageImpl<QueriedTable extends TableDefinition> implements Inse
             },
             primaryTableName,
         } = this.backend
-        const columns = Object.entries(row).map(([columnName, value]) => {
-            const columnDefinition = primaryTable[columnName]
-            if (columnDefinition === undefined) {
+
+        if (rows.length === 0) {
+            throw new Error("no rows to insert")
+        }
+
+        const tableNameSql = primaryTableName.map(part => dialect.escapeIdentifier(part)).join(".")
+
+        if (!Array.isArray(rows)) {
+            rows = [rows]
+        }
+
+        const columnNames = new Set<string>()
+        for (const row of rows) {
+            for (const columnName of Object.keys(row)) {
+                columnNames.add(columnName)
+            }
+        }
+
+        for (const columnName of columnNames) {
+            if (!(columnName in primaryTable)) {
                 throw new Error(`column ${columnName} not found in table ${primaryTableName.join(".")}`)
             }
-            return { columnName, columnDefinition, value }
-        })
-        const tableNameSql = primaryTableName.map(part => dialect.escapeIdentifier(part)).join(".")
-        if (columns.length === 0) {
-            return this.executeStage(`INSERT INTO ${tableNameSql} DEFAULT VALUES`)
-        } else {
-            const columnsSql = columns.map(c => dialect.escapeIdentifier(c.columnName)).join(", ")
-            const valuesSql = columns.map(c => dialect.escapeJsValueToSql(c.value)).join(", ")
-            return this.executeStage(`INSERT INTO ${tableNameSql} (${columnsSql}) VALUES (${valuesSql})`)
         }
+
+        const columnsSql = [...columnNames].map(name => dialect.escapeIdentifier(name)).join(", ")
+
+        const valuesSql = rows
+            .map(row => {
+                const sqlValues = []
+                for (const columnName of columnNames) {
+                    const value = row[columnName]
+                    const sqlValue = value === undefined ? "DEFAULT" : dialect.escapeJsValueToSql(value)
+                    sqlValues.push(sqlValue)
+                }
+                return `(${sqlValues.join(", ")})`
+            })
+            .join(", ")
+
+        return this.executeStage(`INSERT INTO ${tableNameSql} (${columnsSql}) VALUES ${valuesSql}`)
     }
 
     update = (row: Partial<RowTypeFrom<QueriedTable>>) => {

@@ -19,7 +19,7 @@ export function TrackListing(props: { trackIds: string[] }) {
         .map(trackId => {
             const track = resolveCanonical(allTracks, trackId)
             if (track === undefined) return undefined
-            const artist = resolveCanonical(allArtists, track.artistId)!
+            const artist = resolveCanonical(allArtists, track.artistIds[0]!)!
             const album = resolveCanonical(allAlbums, track.albumId)!
             return { trackId, track, artist, album }
         })
