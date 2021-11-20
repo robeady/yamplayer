@@ -282,13 +282,18 @@ export class Explorer {
         )
 
         // TODO batch-add functions
-        const addedAlbums = await Promise.all(externalAlbums.map(async a => this.library.addAlbum(a)))
-        for (const album of addedAlbums) {
-            albumIdsByExternalId.set(album.externalId, album.catalogueId)
-        }
         const addedArtists = await Promise.all(externalArtists.map(async a => this.library.addArtist(a)))
         for (const artist of addedArtists) {
             artistIdsByExternalId.set(artist.externalId, artist.catalogueId)
+        }
+
+        const addedAlbums = await Promise.all(
+            externalAlbums.map(async a =>
+                this.library.addAlbum({ ...a, artistId: artistIdsByExternalId.get(a.artistId)! }),
+            ),
+        )
+        for (const album of addedAlbums) {
+            albumIdsByExternalId.set(album.externalId, album.catalogueId)
         }
 
         const addedPlaylists = await Promise.all(

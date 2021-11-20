@@ -107,7 +107,11 @@ export class CatalogueIdGenerator {
 }
 
 export function parseCatalogueId(id: CatalogueIdString): CatalogueId {
-    return uuid.parse(id) as Uint8Array // the typescript types just say it's an ArrayLike but we know better
+    try {
+        return uuid.parse(id) as Uint8Array // the typescript types just say it's an ArrayLike but we know better
+    } catch (error: unknown) {
+        throw new Error(`Failed to parse catalogue ID ${id}: ${error}`)
+    }
 }
 
 export function stringifyCatalogueId(id: CatalogueId): CatalogueIdString {
