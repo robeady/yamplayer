@@ -15,13 +15,6 @@ async function main(): Promise<ListeningExpress> {
     const db = MariaDB.connect()
     const deezerApiClient = await DeezerApiClient.create({ cacheDirectory: "cache/deezer" })
     const library = await LibraryStore.setup(db)
-    // const librarySeed = await loadLibrarySeed()
-    // const explorer = await Explorer.seeded(
-    //     library,
-    //     deezerApiClient,
-    //     new Resolver(),
-    //     librarySeed.externalTrackIds,
-    // )
     const explorer = new Explorer(library, deezerApiClient, new Resolver())
 
     app.use("/api/library", serve(library))
