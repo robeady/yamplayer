@@ -228,13 +228,12 @@ export class Explorer {
         return Promise.all(
             externalArtistIds.map(externalId => {
                 const match = matchingArtists.find(m => m.externalId === externalId)
-                if (match === undefined) {
-                    return this.service
+                return (
+                    match ??
+                    this.service
                         .lookupArtist(externalId)
                         .then(async externalArtist => this.library.addArtist(externalArtist))
-                } else {
-                    return match
-                }
+                )
             }),
         )
     }

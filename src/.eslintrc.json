@@ -134,7 +134,6 @@
         // "unicorn/no-for-loop": "error",
         "unicorn/no-array-for-each": "off", // complains about my stream forEach
         "unicorn/no-array-callback-reference": "off", // forbids typescript type guard filter functions
-        "unicorn/prefer-module": "off", // somtimes you have to...
         "unicorn/prevent-abbreviations": "off",
         "unicorn/prefer-ternary": "warn",
         // for now we use null because optional properties are easily forgotten

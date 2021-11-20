@@ -338,6 +338,7 @@ function mapTrackExceptArtistIds(trackFromDb: RowTypeFrom<typeof tables["track"]
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function parseCatalogueIdList(idList: Buffer): string[] {
     let i = 0
     const parts = []

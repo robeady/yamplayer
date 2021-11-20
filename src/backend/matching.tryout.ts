@@ -10,4 +10,5 @@ async function main() {
     await fs.writeFile("out.json", JSON.stringify(tracksByExternalId))
 }
 
+// eslint-disable-next-line unicorn/prefer-module
 if (require.main === module) void main()
