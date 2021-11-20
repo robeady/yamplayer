@@ -155,7 +155,7 @@ class StageBackend<QueriedTables extends TableDefinitions, Selection> {
 
     or = (...args: unknown[]) => this.andOr("or", args)
 
-    private andOr = (connective: "and" | "or", ...args: unknown[]) =>
+    private andOr = (connective: "and" | "or", args: unknown[]) =>
         this.withFilter(f => {
             if (f === undefined) {
                 throw new DslMisuseError(`${connective} called before where/join`)
