@@ -30,20 +30,19 @@ export function AlbumPage(props: { albumId: string }) {
 
     const [showingAllTracks, setShowingAllTracks] = useState(false)
 
-    const tracks = useSelector(s =>
-        sortBy(
-            Object.values(s.catalogue.tracks).filter(
-                (t): t is Track =>
-                    typeof t !== "string" && (t.albumId === props.albumId || t.albumId === album?.externalId),
-            ),
-            t => t.trackNumber,
+    const allTracks = useSelector(s => s.catalogue.tracks)
+    const allArtists = useSelector(s => s.catalogue.artists)
+
+    const tracks = sortBy(
+        Object.values(allTracks).filter(
+            (t): t is Track =>
+                typeof t !== "string" && (t.albumId === props.albumId || t.albumId === album?.externalId),
         ),
+        t => t.trackNumber,
     )
 
-    const trackArtists = useSelector(s =>
-        Object.fromEntries(
-            tracks.flatMap(t => t.artistIds).map(a => [a, resolveCanonical(s.catalogue.artists, a)]),
-        ),
+    const trackArtists = Object.fromEntries(
+        tracks.flatMap(t => t.artistIds).map(a => [a, resolveCanonical(allArtists, a)]),
     )
 
     const tracksToShow = showingAllTracks ? tracks : tracks.filter(t => t.savedTimestamp !== null)
@@ -126,18 +125,24 @@ function AlbumSummary(props: AlbumProps) {
     return (
         <div className={css`flex: 0 0 300px; padding-right: 50px;`}>
             <AlbumImage album={props.album} size={250} />
-            <AlbumStats tracks={props.tracks} />
+            <AlbumStats tracks={props.tracks} totalTracks={props.album.numTracks} />
             <AlbumBlurb />
         </div>
     )
 }
 
-function AlbumStats(props: { tracks: Track[] }) {
+function AlbumStats(props: { tracks: Track[]; totalTracks: number | null }) {
     const numTracks = props.tracks.length
     const totalMinutes = Math.ceil(sumBy(props.tracks, t => t.durationSecs / 60))
+
+    const numTracksText =
+        props.totalTracks !== null && numTracks === props.totalTracks
+            ? numTracks
+            : `${numTracks} of ${props.totalTracks}`
+
     return (
         <div className={css`color: ${colors.gray5}; padding-top: 16px;`}>
-            {numTracks} {plural(numTracks, "track")}, {totalMinutes} {plural(totalMinutes, "minute")}.
+            {numTracksText} {plural(numTracks, "track")}, {totalMinutes} {plural(totalMinutes, "minute")}.
         </div>
     )
 }
