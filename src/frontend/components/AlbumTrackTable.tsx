@@ -1,18 +1,66 @@
 import { css } from "linaria"
 import { styled } from "linaria/lib/react"
-import React from "react"
+import { upperFirst } from "lodash"
+import React, { CSSProperties, ReactNode } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { Track } from "../../model"
-import { unreachable } from "../../util"
+import { isNotUndefined } from "../../util"
 import { Row, Subheading } from "../elements"
 import { DropdownMenu, DropdownMenuItem, useDropdownMenu } from "../elements/DropdownMenu"
 import { formatTime } from "../formatting"
 import { audio, catalogue, view } from "../state/actions"
+import { resolveCanonical } from "../state/catalogue"
 import { AudioQueue } from "../state/queue"
 import { colors } from "../styles"
 import { TrackRating } from "./Rating"
 
-export type TrackTableColumn = "#" | "title" | "artist" | "duration" | "rating"
+interface TrackTableColumn {
+    style: CSSProperties
+    render: (track: Track) => ReactNode
+}
+
+export type TrackTableColumnKey = "#" | "title" | "artist" | "length" | "rating"
+
+const columns: Record<TrackTableColumnKey, TrackTableColumn> = {
+    "#": {
+        style: { width: "40px", color: colors.gray5, textAlign: "right" },
+        render: track => track.trackNumber,
+    },
+    title: { style: { width: "340px" }, render: track => track.title },
+    artist: {
+        style: { width: "240px" },
+        render: track => <ArtistCell track={track} />,
+    },
+    length: {
+        style: { width: "70px", color: colors.gray5 },
+        render: track => formatTime(track.durationSecs),
+    },
+    rating: {
+        style: { width: "140px" },
+        render: track => <RatingCell track={track} />,
+    },
+}
+
+function RatingCell(props: { track: Track }) {
+    const dispatch = useDispatch()
+    return (
+        <TrackRating
+            rating={props.track.rating}
+            enabled={props.track.catalogueId !== null}
+            onRate={newRating =>
+                dispatch(catalogue.setTrackRating({ trackId: props.track.catalogueId!, newRating }))
+            }
+        />
+    )
+}
+
+function ArtistCell(props: { track: Track }) {
+    const allArtists = useSelector(s => s.catalogue.artists)
+    const artistNames = props.track.artistIds
+        .map(a => resolveCanonical(allArtists, a)?.name)
+        .filter(isNotUndefined)
+    return <>{artistNames.join(", ")}</>
+}
 
 export const StickyTrackTableHeader = styled.div`
     display: flex;
@@ -23,7 +71,7 @@ export const StickyTrackTableHeader = styled.div`
     padding: 8px 0 0;
 `
 
-export function TrackTableHeadings(props: { cols: TrackTableColumn[] }) {
+export function TrackTableHeadings(props: { cols: TrackTableColumnKey[] }) {
     return (
         <Subheading>
             <Row className={css`height: 30px;`}>
@@ -35,26 +83,13 @@ export function TrackTableHeadings(props: { cols: TrackTableColumn[] }) {
     )
 }
 
-function TableHeading(props: { col: TrackTableColumn }) {
-    switch (props.col) {
-        case "#":
-            return <TrackNumCol>#</TrackNumCol>
-        case "title":
-            return <TrackCol>Track</TrackCol>
-        case "artist":
-            return <TrackCol>Artist</TrackCol>
-        case "duration":
-            return <LengthCol>Length</LengthCol>
-        case "rating":
-            return <RatingCol>Rating</RatingCol>
-        default:
-            unreachable(props.col)
-    }
+function TableHeading(props: { col: TrackTableColumnKey }) {
+    return <TrackTableCell style={columns[props.col].style}>{upperFirst(props.col)}</TrackTableCell>
 }
 
 export function TrackTable(props: {
     tracks: Track[]
-    cols: TrackTableColumn[]
+    cols: TrackTableColumnKey[]
     buildTrackQueue: (fromTrackId: string) => AudioQueue
 }) {
     return (
@@ -73,7 +108,7 @@ export function TrackTable(props: {
 
 function TrackRow(props: {
     track: Track
-    cols: TrackTableColumn[]
+    cols: TrackTableColumnKey[]
     buildTrackQueue: (fromTrackId: string) => AudioQueue
 }) {
     const dispatch = useDispatch()
@@ -104,32 +139,9 @@ function TrackRow(props: {
     )
 }
 
-function TrackRowColumn(props: { col: TrackTableColumn; track: Track }) {
-    const dispatch = useDispatch()
-    const trackId = props.track.catalogueId ?? props.track.externalId
-    switch (props.col) {
-        case "#":
-            return <TrackNumCol>{props.track.trackNumber}</TrackNumCol>
-        case "title":
-            return <TrackCol>{props.track.title}</TrackCol>
-        case "artist":
-            return <TrackCol>{props.track.title}</TrackCol>
-        case "duration":
-            return <LengthCol>{formatTime(props.track.durationSecs)}</LengthCol>
-
-        case "rating":
-            return (
-                <RatingCol>
-                    <TrackRating
-                        rating={props.track.rating}
-                        enabled={props.track.catalogueId !== null}
-                        onRate={newRating => dispatch(catalogue.setTrackRating({ trackId, newRating }))}
-                    />
-                </RatingCol>
-            )
-        default:
-            unreachable(props.col)
-    }
+function TrackRowColumn(props: { col: TrackTableColumnKey; track: Track }) {
+    const col = columns[props.col]
+    return <TrackTableCell style={col.style}>{col.render(props.track)}</TrackTableCell>
 }
 
 const TrackFlex = styled.div`
@@ -151,9 +163,4 @@ const SelectedTrackFlex = styled(TrackFlex)`
         background: ${colors.purple2};
     }
 `
-const TableCol = styled.div`padding-right: 20px;`
-
-const TrackNumCol = styled(TableCol)`flex: 0 0 40px; text-align: right; color: ${colors.gray6};`
-const TrackCol = styled(TableCol)`flex: 0 0 500px;`
-const RatingCol = styled(TableCol)`flex: 0 0 100px;`
-const LengthCol = styled(TableCol)`flex: 0 0 100px;`
+const TrackTableCell = styled.div`padding-right: 20px;`

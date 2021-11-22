@@ -126,6 +126,7 @@
         "react/destructuring-assignment": "off",
         "react/require-default-props": "off",
         "react/jsx-max-depth": "off",
+        "react/display-name": "off",
 
         "react-hooks/exhaustive-deps": "error",
 

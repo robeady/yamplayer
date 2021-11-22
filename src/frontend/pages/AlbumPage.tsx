@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { Link } from "react-router-dom"
 import { Album, Track } from "../../model"
 import { AlbumImage } from "../components/AlbumImage"
-import { TrackTable, TrackTableColumn, TrackTableHeadings } from "../components/AlbumTrackTable"
+import { TrackTable, TrackTableColumnKey, TrackTableHeadings } from "../components/AlbumTrackTable"
 import { Heading, Row } from "../elements"
 import { LinkButton } from "../elements/LinkButton"
 import { plural } from "../elements/plural"
@@ -83,7 +83,7 @@ export function AlbumPage(props: { albumId: string }) {
 function AlbumDetail(
     props: AlbumProps & { showingAllTracks: boolean; setShowingAllTracks: Setter<boolean> },
 ) {
-    const tableCols: TrackTableColumn[] = ["#", "title", "artist", "duration"]
+    const tableCols: TrackTableColumnKey[] = ["#", "title", "artist", "length"]
 
     return (
         <div className={css`flex: 1;`}>

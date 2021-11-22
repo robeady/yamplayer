@@ -11,7 +11,12 @@ import { resolveCanonical } from "../state/catalogue"
 import { AudioQueue, buildAudioQueue } from "../state/queue"
 import { colors, fontSizes } from "../styles"
 import { AlbumImage } from "./AlbumImage"
-import { StickyTrackTableHeader, TrackTable, TrackTableColumn, TrackTableHeadings } from "./AlbumTrackTable"
+import {
+    StickyTrackTableHeader,
+    TrackTable,
+    TrackTableColumnKey,
+    TrackTableHeadings,
+} from "./AlbumTrackTable"
 
 interface AlbumRowData {
     tracks: Track[]
@@ -44,7 +49,7 @@ function assembleRows(trackIds: string[], allTracks: Dict<string | Track>) {
     return rows
 }
 
-const tableCols: TrackTableColumn[] = ["#", "title", "rating", "duration"]
+const tableCols: TrackTableColumnKey[] = ["#", "title", "rating", "length"]
 
 /** This component shows a table of tracks, but where consecutive tracks from the same album are grouped together. */
 export function AlbumsListing(props: { trackIds: string[] }) {
