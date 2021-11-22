@@ -4,7 +4,6 @@ import { upperFirst } from "lodash"
 import React, { CSSProperties, ReactNode } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { Track } from "../../model"
-import { isNotUndefined } from "../../util"
 import { Row, Subheading } from "../elements"
 import { DropdownMenu, DropdownMenuItem, useDropdownMenu } from "../elements/DropdownMenu"
 import { formatTime } from "../formatting"
@@ -56,9 +55,7 @@ function RatingCell(props: { track: Track }) {
 
 function ArtistCell(props: { track: Track }) {
     const allArtists = useSelector(s => s.catalogue.artists)
-    const artistNames = props.track.artistIds
-        .map(a => resolveCanonical(allArtists, a)?.name)
-        .filter(isNotUndefined)
+    const artistNames = props.track.artistIds.map(a => resolveCanonical(allArtists, a)?.name ?? a)
     return <>{artistNames.join(", ")}</>
 }
 

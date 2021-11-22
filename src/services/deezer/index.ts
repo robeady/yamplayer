@@ -114,12 +114,13 @@ export class DeezerApiClient implements Service {
         }
     }
 
-    async lookupAlbumEtc(
+    async lookupAlbumAndTracks(
         id: string,
-    ): Promise<{ album: ExternalAlbum; tracks: ExternalTrack[]; artists: ExternalArtist[] }> {
+    ): Promise<{ album: ExternalAlbum; tracks: ExternalTrack[]; artist: ExternalArtist }> {
         const rawId = parseExternalId(id, "dz")
         const [albumResponse, tracksResponse] = await Promise.all([
             this.httpGet<AlbumResponse>(`album/${rawId}`),
+            // additional request required to get track number, disc number and isrc
             this.httpGet<AlbumTracksResponse>(`album/${rawId}/tracks`),
         ])
         if (albumResponse.data.error || tracksResponse.data.error) {
@@ -150,14 +151,12 @@ export class DeezerApiClient implements Service {
                 isrc: track.isrc || null, // never observed this to be absent but this seems a safe approach
                 rating: null,
             })),
-            artists: [
-                // _KeepArtistParsingInSync_
-                {
-                    externalId: deezerId(album.artist.id),
-                    name: album.artist.name,
-                    imageUrl: album.artist.picture_medium,
-                },
-            ],
+            // _KeepArtistParsingInSync_
+            artist: {
+                externalId: deezerId(album.artist.id),
+                name: album.artist.name,
+                imageUrl: album.artist.picture_medium,
+            },
         }
     }
 

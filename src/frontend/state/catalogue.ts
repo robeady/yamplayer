@@ -51,7 +51,7 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
                     // TODO: should we be populating external ID pointers too?
                     ({ ...state, ...payload, libraryLoaded: true }),
             )
-            .addCase(catalogueThunks.getAlbum.fulfilled, (state, { payload: { album, tracks } }) => {
+            .addCase(catalogueThunks.getAlbum.fulfilled, (state, { payload: { album, tracks, artists } }) => {
                 if (album.catalogueId === null) {
                     state.albums[album.externalId] = album
                 } else {
@@ -64,6 +64,15 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
                     } else {
                         state.tracks[track.catalogueId] = track
                         state.tracks[track.externalId] = track.catalogueId
+                    }
+                }
+                for (const artist of artists) {
+                    console.log({ artist })
+                    if (artist.catalogueId === null) {
+                        state.artists[artist.externalId] = artist
+                    } else {
+                        state.artists[artist.catalogueId] = artist
+                        state.artists[artist.externalId] = artist.catalogueId
                     }
                 }
             })

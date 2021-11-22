@@ -83,17 +83,36 @@ export class Explorer {
 
     /** Fetches an album and associated tracks and artists. Includes tracks not in the library. */
     async getAlbum(albumId: string): Promise<AlbumEtc> {
+        // TODO: this logic got hideously complicated.
+        // maybe it would be better to let the UI query for any artists it doesn't know about instead?
+
         if (albumId.includes(":")) {
-            const external = await this.service.lookupAlbumEtc(albumId)
+            const external = await this.service.lookupAlbumAndTracks(albumId)
             const [internalAlbum] = await this.library.matchAlbums([albumId])
-            const internalArtists = keyBy(
-                await this.library.matchArtists(external.artists.map(a => a.externalId)),
-                a => a.externalId,
-            )
+            const [internalArtist] = await this.library.matchArtists([external.artist.externalId])
+
             const internalTracks = keyBy(
                 await this.library.matchTracks(external.tracks.map(t => t.externalId)),
                 t => t.externalId,
             )
+
+            // some artists may already appear in the internal data. others should be matched
+            // this is basically copy pasted from below.
+            const allExternalArtistIds = [...new Set(external.tracks.flatMap(t => t.artistIds))]
+            const artistsToMatch = allExternalArtistIds.filter(e => e !== internalArtist?.externalId)
+            const matchedArtists = await this.library.matchArtists(artistsToMatch)
+            const remainingExternalArtistIds = [...allExternalArtistIds].filter(
+                e =>
+                    // we tried to match this external artist
+                    artistsToMatch.includes(e) &&
+                    // and we failed
+                    !matchedArtists.some(m => m.externalId === e),
+            )
+
+            const lookedUpExternalArtists = await Promise.all(
+                remainingExternalArtistIds.map(async a => this.service.lookupArtist(a)),
+            )
+
             return {
                 album: {
                     ...external.album,
@@ -108,34 +127,84 @@ export class Explorer {
                     cataloguedTimestamp: internalTracks[t.externalId]?.cataloguedTimestamp ?? null,
                     savedTimestamp: internalTracks[t.externalId]?.savedTimestamp ?? null,
                 })),
-                artists: external.artists.map(a => ({
-                    ...a,
-                    catalogueId: internalArtists[a.externalId]?.catalogueId ?? null,
-                    cataloguedTimestamp: internalArtists[a.externalId]?.cataloguedTimestamp ?? null,
-                })),
+                artists: [
+                    ...(internalArtist ? [internalArtist] : []),
+                    ...lookedUpExternalArtists.map(a => ({
+                        ...a,
+                        catalogueId: null,
+                        cataloguedTimestamp: null,
+                    })),
+                ],
             }
         } else {
             const internal = await this.library.list({ albumId })
+            // TODO: handle not found
             // there might be more tracks in the album not in our library
             const tracks = Object.values(internal.tracks)
+            const artists = Object.values(internal.artists)
             const album = Object.values(internal.albums)[0]!
             if (album.numTracks === tracks.length) {
-                return { album, artists: Object.values(internal.artists), tracks }
+                return { album, artists, tracks }
             } else {
-                const external = await this.service.lookupAlbumEtc(album.externalId)
+                const external = await this.service.lookupAlbumAndTracks(album.externalId)
                 // we don't update the internal tracks with external information here. could this lead to weird inconsistencies?
+
+                // some artists may already appear in the internal data. others should be matched
+                const allExternalArtistIds = new Set(external.tracks.flatMap(t => t.artistIds))
+                const artistsToMatch = new Set<string>()
+                for (const externalArtistId of allExternalArtistIds) {
+                    const already = artists.find(a => a.externalId === externalArtistId)
+                    if (already === undefined) {
+                        artistsToMatch.add(externalArtistId)
+                    }
+                }
+                const matchedArtists = await this.library.matchArtists([...artistsToMatch])
+                const remainingExternalArtistIds = [...allExternalArtistIds].filter(
+                    e =>
+                        // we tried to match this external artist
+                        artistsToMatch.has(e) &&
+                        // and we failed
+                        !matchedArtists.some(m => m.externalId === e),
+                )
+                console.log({ allExternalArtistIds, remainingExternalArtistIds, matchedArtists })
+
+                const lookedUpExternalArtists = await Promise.all(
+                    remainingExternalArtistIds.map(async a => this.service.lookupArtist(a)),
+                )
+
                 const combinedTracks: Track[] = [
                     ...tracks,
                     ...external.tracks
                         .filter(et => !tracks.some(it => it.externalId === et.externalId))
                         .map(et => ({
                             ...et,
+                            // remap external track artist IDs
+                            artistIds: et.artistIds.map(
+                                externalArtistId =>
+                                    artists.find(a => a.externalId === externalArtistId)?.catalogueId ??
+                                    matchedArtists.find(m => m.externalId === externalArtistId)
+                                        ?.catalogueId ??
+                                    externalArtistId,
+                            ),
                             catalogueId: null,
                             cataloguedTimestamp: null,
                             savedTimestamp: null,
                         })),
                 ]
-                return { album, tracks: combinedTracks, artists: Object.values(internal.artists) }
+
+                return {
+                    album,
+                    tracks: combinedTracks,
+                    artists: [
+                        ...artists,
+                        ...matchedArtists,
+                        ...lookedUpExternalArtists.map(e => ({
+                            ...e,
+                            catalogueId: null,
+                            cataloguedTimestamp: null,
+                        })),
+                    ],
+                }
             }
         }
     }
