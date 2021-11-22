@@ -30,9 +30,8 @@ See https://www.figma.com/file/UL3IcZhYuqSxL31gvCydxl/Yamplayer-app
 ### Installation
 
 1. Clone the repo with its submodules: `git clone --recurse-submodules https://github.com/robeady/yamplayer.git`
-2. Change to the app directory: `cd app`
-3. Install dependencies: `yarn install --frozen-lockfile`
-4. Create a database: `scripts/create_db.cmd` will use the mariadb docker image to do this.
+1. Install dependencies: `yarn install --frozen-lockfile`
+1. Create a database: `scripts/create_db.cmd` will use the mariadb docker image to do this.
 
 ### Running locally
 

@@ -1,24 +1,24 @@
 name: CI
 
 on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    push:
+        branches: [master]
+    pull_request:
+        branches: [master]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2.3.2
-      with:
-        token: ${{secrets.ROBEADY_GITHUB_PAT}}
-        submodules: recursive 
-    - uses: actions/setup-node@v1
-      with:
-        node-version: '14'
-    - run: yarn --cwd app install --frozen-lockfile
-    - run: yarn --cwd app run typecheck
-    - run: yarn --cwd app test
-    - run: yarn --cwd app run lint
-    - run: yarn --cwd app run format:check    
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2.3.2
+              with:
+                  token: ${{secrets.ROBEADY_GITHUB_PAT}}
+                  submodules: recursive
+            - uses: actions/setup-node@v1
+              with:
+                  node-version: "14"
+            - run: yarn install --frozen-lockfile
+            - run: yarn run typecheck
+            - run: yarn test
+            - run: yarn run lint
+            - run: yarn run format:check
