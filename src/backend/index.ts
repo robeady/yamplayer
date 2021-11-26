@@ -22,10 +22,12 @@ async function main(): Promise<ListeningExpress> {
     const library = await LibraryStore.setup(db)
     const explorer = new Explorer(library, deezerApiClient, new Resolver())
 
-    app.use("/api/library", serve(library))
-    app.use("/api/explorer", serve(explorer))
+    const base = process.env.YP_BASEURL ?? ""
 
-    app.get("/api/proxy", async (req, res) => {
+    app.use(`${base}/api/library`, serve(library))
+    app.use(`${base}/api/explorer`, serve(explorer))
+
+    app.get(`${base}/api/proxy`, async (req, res) => {
         const url = req.query.url as string
         try {
             const response = await globalAxios.get(url, { responseType: "stream" })
