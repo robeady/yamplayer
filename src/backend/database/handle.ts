@@ -56,8 +56,9 @@ export class MariaDB implements DatabaseHandle {
             user,
             password,
             database,
-            // not sure why this was enabled, safer to disable:
-            // multipleStatements: true,
+            // TODO: this is only enabled for running migration commands
+            // for _Security_, disable it for normal queries
+            multipleStatements: true,
             rowsAsArray: true,
         })
         console.log("successfully created db connection pool")
