@@ -27,18 +27,14 @@ echo "> uploading zip file"
 fileman_upload "$DATE.zip" yamplayer2
 
 echo "> extracting zip file to new directory"
-fileman_op extract "yamplayer2/$DATE.zip" "$DATE"
+fileman_op extract "yamplayer2/live-$DATE.zip" "$DATE"
 fileman_op unlink "yamplayer2/$DATE.zip"
 
-echo "> swapping old directory for new directory"
-fileman_op move yamplayer2/live "pre-$DATE"
-fileman_op move "yamplayer2/$DATE" live
+echo "> replacing old app directory with new directory"
+fileman_op move "yamplayer2/live-$DATE" live
 
 echo "> restarting app"
 touch "restart_$DATE.txt"
 # upload cannot overwrite files
 fileman_upload "restart_$DATE.txt" yamplayer2/tmp
 fileman_op move "yamplayer2/tmp/restart_$DATE.txt" restart.txt
-
-echo "> deleting old app directory"
-fileman_op unlink "yamplayer2/pre-$DATE"
