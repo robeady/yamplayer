@@ -24,10 +24,10 @@ async function main(): Promise<ListeningExpress> {
 
     const base = process.env.YP_BASEURL ?? ""
 
-    app.use(`${base}/api/library`, serve(library))
-    app.use(`${base}/api/explorer`, serve(explorer))
+    app.use(`/${base}api/library`, serve(library))
+    app.use(`/${base}api/explorer`, serve(explorer))
 
-    app.get(`${base}/api/proxy`, async (req, res) => {
+    app.get(`/${base}api/proxy`, async (req, res) => {
         const url = req.query.url as string
         try {
             const response = await globalAxios.get(url, { responseType: "stream" })
