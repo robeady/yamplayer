@@ -31,6 +31,7 @@ fileman_op extract "yamplayer2/$DATE.zip" "live-$DATE"
 fileman_op unlink "yamplayer2/$DATE.zip"
 
 echo "> replacing old app directory with new directory"
+fileman_op move "yamplayer2/live" "live-pre-$DATE"
 fileman_op move "yamplayer2/live-$DATE" live
 
 echo "> restarting app"
@@ -38,3 +39,6 @@ touch "restart_$DATE.txt"
 # upload cannot overwrite files
 fileman_upload "restart_$DATE.txt" yamplayer2/tmp
 fileman_op move "yamplayer2/tmp/restart_$DATE.txt" restart.txt
+
+echo "> removing old app directory"
+fileman_op unlink "yamplayer2/live-pre-$DATE"
