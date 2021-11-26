@@ -25,6 +25,13 @@ class MariaDBConnection implements DatabaseConnectionHandle {
     }
 }
 
+export interface DbConfig {
+    user: string
+    password: string
+    host?: string
+    port?: number
+    database?: string
+}
 export class MariaDB implements DatabaseHandle {
     private constructor(private pool: Pool) {}
 
@@ -36,15 +43,22 @@ export class MariaDB implements DatabaseHandle {
         return new MariaDBConnection(this.pool).execute(sql, values)
     }
 
-    static connect(port = 3306): MariaDB {
+    static connect({
+        user,
+        password,
+        host = "localhost",
+        port = 3306,
+        database = "yamplayer",
+    }: DbConfig): MariaDB {
         const connectionPool = mariadb.createPool({
-            host: "localhost",
+            host,
             port,
-            user: "yamplayer_user",
-            password: "hunter2",
-            database: "yamplayer",
+            user,
+            password,
+            database,
+            // TODO: this is only enabled for running migration commands
+            // for _Security_, disable it for normal queries
             multipleStatements: true,
-            connectionLimit: 3,
             rowsAsArray: true,
         })
         console.log("successfully created db connection pool")

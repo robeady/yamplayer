@@ -26,7 +26,11 @@ describe("library store tests", () => {
             })
             .withWaitStrategy(Wait.forHealthCheck())
             .start()
-        db = MariaDB.connect(container.getMappedPort(3306))
+        db = MariaDB.connect({
+            port: container.getMappedPort(3306),
+            user: "yamplayer_user",
+            password: "hunter2",
+        })
         library = await LibraryStore.setup(db, () => 0 as Timestamp)
     })
 

@@ -9,9 +9,9 @@ const DEV = process.env.NODE_ENV !== "production"
 // disable vendor prefixing of linaria css
 require("stylis").set({ prefix: false })
 
-const appConfig = {
-    mode: DEV ? "development" : "production",
-    entry: ["./src/frontend/index"],
+/** @type {webpack.Configuration} */
+const config = {
+    entry: "./src/frontend/index",
     output: {
         path: path.join(__dirname, "dist"),
         filename: "bundle.js",
@@ -57,20 +57,20 @@ const appConfig = {
     ],
 }
 
-const developmentConfig = {
+const devConfig = {
     devServer: {
         contentBase: "src/frontend/public",
-        proxy: { "/api": "http://localhost:8280" },
+        proxy: { "/api": `http://localhost:${process.env.YP_PORT}` },
     },
     resolve: { alias: { "react-dom": "@hot-loader/react-dom" } },
     plugins: [new ForkTsCheckerWebpackPlugin(), new webpack.NamedModulesPlugin()],
     devtool: "eval-source-map",
 }
 
-const productionConfig = {
+const prodConfig = {
     output: {
         publicPath: "/",
     },
 }
 
-module.exports = merge(appConfig, DEV ? developmentConfig : productionConfig)
+module.exports = merge(config, DEV ? devConfig : prodConfig)
