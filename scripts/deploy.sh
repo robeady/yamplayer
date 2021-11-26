@@ -27,7 +27,7 @@ echo "> uploading zip file"
 fileman_upload "$DATE.zip" yamplayer2
 
 echo "> extracting zip file to new directory"
-fileman_op extract "yamplayer2/live-$DATE.zip" "$DATE"
+fileman_op extract "yamplayer2/live-$DATE.zip" "live-$DATE"
 fileman_op unlink "yamplayer2/$DATE.zip"
 
 echo "> replacing old app directory with new directory"
