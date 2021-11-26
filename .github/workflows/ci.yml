@@ -1,4 +1,4 @@
-on: [push, pull_request]
+on: push
 
 jobs:
     build:
@@ -16,7 +16,7 @@ jobs:
             - run: yarn test
             - run: yarn run lint:check
             - run: yarn run format:check
-            - if: github.event_name == 'push' && github.ref == 'refs/heads/deployment'
+            - if: github.ref == 'refs/heads/master'
               env:
                   USER: ${{secrets.DEPLOY_USER}}
                   TOKEN: ${{secrets.DEPLOY_TOKEN}}
