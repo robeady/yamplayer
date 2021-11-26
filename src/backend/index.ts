@@ -2,6 +2,7 @@ import globalAxios from "axios"
 import express from "express"
 import { DeezerApiClient } from "../services/deezer"
 import { Resolver } from "../services/plugins/resolver"
+import { parseNumber } from "../util"
 import { listen, ListeningExpress } from "../util/express"
 import { MariaDB } from "./database/handle"
 import { Explorer } from "./explorer"
@@ -12,7 +13,7 @@ async function main(): Promise<ListeningExpress> {
     const app = express()
     app.use(express.json({ limit: "10mb" }))
 
-    const db = MariaDB.connect()
+    const db = MariaDB.connect({ user: process.env.YP_DB_USER!, password: process.env.YP_DB_PASSWORD! })
     const deezerApiClient = await DeezerApiClient.create({ cacheDirectory: "cache/deezer" })
     const library = await LibraryStore.setup(db)
     const explorer = new Explorer(library, deezerApiClient, new Resolver())
@@ -33,7 +34,7 @@ async function main(): Promise<ListeningExpress> {
         }
     })
 
-    return listen(app, 8280, "127.0.0.1")
+    return listen(app, parseNumber(process.env.YP_PORT) ?? 0, "127.0.0.1")
 }
 
 main()

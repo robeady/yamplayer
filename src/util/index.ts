@@ -5,3 +5,10 @@ export function unreachable(arg: never): never {
 export function isNotUndefined<T>(t: T | undefined): t is T {
     return t !== undefined
 }
+
+export function parseNumber(s: unknown): number | undefined {
+    const n = Number(s)
+    if (!Number.isNaN(n)) {
+        return n
+    }
+}
