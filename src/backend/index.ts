@@ -9,6 +9,9 @@ import { Explorer } from "./explorer"
 import { LibraryStore } from "./library"
 import { serve } from "./rpc/server"
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports, unicorn/prefer-module
+require("source-map-support").install()
+
 async function main(): Promise<ListeningExpress> {
     const app = express()
     app.use(express.json({ limit: "10mb" }))
