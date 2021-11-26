@@ -14,16 +14,25 @@ function fileman_upload {
 
 DATE=$(date --iso-8601 --utc)
 
-# zip backend code and dependencies
+echo "reinstall non-dev dependencies"
+mv node_modules node_modules_dev
+yarn install --frozen-lockfile --prod
+
+echo "zip backend code and dependencies"
 zip -qr "$DATE.zip" dist node_modules -x "dist/frontend/*"
-# upload zip file
+
+echo "upload zip file"
 fileman_upload "$DATE.zip" yamplayer2
-# extract zip file to new directory
+
+echo "extract zip file to new directory"
 fileman_op extract "yamplayer2/$DATE.zip" "$DATE"
-# swap old directory for new directory
+
+echo "swap old directory for new directory"
 fileman_op move yamplayer2/live "pre-$DATE"
 fileman_op move "yamplayer2/$DATE" live
-# restart app
+
+echo "restart app"
 touch restart.txt
 fileman_upload restart.txt yamplayer2/tmp
-# TODO: delete old directory
+
+echo "TODO: delete old directory"

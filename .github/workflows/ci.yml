@@ -12,26 +12,12 @@ jobs:
               with:
                   node-version: "14"
             - run: yarn install --frozen-lockfile
-            - run: yarn run typecheck
+            - run: yarn run compile
             - run: yarn test
             - run: yarn run lint:check
             - run: yarn run format:check
-
-    deploy:
-        needs: build
-        if: github.event_name == 'push' && github.ref == 'refs/heads/deployment'
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2.3.2
-              with:
-                  token: ${{secrets.ROBEADY_GITHUB_PAT}}
-                  submodules: recursive
-            - uses: actions/setup-node@v1
-              with:
-                  node-version: "14"
-            - run: yarn install --frozen-lockfile --prod
-            - run: yarn run compile
-            - env:
+            - if: github.event_name == 'push' && github.ref == 'refs/heads/deployment'
+              env:
                   USER: ${{secrets.DEPLOY_USER}}
                   TOKEN: ${{secrets.DEPLOY_TOKEN}}
                   HOST: ${{secrets.DEPLOY_HOST}}
