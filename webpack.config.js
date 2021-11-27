@@ -1,8 +1,9 @@
-const path = require("path")
 const webpack = require("webpack")
 const merge = require("webpack-merge")
 const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin")
 const MiniCssExtractPlugin = require("mini-css-extract-plugin")
+const HtmlWebpackPlugin = require("html-webpack-plugin")
+const InjectBodyPlugin = require("inject-body-webpack-plugin").default
 
 const DEV = process.env.NODE_ENV !== "production"
 
@@ -11,11 +12,8 @@ require("stylis").set({ prefix: false })
 
 /** @type {webpack.Configuration} */
 const config = {
+    mode: DEV ? "development" : "production",
     entry: "./src/frontend/index",
-    output: {
-        path: path.join(__dirname, "dist"),
-        filename: "bundle.js",
-    },
     resolve: {
         modules: ["node_modules"],
         extensions: [".ts", ".tsx", ".js", ".jsx"],
@@ -49,27 +47,45 @@ const config = {
             },
         ],
     },
+    devtool: DEV ? "eval-source-map" : "source-map",
     plugins: [
+        new HtmlWebpackPlugin({
+            title: "Yamplayer",
+        }),
+        new InjectBodyPlugin({
+            content: '<main id="app" />',
+        }),
         new MiniCssExtractPlugin({
-            // TODO: something like [contenthash] in PROD. will need some way to link correct filename
-            filename: "styles.css",
+            filename: DEV ? "styles.css" : "styles-[contenthash].css",
         }),
     ],
 }
 
+/** @type {webpack.Configuration} */
 const devConfig = {
     devServer: {
-        contentBase: "src/frontend/public",
         proxy: { "/api": `http://localhost:${process.env.YP_PORT}` },
     },
     resolve: { alias: { "react-dom": "@hot-loader/react-dom" } },
     plugins: [new ForkTsCheckerWebpackPlugin(), new webpack.NamedModulesPlugin()],
-    devtool: "eval-source-map",
 }
 
+/** @type {webpack.Configuration} */
 const prodConfig = {
     output: {
-        publicPath: "/",
+        filename: "[name].[contenthash].js",
+        // publicPath: "auto",
+    },
+    optimization: {
+        splitChunks: {
+            cacheGroups: {
+                vendor: {
+                    test: /[\\/]node_modules[\\/]/,
+                    name: "vendor",
+                    chunks: "all",
+                },
+            },
+        },
     },
 }
 
