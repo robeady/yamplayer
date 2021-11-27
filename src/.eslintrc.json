@@ -149,6 +149,7 @@
         "unicorn/prefer-query-selector": "off",
         // not supported by TS? can't find any help online
         "unicorn/prefer-node-protocol": "off",
+        "unicorn/prefer-module": "off",
 
         // === jest ===
         "jest/expect-expect": ["warn", { "assertFunctionNames": ["expect*"] }],

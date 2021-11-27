@@ -7,10 +7,15 @@ import { listen, ListeningExpress } from "../util/express"
 import { MariaDB } from "./database/handle"
 import { Explorer } from "./explorer"
 import { LibraryStore } from "./library"
+import { moduleLogger } from "./logging"
 import { serve } from "./rpc/server"
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports, unicorn/prefer-module
-require("source-map-support").install()
+if (process.env.NODE_ENV === "production") {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+    require("source-map-support").install()
+}
+
+const logger = moduleLogger(module)
 
 async function main(): Promise<ListeningExpress> {
     const app = express()
@@ -38,7 +43,7 @@ async function main(): Promise<ListeningExpress> {
         } catch (error: any) {
             // on async handlers express won't do any error handling by default,
             // let's take care of it ourselves.
-            console.error(error)
+            logger.error(error)
             res.status(500).json(`${error?.name || "Error"}: ${error?.message || JSON.stringify(error)}`)
         }
     })
@@ -48,6 +53,6 @@ async function main(): Promise<ListeningExpress> {
 
 main()
     .then(({ address, port }) => {
-        console.log(`backend listening on ${address}:${port}`)
+        logger.info(`backend listening on ${address}:${port}`)
     })
-    .catch(error => console.error(error))
+    .catch(error => logger.error(error))
