@@ -1,3 +1,4 @@
+const path = require("path")
 const webpack = require("webpack")
 const merge = require("webpack-merge")
 const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin")
@@ -73,6 +74,7 @@ const devConfig = {
 /** @type {webpack.Configuration} */
 const prodConfig = {
     output: {
+        path: path.resolve(__dirname, "dist", "web"),
         filename: "[name].[contenthash].js",
         // publicPath: "auto",
     },

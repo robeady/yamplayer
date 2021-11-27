@@ -16,7 +16,6 @@ jobs:
             - run: yarn test
             - run: yarn run lint:check
             - run: yarn run format:check
-            - run: yarn run frontend:build
             - if: github.ref == 'refs/heads/master'
               env:
                   USER: ${{secrets.DEPLOY_USER}}

@@ -20,8 +20,11 @@ echo "> reinstalling non-dev dependencies"
 mv node_modules node_modules_dev
 yarn install --frozen-lockfile --prod
 
-echo "> zipping backend code and dependencies"
-zip -qr "$DATE.zip" dist node_modules -x "dist/frontend/*"
+echo "> bundling frontend"
+yarn run frontend:build
+
+echo "> zipping code and dependencies"
+zip -qr "$DATE.zip" dist node_modules -x "dist/node/frontend/*"
 
 echo "> uploading zip file"
 fileman_upload "$DATE.zip" yamplayer2
@@ -29,6 +32,15 @@ fileman_upload "$DATE.zip" yamplayer2
 echo "> extracting zip file to new directory"
 fileman_op extract "yamplayer2/$DATE.zip" "live-$DATE"
 fileman_op unlink "yamplayer2/$DATE.zip"
+
+echo "> moving frontend bundle"
+fileman_op move "yamplayer2/live-$DATE/dist/web" "/link/yamplayer-$DATE"
+
+echo "> deploying new frontend"
+fileman_op copy "link/yamplayer/api" "link/yamplayer-$DATE"
+fileman_op move "link/yamplayer" "link/yamplayer-pre-$DATE"
+fileman_op move "link/yamplayer-$DATE" "link/yamplayer"
+fileman_op unlink "link/yamplayer-pre-$DATE"
 
 echo "> replacing old app directory with new directory"
 fileman_op move "yamplayer2/live" "live-pre-$DATE"
