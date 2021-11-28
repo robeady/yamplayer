@@ -38,6 +38,7 @@ export function AlbumPage(props: { albumId: string }) {
             (t): t is Track =>
                 typeof t !== "string" && (t.albumId === props.albumId || t.albumId === album?.externalId),
         ),
+        t => t.discNumber,
         t => t.trackNumber,
     )
 
