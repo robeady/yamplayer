@@ -5,7 +5,8 @@ import { useDispatch, useSelector } from "react-redux"
 import { PlayPauseButton } from "./components/PlayPause"
 import { Slider } from "./components/Slider"
 import { VolumeControl } from "./components/Volume"
-import { DotDotDot, Flex, Noverflow } from "./elements"
+import { DotDotDot, Noverflow, Row } from "./elements"
+import { AlbumLink } from "./elements/links"
 import { formatTime } from "./formatting"
 import SkipNext from "./icons/skip_next.svg"
 import SkipPrevious from "./icons/skip_previous.svg"
@@ -13,7 +14,7 @@ import { audio } from "./state/actions"
 import { resolveCanonical } from "./state/catalogue"
 import { colors } from "./styles"
 
-function Player() {
+export function Player() {
     return (
         <div
             className={css`
@@ -48,15 +49,15 @@ function PlayingTrack() {
             className={css`
                 padding: 16px;
             `}>
-            <Flex className={css`gap: 12px;`}>
+            <Row className={css`gap: 12px;`}>
                 <img src={playingAlbum?.coverImageUrl ?? undefined} width={48} />
                 <Noverflow>
                     <DotDotDot>{playingTrack?.title}</DotDotDot>
-                    <DotDotDot className={css`color: ${colors.gray6};`}>
-                        {playingArtist?.name} • {playingAlbum?.title}
+                    <DotDotDot className={css`color: ${colors.gray6}; font-size: 14px;`}>
+                        {playingArtist?.name} • <AlbumLink album={playingAlbum} />
                     </DotDotDot>
                 </Noverflow>
-            </Flex>
+            </Row>
         </div>
     )
 }
@@ -198,21 +199,4 @@ function SecondaryControls() {
     )
 }
 
-export function NowPlaying() {
-    const queue = useSelector(s => s.player.queue)
-    return (
-        <div>
-            <br />
-            <span>Up next:</span>
-            <ol>
-                {queue.next.map(trackId => (
-                    <li key={trackId}>{trackId}</li>
-                ))}
-            </ol>
-        </div>
-    )
-}
-
 const clamp = (number: number, min: number, max: number) => (number < min ? min : number > max ? max : number)
-
-export default Player
