@@ -30,6 +30,7 @@ export const rootLogger = createLogger({
             ? []
             : [
                   new transports.Console({
+                      level: process.env.NODE_ENV === "test" ? "warn" : "debug",
                       format: format.combine(
                           format.colorize(),
                           format.timestamp({ format: "HH:mm:ss.SSS" }),
