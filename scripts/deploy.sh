@@ -35,6 +35,7 @@ fileman_op move "yamplayer2/live-$DATE/dist/web" "/link/yamplayer-$DATE"
 
 echo "> deploying new frontend"
 fileman_op copy "link/yamplayer/api" "/link/yamplayer-$DATE/api"
+fileman_op copy "link/yamplayer/.htaccess" "/link/yamplayer-$DATE"
 fileman_op move "link/yamplayer" "/link/yamplayer-pre-$DATE"
 fileman_op move "link/yamplayer-$DATE" "/link/yamplayer"
 fileman_op unlink "link/yamplayer-pre-$DATE"
