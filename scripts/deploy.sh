@@ -20,9 +20,6 @@ echo "> reinstalling non-dev dependencies"
 mv node_modules node_modules_dev
 yarn install --frozen-lockfile --prod
 
-echo "> bundling frontend"
-yarn run frontend:build
-
 echo "> zipping code and dependencies"
 zip -qr "$DATE.zip" dist node_modules -x "dist/node/frontend/*"
 
