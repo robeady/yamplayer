@@ -2,6 +2,9 @@ import { groupBy, intersection, keyBy } from "lodash"
 import { ExternalTrack } from "../model"
 import { Service } from "../services"
 import { ItunesLibraryContents, ItunesTrack } from "../services/apple/itunes"
+import { moduleLogger } from "./logging"
+
+const logger = moduleLogger(module)
 
 export async function matchItunesLibrary(
     itunesLibraryContents: ItunesLibraryContents,
@@ -19,7 +22,7 @@ export async function matchItunesLibrary(
         const matches = await searchForItunesTrack(service, track)
         if (matches.results.externalTrackIds.length === 0) {
             // TODO: inform the user that we failed to match this track
-            console.warn(`failed to match itunes track ${track.title} by ${track.artistName}`)
+            logger.warn(`failed to match itunes track ${track.title} by ${track.artistName}`)
         } else {
             matchedTracks.push({
                 track,

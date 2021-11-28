@@ -1,5 +1,8 @@
+import { moduleLogger } from "../logging"
 import { DatabaseHandle } from "./dsl/impl"
 import { sql } from "./sqltypes"
+
+const logger = moduleLogger(module)
 
 const migrationTablesSetup = sql`
     CREATE TABLE IF NOT EXISTS migrations (
@@ -25,7 +28,7 @@ export async function applyMigrations(migrations: DatabaseMigration[], db: Datab
         const lastKnownSchemaVersion = migrations.length - 1
 
         if (foundSchemaVersion < lastKnownSchemaVersion) {
-            console.log(
+            logger.info(
                 `migrating database forwards from schema version ${foundSchemaVersion} to ${lastKnownSchemaVersion}`,
             )
             for (let i = foundSchemaVersion + 1; i <= lastKnownSchemaVersion; i++) {
@@ -36,7 +39,7 @@ export async function applyMigrations(migrations: DatabaseMigration[], db: Datab
                 )
             }
         } else if (foundSchemaVersion > lastKnownSchemaVersion) {
-            console.log(
+            logger.info(
                 `rolling back database from schema version ${foundSchemaVersion} to ${lastKnownSchemaVersion}`,
             )
             const mysteriousNewMigrations = (await conn.query(
@@ -47,7 +50,7 @@ export async function applyMigrations(migrations: DatabaseMigration[], db: Datab
                 await conn.query(rollbackSql)
             }
         } else {
-            console.log(`database is up to date with schema version ${lastKnownSchemaVersion}`)
+            logger.info(`database is up to date with schema version ${lastKnownSchemaVersion}`)
         }
     })
 }

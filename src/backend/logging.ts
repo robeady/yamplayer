@@ -4,8 +4,9 @@ import path from "path"
 import { createLogger, format, transports } from "winston"
 
 function formatMessage(info: TransformableInfo) {
+    const message = typeof info.message === "string" ? info.message : JSON.stringify(info.message)
     const file = info.file ? ` [${info.file}]` : ""
-    let line = `${info.timestamp} ${info.level}:${file} ${info.message}`
+    let line = `${info.timestamp} ${info.level}:${file} ${message}`
     const extraProps = omit(info, "level", "file", "message", "timestamp", "stack")
     if (!isEmpty(extraProps)) {
         line += " "

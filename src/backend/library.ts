@@ -25,6 +25,9 @@ import { applyMigrations } from "./database/migrations"
 import { yamplayerMigrations } from "./database/schema"
 import * as tables from "./database/tables"
 import { LibraryContents } from "./explorer"
+import { moduleLogger } from "./logging"
+
+const logger = moduleLogger(module)
 
 export class LibraryStore {
     query: QueryBuilder
@@ -91,7 +94,7 @@ export class LibraryStore {
             .filter(artistId => !(artistId in artists))
             .map(parseCatalogueId)
         if (unretrievedAlbumArtists.length > 0) {
-            console.log(`performing extra query for ${unretrievedAlbumArtists.length} album artists`)
+            logger.info(`performing extra query for ${unretrievedAlbumArtists.length} album artists`)
             const albumArtistRows = await this.query(artist)
                 .where(artist.id, "IN", unretrievedAlbumArtists)
                 .fetch()

@@ -166,7 +166,6 @@ export class Explorer {
                         // and we failed
                         !matchedArtists.some(m => m.externalId === e),
                 )
-                console.log({ allExternalArtistIds, remainingExternalArtistIds, matchedArtists })
 
                 const lookedUpExternalArtists = await Promise.all(
                     remainingExternalArtistIds.map(async a => this.service.lookupArtist(a)),

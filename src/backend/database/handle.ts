@@ -1,7 +1,10 @@
 import mariadb, { Connection, Pool, UpsertResult } from "mariadb"
+import { moduleLogger } from "../logging"
 import { MySqlDialect } from "./dsl/dialect"
 import { DatabaseConnectionHandle, DatabaseHandle } from "./dsl/impl"
 import { ExecResult } from "./dsl/stages"
+
+const logger = moduleLogger(module)
 
 class MariaDBConnection implements DatabaseConnectionHandle {
     constructor(private connection: Pool | Connection) {}
@@ -9,18 +12,18 @@ class MariaDBConnection implements DatabaseConnectionHandle {
     async query(sql: string, values?: unknown[]): Promise<unknown[][]> {
         try {
             const result: unknown[][] = await this.connection.query(sql, values)
-            console.log(`${sql} produced ${result.length} rows`)
+            logger.debug(`${sql} produced ${result.length} rows`)
             return result
         } catch (error: unknown) {
-            console.log(`${sql} threw ${error}`)
+            logger.error(`${sql} threw:`, error)
             throw error
         }
     }
 
     async execute(sql: string, values?: unknown[]): Promise<ExecResult> {
-        console.log(sql)
+        logger.debug(sql)
         const result = (await this.connection.query(sql, values)) as UpsertResult
-        console.log(result)
+        logger.debug(result)
         return { rowsAffected: result.affectedRows, lastInsertedId: result.insertId }
     }
 }
@@ -61,7 +64,7 @@ export class MariaDB implements DatabaseHandle {
             multipleStatements: true,
             rowsAsArray: true,
         })
-        console.log("successfully created db connection pool")
+        logger.info("successfully created db connection pool")
         return new MariaDB(connectionPool)
     }
 

@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios"
 import { setupCache } from "axios-cache-adapter"
 import Bottleneck from "bottleneck"
+import { moduleLogger } from "../../backend/logging"
 import { ExternalAlbum, ExternalArtist, ExternalTrack, SearchResults } from "../../model"
 import { Dict } from "../../util/types"
 import { parseExternalId } from "../ids"
@@ -16,13 +17,15 @@ type AlbumResponse = typeof import("./albumResponse.json") & MaybeEntityNotFound
 type AlbumTracksResponse = typeof import("./albumTracksResponse.json") & MaybeEntityNotFoundResponse
 type ArtistResponse = typeof import("./artistResponse.json") & MaybeEntityNotFoundResponse
 
+const logger = moduleLogger(module)
+
 export class DeezerApiClient implements Service {
     private httpGet: <T>(path: string, config?: AxiosRequestConfig) => Promise<AxiosResponse<T>>
 
     private constructor(apiBaseUrl: string, axios: AxiosInstance, rateLimit: boolean) {
         const get = async <T>(path: string, config?: AxiosRequestConfig) => {
             const url = `${apiBaseUrl}/${path}`
-            console.log("sending GET request " + JSON.stringify({ ...config, path }))
+            logger.debug("sending GET request " + JSON.stringify({ ...config, path }))
             return axios.get<T>(url, config)
         }
         if (rateLimit) {
@@ -45,7 +48,7 @@ export class DeezerApiClient implements Service {
         cacheDirectory = null as string | null,
         rateLimit = true,
     } = {}): Promise<DeezerApiClient> {
-        console.log(`cache dir: ${cacheDirectory}`)
+        logger.info(`deezer api client cache dir: ${cacheDirectory}`)
         return new DeezerApiClient(
             apiBaseUrl,
             axios.create({

@@ -67,7 +67,6 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
                     }
                 }
                 for (const artist of artists) {
-                    console.log({ artist })
                     if (artist.catalogueId === null) {
                         state.artists[artist.externalId] = artist
                     } else {

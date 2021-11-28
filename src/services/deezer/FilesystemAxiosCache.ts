@@ -1,6 +1,9 @@
 import { promises as fs } from "fs"
 import path from "path"
+import { moduleLogger } from "../../backend/logging"
 import { Dict } from "../../util/types"
+
+const logger = moduleLogger(module)
 
 // implements https://github.com/RasCarlito/axios-cache-adapter/blob/master/src/memory.js
 /**
@@ -20,10 +23,10 @@ export class FilesystemAxiosCache {
         try {
             const filePath = this.getFilePath(key)
             const contents = await fs.readFile(filePath)
-            console.log(`cache hit for ${key}`)
+            logger.debug(`cache hit for ${key}`)
             return JSON.parse(contents.toString())
         } catch (error: unknown) {
-            console.log(`cache miss for ${key}`)
+            logger.debug(`cache miss for ${key}`)
             if ((error as NodeJS.ErrnoException).code === "ENOENT") {
                 return null
             }
@@ -36,11 +39,10 @@ export class FilesystemAxiosCache {
             const filePath = this.getFilePath(key)
             const data = JSON.stringify(value)
             await fs.writeFile(filePath, data)
-            console.log(`cached ${key}`)
+            logger.debug(`cached ${key}`)
             return value
         } catch (error: unknown) {
-            console.error(`failed to cache ${key}`)
-            console.error(error)
+            logger.error(`failed to cache ${key}:`, error)
             throw error
         }
     }
@@ -51,7 +53,7 @@ export class FilesystemAxiosCache {
     }
 
     async clear(): Promise<void> {
-        console.log("CLEARING CACHE")
+        logger.info("clearing cache")
         await fs.rmdir(this.cacheDirectory, { recursive: true })
         await fs.mkdir(this.cacheDirectory)
     }
