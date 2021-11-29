@@ -116,7 +116,10 @@ function FullSizeAlbumCell(props: { album: Album; artist: Artist }) {
     return (
         <AlbumArtistCol
             className={css`
-                gap: 8px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                justify-content: center;
                 padding-top: 6px;
                 overflow: hidden;
             `}>
