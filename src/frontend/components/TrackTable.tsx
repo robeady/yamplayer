@@ -5,8 +5,8 @@ import React, { CSSProperties, ReactNode } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { Track } from "../../model"
 import { Row, Subheading } from "../elements"
+import { Date } from "../elements/dates"
 import { DropdownMenu, DropdownMenuItem, useDropdownMenu } from "../elements/DropdownMenu"
-import { TimeAgo } from "../elements/TimeAgo"
 import { formatTime } from "../formatting"
 import { audio, catalogue, view } from "../state/actions"
 import { resolveCanonical } from "../state/catalogue"
@@ -41,7 +41,7 @@ const columns: Record<TrackTableColumnKey, TrackTableColumn> = {
     },
     saved: {
         style: { color: colors.gray5 },
-        render: track => <TimeAgo time={track.savedTimestamp} />,
+        render: track => <Date time={track.savedTimestamp} />,
     },
 }
 
