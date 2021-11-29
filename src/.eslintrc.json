@@ -71,6 +71,8 @@
         "class-methods-use-this": "warn",
         "no-continue": "off",
         "no-param-reassign": "off",
+        "no-eq-null": "off",
+        "eqeqeq": ["error", { "null": "ignore" }]
 
         // === disabling ts rules ===
         "@typescript-eslint/explicit-function-return-type": "off",

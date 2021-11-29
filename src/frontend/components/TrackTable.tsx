@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { Track } from "../../model"
 import { Row, Subheading } from "../elements"
 import { DropdownMenu, DropdownMenuItem, useDropdownMenu } from "../elements/DropdownMenu"
+import { TimeAgo } from "../elements/TimeAgo"
 import { formatTime } from "../formatting"
 import { audio, catalogue, view } from "../state/actions"
 import { resolveCanonical } from "../state/catalogue"
@@ -18,7 +19,7 @@ interface TrackTableColumn {
     render: (track: Track) => ReactNode
 }
 
-export type TrackTableColumnKey = "#" | "title" | "artist" | "length" | "rating"
+export type TrackTableColumnKey = "#" | "title" | "artist" | "length" | "rating" | "saved"
 
 const columns: Record<TrackTableColumnKey, TrackTableColumn> = {
     "#": {
@@ -37,6 +38,10 @@ const columns: Record<TrackTableColumnKey, TrackTableColumn> = {
     rating: {
         style: { width: "140px" },
         render: track => <RatingCell track={track} />,
+    },
+    saved: {
+        style: { color: colors.gray5 },
+        render: track => <TimeAgo time={track.savedTimestamp} />,
     },
 }
 

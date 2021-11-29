@@ -11,14 +11,9 @@ import { resolveCanonical } from "../state/catalogue"
 import { AudioQueue, buildAudioQueue } from "../state/queue"
 import { colors, fontSizes } from "../styles"
 import { AlbumImage } from "./AlbumImage"
-import {
-    StickyTrackTableHeader,
-    TrackTable,
-    TrackTableColumnKey,
-    TrackTableHeadings,
-} from "./AlbumTrackTable"
+import { StickyTrackTableHeader, TrackTable, TrackTableColumnKey, TrackTableHeadings } from "./TrackTable"
 
-const tableCols: TrackTableColumnKey[] = ["#", "title", "rating", "length"]
+const tableCols: TrackTableColumnKey[] = ["#", "title", "rating", "length", "saved"]
 
 /** This component shows a table of tracks, but where consecutive tracks from the same album are grouped together. */
 export function TrackListByAlbum(props: { trackIds: string[] }) {
