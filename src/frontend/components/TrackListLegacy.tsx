@@ -10,7 +10,7 @@ import Star from "../icons/star_rate.svg"
 import { audio, catalogue } from "../state/actions"
 import { resolveCanonical } from "../state/catalogue"
 
-export function TrackListing(props: { trackIds: string[] }) {
+export function TrackListLegacy(props: { trackIds: string[] }) {
     const allTracks = useSelector(s => s.catalogue.tracks)
     const allAlbums = useSelector(s => s.catalogue.albums)
     const allArtists = useSelector(s => s.catalogue.artists)

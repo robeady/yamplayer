@@ -1,8 +1,8 @@
 import { css } from "linaria"
 import React, { useState } from "react"
 import { useSelector } from "react-redux"
-import { AlbumsListing } from "./components/AlbumsListing"
-import { TrackListing } from "./components/TrackListing"
+import { TrackListByAlbum } from "./components/TrackListByAlbum"
+import { TrackListLegacy } from "./components/TrackListLegacy"
 import { Row } from "./elements"
 
 export function LibraryTracks() {
@@ -12,7 +12,7 @@ export function LibraryTracks() {
         .map(([id]) => id)
 
     const [view, setView] = useState("playlist" as "playlist" | "tracks")
-    const ListComponent = view === "playlist" ? AlbumsListing : TrackListing
+    const ListComponent = view === "playlist" ? TrackListByAlbum : TrackListLegacy
     return (
         <div>
             <Row className={css`padding-bottom: 25px; align-items: center; gap: 10px;`}>

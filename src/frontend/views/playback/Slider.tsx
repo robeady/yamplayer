@@ -1,7 +1,7 @@
 import { css, cx } from "linaria"
 import React from "react"
 import ReactSlider, { ReactSliderProps } from "react-slider"
-import { colors } from "../styles"
+import { colors } from "../../styles"
 
 const trackClassName = css`
     background: ${colors.gray2};

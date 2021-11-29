@@ -18,6 +18,40 @@ import {
     TrackTableHeadings,
 } from "./AlbumTrackTable"
 
+const tableCols: TrackTableColumnKey[] = ["#", "title", "rating", "length"]
+
+/** This component shows a table of tracks, but where consecutive tracks from the same album are grouped together. */
+export function TrackListByAlbum(props: { trackIds: string[] }) {
+    // let's fetch all those tracks, because we'll need to iterate over them to find which ones have the same album
+    const allTracks = useSelector(s => s.catalogue.tracks)
+    const rows = useMemo(() => assembleRows(props.trackIds, allTracks), [allTracks, props.trackIds])
+    return (
+        <div>
+            <StickyTrackTableHeader>
+                <Subheading className={css`width: ${albumArtistColWidth};`}>
+                    <Row className={css`height: 30px;`}>
+                        <AlbumArtistCol>Album / Artist</AlbumArtistCol>
+                    </Row>
+                </Subheading>
+                <TrackTableHeadings cols={tableCols} />
+            </StickyTrackTableHeader>
+
+            {rows.map(({ tracks, albumId }, i) => (
+                <AlbumRow
+                    key={i.toString()} /* same album could appear more than once so cannot just use album id */
+                    tracks={tracks}
+                    albumId={albumId}
+                    buildTrackQueue={tid =>
+                        buildAudioQueue(
+                            rows.flatMap(r => r.tracks).map(t => t.catalogueId ?? t.externalId),
+                            tid,
+                        )
+                    }
+                />
+            ))}
+        </div>
+    )
+}
 interface AlbumRowData {
     tracks: Track[]
     albumId: string
@@ -47,43 +81,6 @@ function assembleRows(trackIds: string[], allTracks: Dict<string | Track>) {
         lastAlbumId = canonicalTrack.albumId
     }
     return rows
-}
-
-const tableCols: TrackTableColumnKey[] = ["#", "title", "rating", "length"]
-
-/** This component shows a table of tracks, but where consecutive tracks from the same album are grouped together. */
-export function AlbumsListing(props: { trackIds: string[] }) {
-    // let's fetch all those tracks, because we'll need to iterate over them to find which ones have the same album
-    const allTracks = useSelector(s => s.catalogue.tracks)
-    const rows = useMemo(() => assembleRows(props.trackIds, allTracks), [allTracks, props.trackIds])
-    return (
-        <div>
-            <StickyTrackTableHeader>
-                <Subheading className={css`width: ${albumArtistColWidth};`}>
-                    <Row className={css`height: 30px;`}>
-                        <AlbumArtistCol>Album / Artist</AlbumArtistCol>
-                    </Row>
-                </Subheading>
-                <TrackTableHeadings cols={tableCols} />
-            </StickyTrackTableHeader>
-
-            {rows.map(({ tracks, albumId }, i) => (
-                <AlbumRow
-                    key={
-                        i.toString() /* same album could appear more than once so cannot just use album id */
-                    }
-                    tracks={tracks}
-                    albumId={albumId}
-                    buildTrackQueue={tid =>
-                        buildAudioQueue(
-                            rows.flatMap(r => r.tracks).map(t => t.catalogueId ?? t.externalId),
-                            tid,
-                        )
-                    }
-                />
-            ))}
-        </div>
-    )
 }
 
 function AlbumRow(props: {

@@ -2,8 +2,8 @@ import { css } from "linaria"
 import React from "react"
 import { MdVolumeDown, MdVolumeMute, MdVolumeOff, MdVolumeUp } from "react-icons/md"
 import { useDispatch, useSelector } from "react-redux"
-import { audio } from "../state/actions"
-import { colors } from "../styles"
+import { audio } from "../../state/actions"
+import { colors } from "../../styles"
 import { Slider } from "./Slider"
 
 export function VolumeControl() {
