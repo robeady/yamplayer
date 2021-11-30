@@ -2,6 +2,7 @@ import { css } from "linaria"
 import React, { useEffect, useState } from "react"
 import { MdRepeat, MdShuffle } from "react-icons/md"
 import { useDispatch, useSelector } from "react-redux"
+import { AlbumImage } from "../../components/AlbumImage"
 import { DotDotDot, Noverflow, Row } from "../../elements"
 import { AlbumLink } from "../../elements/links"
 import { formatTime } from "../../formatting"
@@ -50,7 +51,7 @@ function PlayingTrack() {
                 padding: 16px;
             `}>
             <Row className={css`gap: 12px;`}>
-                <img src={playingAlbum?.coverImageUrl ?? undefined} width={48} />
+                <AlbumImage album={playingAlbum} size={48} />
                 <Noverflow>
                     <DotDotDot>{playingTrack?.title}</DotDotDot>
                     <DotDotDot className={css`color: ${colors.gray6}; font-size: 14px;`}>
