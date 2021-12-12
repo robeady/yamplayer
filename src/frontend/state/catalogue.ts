@@ -116,15 +116,11 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
             }),
 })
 
-export function resolveCanonical<T>(dict: Dict<T | string>, id: string): T | undefined {
-    let r: string | T = id
+export function resolveCanonical<T>(dict: Dict<T | string>, id: string | undefined): T | undefined {
+    let r: string | T | undefined = id
     while (typeof r === "string") {
         // TODO: handle cycles
-        const next: string | undefined | T = dict[r]
-        if (next === undefined) {
-            return undefined
-        }
-        r = next
+        r = dict[r]
     }
     return r
 }

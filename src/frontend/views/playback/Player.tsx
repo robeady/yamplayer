@@ -10,6 +10,7 @@ import SkipNext from "../../icons/skip_next.svg"
 import SkipPrevious from "../../icons/skip_previous.svg"
 import { audio } from "../../state/actions"
 import { resolveCanonical } from "../../state/catalogue"
+import { currentTrack } from "../../state/queue"
 import { colors } from "../../styles"
 import { PlayPauseButton } from "./PlayPause"
 import { Slider } from "./Slider"
@@ -32,18 +33,12 @@ export function Player() {
 
 function PlayingTrack() {
     const status = useSelector(s => s.player.status)
-    const nowPlayingTrackId = useSelector(s => s.player.queue.current)
-    const playingTrack = useSelector(s =>
-        nowPlayingTrackId === null ? undefined : resolveCanonical(s.catalogue.tracks, nowPlayingTrackId),
-    )
-    const playingAlbum = useSelector(
-        s => playingTrack && resolveCanonical(s.catalogue.albums, playingTrack.albumId),
-    )
-    const playingArtist = useSelector(
-        s => playingTrack && resolveCanonical(s.catalogue.artists, playingTrack.artistIds[0]!),
-    )
+    const nowPlayingTrackId = useSelector(s => currentTrack(s.player.queue))
+    const playingTrack = useSelector(s => resolveCanonical(s.catalogue.tracks, nowPlayingTrackId))
+    const playingAlbum = useSelector(s => resolveCanonical(s.catalogue.albums, playingTrack?.albumId))
+    const playingArtist = useSelector(s => resolveCanonical(s.catalogue.artists, playingTrack?.artistIds[0]))
 
-    return nowPlayingTrackId === null ? (
+    return nowPlayingTrackId === undefined ? (
         <span>We are {status.state}</span>
     ) : (
         <div
@@ -90,6 +85,7 @@ function PlayPauseSkipControls() {
                 width={36}
                 height={36}
                 fill="slategray"
+                onClick={() => dispatch(audio.skipBack())}
             />
             <div className={css`margin-left: 12px; margin-right: 12px;`}>
                 <PlayPause size={32} />
@@ -121,10 +117,8 @@ function PlayPause(props: { size: number }) {
 
 function ProgressBar() {
     const status = useSelector(s => s.player.status)
-    const duration = useSelector(s =>
-        s.player.queue.current === null
-            ? null
-            : resolveCanonical(s.catalogue.tracks, s.player.queue.current)?.durationSecs,
+    const duration = useSelector(
+        s => resolveCanonical(s.catalogue.tracks, currentTrack(s.player.queue))?.durationSecs,
     )
     const refreshIntervalMillis = 500
 

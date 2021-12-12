@@ -11,7 +11,6 @@ import { LinkButton } from "../elements/LinkButton"
 import { plural } from "../elements/plural"
 import { catalogue } from "../state/actions"
 import { resolveCanonical } from "../state/catalogue"
-import { buildAudioQueue } from "../state/queue"
 import { colors } from "../styles"
 
 interface AlbumProps {
@@ -94,12 +93,10 @@ function AlbumDetail(
             <TrackTable
                 tracks={props.tracks}
                 cols={tableCols}
-                buildTrackQueue={trackId =>
-                    buildAudioQueue(
-                        props.tracks.map(t => t.catalogueId ?? t.externalId),
-                        trackId,
-                    )
-                }
+                buildTrackQueue={i => ({
+                    tracks: props.tracks.map(t => t.catalogueId ?? t.externalId),
+                    currentIdx: i,
+                })}
             />
             {props.album.numTracks === null ||
                 ((props.album.numTracks > props.tracks.length || props.showingAllTracks) && (

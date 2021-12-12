@@ -8,7 +8,7 @@ import { DotDotDot, Flex, Row, Subheading } from "../elements"
 import { useDropdownMenu } from "../elements/DropdownMenu"
 import { AlbumLink } from "../elements/links"
 import { resolveCanonical } from "../state/catalogue"
-import { AudioQueue, buildAudioQueue } from "../state/queue"
+import { AudioQueue } from "../state/queue"
 import { colors, fontSizes } from "../styles"
 import { AlbumImage } from "./AlbumImage"
 import { StickyTrackTableHeader, TrackTable, TrackTableColumnKey, TrackTableHeadings } from "./TrackTable"
@@ -36,12 +36,10 @@ export function TrackListByAlbum(props: { trackIds: string[] }) {
                     key={i.toString()} /* same album could appear more than once so cannot just use album id */
                     tracks={tracks}
                     albumId={albumId}
-                    buildTrackQueue={tid =>
-                        buildAudioQueue(
-                            rows.flatMap(r => r.tracks).map(t => t.catalogueId ?? t.externalId),
-                            tid,
-                        )
-                    }
+                    buildTrackQueue={j => ({
+                        tracks: rows.flatMap(r => r.tracks).map(t => t.catalogueId ?? t.externalId),
+                        currentIdx: rows.slice(0, i).flatMap(r => r.tracks).length + j,
+                    })}
                 />
             ))}
         </div>
@@ -78,18 +76,14 @@ function assembleRows(trackIds: string[], allTracks: Dict<string | Track>) {
     return rows
 }
 
-function AlbumRow(props: {
-    tracks: Track[]
-    albumId: string
-    buildTrackQueue: (fromTrackId: string) => AudioQueue
-}) {
+function AlbumRow(props: { tracks: Track[]; albumId: string; buildTrackQueue: (i: number) => AudioQueue }) {
     const fullSizeThreshold = 9
     const album = useSelector(s => resolveCanonical(s.catalogue.albums, props.albumId)!)
     const artist = useSelector(
         s =>
             resolveCanonical(
                 s.catalogue.artists,
-                props.tracks[0]!.artistIds[0]! /* TODO: get album primary artist */,
+                props.tracks[0]!.artistIds[0] /* TODO: get album primary artist */,
             )!,
     )
     const { show } = useDropdownMenu()

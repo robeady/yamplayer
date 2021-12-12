@@ -19,7 +19,7 @@ export function TrackListLegacy(props: { trackIds: string[] }) {
         .map(trackId => {
             const track = resolveCanonical(allTracks, trackId)
             if (track === undefined) return undefined
-            const artist = resolveCanonical(allArtists, track.artistIds[0]!)!
+            const artist = resolveCanonical(allArtists, track.artistIds[0])!
             const album = resolveCanonical(allAlbums, track.albumId)!
             return { trackId, track, artist, album }
         })
@@ -27,7 +27,7 @@ export function TrackListLegacy(props: { trackIds: string[] }) {
 
     return (
         <div className={css`font-size: 14px;`}>
-            {tracksToList.map(t => (
+            {tracksToList.map((t, i) => (
                 <TrackRow
                     key={t.trackId}
                     onClick={e => {
@@ -37,7 +37,12 @@ export function TrackListLegacy(props: { trackIds: string[] }) {
                         }
                     }}
                     onDoubleClick={() =>
-                        dispatch(audio.play({ next: [t.track.catalogueId ?? t.track.externalId] }))
+                        dispatch(
+                            audio.play({
+                                tracks: tracksToList.map(t => t.track.catalogueId ?? t.track.externalId),
+                                currentIdx: i,
+                            }),
+                        )
                     }>
                     <CoverAndTrackTitle track={t.track} album={t.album} />
                     <TrackRating

@@ -92,27 +92,24 @@ function TableHeading(props: { col: TrackTableColumnKey }) {
 export function TrackTable(props: {
     tracks: Track[]
     cols: TrackTableColumnKey[]
-    buildTrackQueue: (fromTrackId: string) => AudioQueue
+    buildTrackQueue: (i: number) => AudioQueue
 }) {
+    const dispatch = useDispatch()
     return (
         <div className={css`width: 100%; padding: 10px 0;`}>
-            {props.tracks.map(track => (
+            {props.tracks.map((track, i) => (
                 <TrackRow
                     cols={props.cols}
                     key={track.catalogueId ?? track.externalId}
                     track={track}
-                    buildTrackQueue={props.buildTrackQueue}
+                    play={() => dispatch(audio.play(props.buildTrackQueue(i)))}
                 />
             ))}
         </div>
     )
 }
 
-function TrackRow(props: {
-    track: Track
-    cols: TrackTableColumnKey[]
-    buildTrackQueue: (fromTrackId: string) => AudioQueue
-}) {
+function TrackRow(props: { track: Track; cols: TrackTableColumnKey[]; play: () => void }) {
     const dispatch = useDispatch()
 
     const trackId = props.track.catalogueId ?? props.track.externalId
@@ -131,7 +128,7 @@ function TrackRow(props: {
             <TrackComponent
                 onContextMenu={show}
                 onMouseDown={() => dispatch(view.selectedTrackChanged(trackId))}
-                onDoubleClick={() => dispatch(audio.play(props.buildTrackQueue(trackId)))}
+                onDoubleClick={() => props.play()}
                 className={css``}>
                 {props.cols.map(col => (
                     <TrackRowColumn key={col} track={props.track} col={col} />
