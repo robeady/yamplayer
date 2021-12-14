@@ -43,9 +43,13 @@ function setupStore() {
     })
     audioPlayer = new AudioPlayer(
         0.2,
-        trackId => {
+        async trackId => {
             const track = resolveCanonical(store.getState().catalogue.tracks, trackId)
-            return track && loadTrackData(explorer, track)
+            if (track) {
+                return loadTrackData(explorer, track)
+            } else {
+                throw new Error(`cannot load unknown track ${trackId}`)
+            }
         },
         store.dispatch,
     )
