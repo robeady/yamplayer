@@ -116,6 +116,7 @@ function PlayPause(props: { size: number }) {
 }
 
 function ProgressBar() {
+    const dispatch = useDispatch()
     const status = useSelector(s => s.player.status)
     const duration = useSelector(
         s => resolveCanonical(s.catalogue.tracks, currentTrack(s.player.queue))?.durationSecs,
@@ -151,7 +152,7 @@ function ProgressBar() {
                     flex: 1;
                     padding: 16px 12px;
                 `}>
-                <Slider value={sliderValue} onChange={v => v /* TODO implement seeking */} />
+                <Slider value={sliderValue} onChange={v => dispatch(audio.seekTo(v * duration!))} />
             </div>
             <TrackTime time={duration ?? 0} />
         </div>
