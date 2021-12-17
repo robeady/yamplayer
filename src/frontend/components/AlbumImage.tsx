@@ -6,7 +6,7 @@ import { colors } from "../styles"
 export function AlbumImage(props: { album?: Album; size?: number }) {
     return (
         <img
-            className={css`border-radius: calc(5% + 1px); border: 1px solid ${colors.gray3}; display: block;`}
+            className={css`border-radius: calc(4% + 2px); border: 1px solid ${colors.gray3}; display: block;`}
             src={props.album?.coverImageUrl ?? undefined}
             width={props.size}
             height={props.size}
