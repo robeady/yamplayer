@@ -36,6 +36,7 @@ const thumbClassName = css`
     padding: 7px;
     border-radius: 50%;
     top: -4px;
+    margin-left: -7px;
 `
 const sliderProps: ReactSliderProps = {
     trackClassName,
