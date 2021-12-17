@@ -13,13 +13,13 @@ import { createStore } from "./state/redux"
 
 // these must not be reordered.
 // until https://github.com/microsoft/TypeScript/issues/41494 we need to use require
-/* eslint-disable unicorn/prefer-module, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-require-imports */
 require("sanitize.css/evergreen.css")
 require("sanitize.css/forms.evergreen.css")
 require("sanitize.css/assets.css")
 require("sanitize.css/typography.css")
 require("./styles/global")
-/* eslint-enable unicorn/prefer-module, @typescript-eslint/no-require-imports */
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 async function loadTrackData(explorerClient: Remote<Explorer>, track: Track) {
     const query = new URLSearchParams({ url: await explorerClient.resolveTrackUrl(track.externalId) })
