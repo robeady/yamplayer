@@ -1,13 +1,11 @@
 import { css } from "linaria"
 import { sortBy, sumBy } from "lodash"
-import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { Link } from "react-router-dom"
 import { Album, Track } from "../../model"
+import { AlbumContents } from "../components/AlbumContents"
 import { AlbumImage } from "../components/AlbumImage"
-import { TrackTable, TrackTableColumnKey, TrackTableHeadings } from "../components/TrackTable"
-import { Heading, Row } from "../elements"
-import { LinkButton } from "../elements/LinkButton"
+import { Row } from "../elements"
 import { plural } from "../elements/plural"
 import { catalogue } from "../state/actions"
 import { resolveCanonical } from "../state/catalogue"
@@ -70,52 +68,14 @@ export function AlbumPage(props: { albumId: string }) {
     return (
         <Row>
             <AlbumSummary album={album} tracks={tracksToShow} />
-            <AlbumDetail
+            <AlbumContents
                 album={album}
                 tracks={tracksToShow}
                 showingAllTracks={showingAllTracks}
                 setShowingAllTracks={setShowingAllTracks}
+                showHeadings
             />
         </Row>
-    )
-}
-
-function AlbumDetail(
-    props: AlbumProps & { showingAllTracks: boolean; setShowingAllTracks: Setter<boolean> },
-) {
-    const tableCols: TrackTableColumnKey[] = ["#", "title", "artist", "length"]
-
-    return (
-        <div className={css`flex: 1;`}>
-            <AlbumTitle title={props.album.title} />
-            <AlbumArtist />
-            <TrackTableHeadings cols={tableCols} />
-            <TrackTable
-                tracks={props.tracks}
-                cols={tableCols}
-                buildTrackQueue={i => ({
-                    tracks: props.tracks.map(t => t.catalogueId ?? t.externalId),
-                    currentIdx: i,
-                })}
-            />
-            {props.album.numTracks === null ||
-                ((props.album.numTracks > props.tracks.length || props.showingAllTracks) && (
-                    <WholeAlbumToggle
-                        showingAllTracks={props.showingAllTracks}
-                        setShowingAllTracks={props.setShowingAllTracks}
-                    />
-                ))}
-        </div>
-    )
-}
-
-type Setter<T> = Dispatch<SetStateAction<T>>
-
-function WholeAlbumToggle(props: { showingAllTracks: boolean; setShowingAllTracks: Setter<boolean> }) {
-    return (
-        <LinkButton onClick={() => props.setShowingAllTracks(s => !s)}>
-            {props.showingAllTracks ? "Show only tracks in library" : "Show whole album"}
-        </LinkButton>
     )
 }
 
@@ -153,16 +113,5 @@ function AlbumBlurb() {
             nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit
             esse cillum dolore eu fugiat nulla pariatur
         </p>
-    )
-}
-
-function AlbumTitle(props: { title: string }) {
-    return <Heading>{props.title}</Heading>
-}
-function AlbumArtist() {
-    return (
-        <div className={css`padding-bottom: 16px;`}>
-            <Link to={`/library/artist/{"catalogueId"}`}>Some Body</Link>
-        </div>
     )
 }
