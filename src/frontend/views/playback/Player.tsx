@@ -1,13 +1,12 @@
 import { css } from "linaria"
+import { styled } from "linaria/react"
 import React, { useEffect, useState } from "react"
-import { MdRepeat, MdShuffle } from "react-icons/md"
+import { MdRepeat, MdShuffle, MdSkipNext, MdSkipPrevious } from "react-icons/md"
 import { useDispatch, useSelector } from "react-redux"
 import { AlbumImage } from "../../components/AlbumImage"
 import { DotDotDot, Noverflow, Row } from "../../elements"
 import { AlbumLink } from "../../elements/links"
 import { formatTime } from "../../formatting"
-import SkipNext from "../../icons/skip_next.svg"
-import SkipPrevious from "../../icons/skip_previous.svg"
 import { audio } from "../../state/actions"
 import { resolveCanonical } from "../../state/catalogue"
 import { currentTrack } from "../../state/queue"
@@ -78,25 +77,21 @@ function PlayPauseSkipControls() {
                 justify-self: center;
                 padding-top: 16px;
             `}>
-            <SkipPrevious
+            <MdSkipPrevious
                 className={css`
                     cursor: pointer;
                 `}
-                width={36}
-                height={36}
+                size={32}
                 fill="slategray"
                 onClick={() => dispatch(audio.skipBack())}
             />
             <div className={css`margin-left: 12px; margin-right: 12px;`}>
                 <PlayPause size={32} />
             </div>
-            <SkipNext
-                className={css`
-                    cursor: pointer;
-                `}
+            <MdSkipNext
+                className={css`cursor: pointer;`}
                 fill="slategray"
-                width={32}
-                height={32}
+                size={32}
                 onClick={() => dispatch(audio.skipNext())}
             />
         </div>
@@ -179,6 +174,8 @@ const playerIcon = css`
 `
 
 function SecondaryControls() {
+    const dispatch = useDispatch()
+    const repeat = useSelector(s => s.player.repeat)
     return (
         <div
             className={css`
@@ -188,11 +185,22 @@ function SecondaryControls() {
                 padding: 16px;
                 gap: 12px;
             `}>
-            <MdShuffle className={playerIcon} size={20} />
-            <MdRepeat className={playerIcon} size={20} />
+            <ToggleButton>
+                <MdShuffle size={20} />
+            </ToggleButton>
+            <ToggleButton enabled={repeat}>
+                <MdRepeat onClick={() => dispatch(audio.toggleRepeat())} size={20} />
+            </ToggleButton>
             <VolumeControl />
         </div>
     )
 }
+
+const ToggleButton = styled.div<{ enabled?: boolean }>`
+    color: ${props => (props.enabled ? colors.purple6 : colors.gray6)};
+    &:hover {
+        color: ${colors.gray8};
+    }
+`
 
 const clamp = (number: number, min: number, max: number) => (number < min ? min : number > max ? max : number)

@@ -26,7 +26,7 @@ function thunkActions<K extends keyof YamEnv, T extends YamEnv[K]>(
     nameInEnv: K,
     clazz: { prototype: T },
 ): {
-    [K in FunctionKeysIn<T>]: T[K] extends (...args: infer A) => unknown
+    [K in keyof T]: T[K] extends (...args: infer A) => unknown
         ? ThunkActionCreator<A, ReturnType<T[K]>>
         : never
 } {
@@ -41,8 +41,6 @@ function thunkActions<K extends keyof YamEnv, T extends YamEnv[K]>(
         }),
     ) as any
 }
-
-type FunctionKeysIn<T> = { [K in keyof T]: T[K] extends (...args: never[]) => unknown ? K : never }[keyof T]
 
 export type ThunkActionCreator<A extends unknown[], R> = (
     ...args: A

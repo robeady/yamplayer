@@ -12,6 +12,7 @@ export class AudioPlayer {
         | { state: "loading"; promise: Promise<unknown>; trackId: string }
     volume: number
     muted = false
+    repeat = false
     /**
      * A counter to keep track of track loads, so that if the user skips while we're still loading a track,
      * then once that track is loaded we will discard the result.
@@ -72,8 +73,10 @@ export class AudioPlayer {
 
     /** Skips to the next track in the queue */
     skipNext() {
-        if (this.queue.currentIdx < this.queue.tracks.length) {
+        if (this.queue.currentIdx < this.queue.tracks.length - 1) {
             this.play(produce(q => void q.currentIdx++))
+        } else if (this.repeat) {
+            this.play(produce(q => void (q.currentIdx = 0)))
         }
     }
 
@@ -119,6 +122,11 @@ export class AudioPlayer {
         this.muted = !this.muted
         this.howl?.mute(this.muted)
         this.emitEvent(player.volumeChanged({ muted: this.muted, volume: this.volume }))
+    }
+
+    toggleRepeat() {
+        this.repeat = !this.repeat
+        this.emitEvent(player.modeChanged({ repeat: this.repeat }))
     }
 
     private createHowlAndPlay(trackData: Uint8Array): { howl: Howl; howlSoundId: number } {

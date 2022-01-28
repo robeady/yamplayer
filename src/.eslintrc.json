@@ -109,7 +109,6 @@
         "@typescript-eslint/member-ordering": "off",
         "@typescript-eslint/no-implicit-any-catch": ["error", { "allowExplicitAny": true }],
         "@typescript-eslint/init-declarations": "off",
-        "@typescript-eslint/strict-boolean-expressions": ["error", { "allowAny": true }],
         "@typescript-eslint/no-unused-vars": [
             "warn",
             { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }

@@ -8,6 +8,7 @@ interface PlayerState {
     volume: Fraction
     muted: boolean
     queue: AudioQueue
+    repeat: boolean
 }
 
 export type PlaybackStatus =
@@ -21,6 +22,7 @@ const initialState: PlayerState = {
     volume: 0.2,
     muted: false,
     queue: emptyAudioQueue(),
+    repeat: false,
 }
 
 export const playerSlice = createSlice({
@@ -43,5 +45,6 @@ export const playerSlice = createSlice({
         }),
         playbackStopped: s => ({ ...s, status: { state: "stopped" } }),
         playbackLoading: s => ({ ...s, status: { state: "loading" } }),
+        modeChanged: (state, { payload: { repeat } }: PA<{ repeat: boolean }>) => ({ ...state, repeat }),
     },
 })
