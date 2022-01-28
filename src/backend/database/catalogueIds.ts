@@ -33,14 +33,10 @@ const UINT32_RADIX = 2 ** 32
 const UINT8_MAX = 0b1111_1111
 
 export class CatalogueIdGenerator {
-    private lastTimestamp: number | undefined
-    private lastId = new Uint8Array(CATALOGUE_ID_LENGTH_BYTES)
-
     // TODO: probably simpler to make this just a module with a generate function
     constructor(
         private now: () => Timestamp = unixNow,
         private get10RandomBytes: () => Uint8Array = new RandomProvider().get10RandomBytes,
-        private increment = false,
     ) {}
 
     /**
@@ -71,24 +67,7 @@ export class CatalogueIdGenerator {
     generate(): CatalogueId {
         const bytes = new Uint8Array(CATALOGUE_ID_LENGTH_BYTES)
 
-        const timestamp = this.now()
-
-        if (this.increment && timestamp === this.lastTimestamp) {
-            // copy the last ID and increment the random part after the variant by 1
-            bytes.set(this.lastId)
-            for (let i = CATALOGUE_ID_LENGTH_BYTES - 1; i > VARIANT_INDEX; i--) {
-                if (bytes[i] === UINT8_MAX) {
-                    bytes[i] = 0
-                } else {
-                    bytes[i]++
-                    this.lastId = bytes
-                    return bytes
-                }
-            }
-            // if we get to here, then the random increment overflowed. fall through and refill with random bits
-        } else {
-            populateTimestamp(bytes, timestamp)
-        }
+        populateTimestamp(bytes, this.now())
 
         bytes.set(this.get10RandomBytes(), 6)
 
@@ -100,8 +79,6 @@ export class CatalogueIdGenerator {
         bytes[VARIANT_INDEX] &= 0b0011_1111
         bytes[VARIANT_INDEX] |= 0b1000_0000
 
-        this.lastId = bytes
-        this.lastTimestamp = timestamp
         return bytes
     }
 }

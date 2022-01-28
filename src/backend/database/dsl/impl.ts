@@ -9,7 +9,7 @@ import {
     TableDefinitions,
 } from "./definitions"
 import { SqlDialect } from "./dialect"
-import { DslMisuseError, Todo as TodoError } from "./errors"
+import { DslMisuseError, TodoError } from "./errors"
 import {
     AliasIn,
     ColumnIn,
