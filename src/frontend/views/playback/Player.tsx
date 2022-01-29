@@ -166,13 +166,6 @@ function TrackTime(props: { time: number }) {
     )
 }
 
-const playerIcon = css`
-    color: ${colors.gray6};
-    &:hover {
-        color: ${colors.gray8};
-    }
-`
-
 function SecondaryControls() {
     const dispatch = useDispatch()
     const shuffle = useSelector(s => s.player.shuffle)
