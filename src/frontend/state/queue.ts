@@ -1,3 +1,9 @@
+import { shuffle } from "lodash"
+
+export interface ShuffledAudioQueue extends AudioQueue {
+    readonly shuffledTracks: string[]
+}
+
 export interface AudioQueue {
     /** Track IDs in playback order */
     readonly tracks: string[]
@@ -5,14 +11,16 @@ export interface AudioQueue {
     readonly currentIdx: number
 }
 
-export function currentTrack(queue: AudioQueue) {
-    return queue.tracks[queue.currentIdx]
+export function currentTrack(queue: ShuffledAudioQueue) {
+    return queue.shuffledTracks[queue.currentIdx]
 }
 
-export function emptyAudioQueue(): AudioQueue {
-    return { tracks: [], currentIdx: 0 }
+export function emptyAudioQueue(): ShuffledAudioQueue {
+    return { tracks: [], shuffledTracks: [], currentIdx: 0 }
 }
 
-export function appendToQueue(existing: AudioQueue, newTracks: string[]): AudioQueue {
-    return { tracks: [...existing.tracks, ...newTracks], currentIdx: existing.currentIdx }
+export function shuffleTracks(tracks: string[], idxOfFirst: number) {
+    return idxOfFirst < tracks.length
+        ? [tracks[idxOfFirst]!, ...shuffle(tracks.filter((t, i) => i !== idxOfFirst))]
+        : shuffle(tracks)
 }

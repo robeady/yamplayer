@@ -175,6 +175,7 @@ const playerIcon = css`
 
 function SecondaryControls() {
     const dispatch = useDispatch()
+    const shuffle = useSelector(s => s.player.shuffle)
     const repeat = useSelector(s => s.player.repeat)
     return (
         <div
@@ -185,8 +186,8 @@ function SecondaryControls() {
                 padding: 16px;
                 gap: 12px;
             `}>
-            <ToggleButton>
-                <MdShuffle size={20} />
+            <ToggleButton enabled={shuffle}>
+                <MdShuffle onClick={() => dispatch(audio.toggleShuffle())} size={20} />
             </ToggleButton>
             <ToggleButton enabled={repeat}>
                 <MdRepeat onClick={() => dispatch(audio.toggleRepeat())} size={20} />

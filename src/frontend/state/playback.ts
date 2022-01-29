@@ -1,14 +1,15 @@
 import { createSlice } from "@reduxjs/toolkit"
 import { Fraction } from "../../util/types"
 import { PA } from "./actions"
-import { AudioQueue, emptyAudioQueue } from "./queue"
+import { emptyAudioQueue, ShuffledAudioQueue } from "./queue"
 
 interface PlayerState {
     status: PlaybackStatus
     volume: Fraction
     muted: boolean
-    queue: AudioQueue
+    queue: ShuffledAudioQueue
     repeat: boolean
+    shuffle: boolean
 }
 
 export type PlaybackStatus =
@@ -23,6 +24,7 @@ const initialState: PlayerState = {
     muted: false,
     queue: emptyAudioQueue(),
     repeat: false,
+    shuffle: false,
 }
 
 export const playerSlice = createSlice({
@@ -34,7 +36,7 @@ export const playerSlice = createSlice({
             volume,
             muted,
         }),
-        queueChanged: (s, { payload: queue }: PA<AudioQueue>) => ({ ...s, queue }),
+        queueChanged: (s, { payload: queue }: PA<ShuffledAudioQueue>) => ({ ...s, queue }),
         playbackPaused: (s, { payload: position }: PA<number>) => ({
             ...s,
             status: { state: "paused", position },
@@ -45,6 +47,9 @@ export const playerSlice = createSlice({
         }),
         playbackStopped: s => ({ ...s, status: { state: "stopped" } }),
         playbackLoading: s => ({ ...s, status: { state: "loading" } }),
-        modeChanged: (state, { payload: { repeat } }: PA<{ repeat: boolean }>) => ({ ...state, repeat }),
+        modeChanged: (
+            state,
+            { payload: { repeat, shuffle } }: PA<{ repeat: boolean; shuffle: boolean }>,
+        ) => ({ ...state, repeat, shuffle }),
     },
 })

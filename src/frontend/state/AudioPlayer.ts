@@ -1,18 +1,19 @@
-import produce from "@reduxjs/toolkit/node_modules/immer"
 import { Howl } from "howler"
+import { shuffle } from "lodash"
 import { player, PlayerAction } from "./actions"
-import { appendToQueue, AudioQueue, emptyAudioQueue } from "./queue"
+import { AudioQueue, emptyAudioQueue, ShuffledAudioQueue, shuffleTracks } from "./queue"
 
 const HOWL_VOLUME_RATIO = 0.25
 
 export class AudioPlayer {
-    queue: AudioQueue = emptyAudioQueue()
+    queue: ShuffledAudioQueue = emptyAudioQueue()
     playback?:
         | { state: "underway"; howl: Howl; howlSoundId: number; trackId: string }
         | { state: "loading"; promise: Promise<unknown>; trackId: string }
     volume: number
     muted = false
     repeat = false
+    shuffle = false
     /**
      * A counter to keep track of track loads, so that if the user skips while we're still loading a track,
      * then once that track is loaded we will discard the result.
@@ -32,18 +33,29 @@ export class AudioPlayer {
     }
 
     /** Play tracks, replacing or updating the existing queue */
-    play(queue: AudioQueue | ((oldQueue: AudioQueue) => AudioQueue)) {
-        const oldQueue = this.queue
-        this.queue = typeof queue === "function" ? queue(this.queue) : queue
-        if (oldQueue !== this.queue) {
-            this.emitEvent(player.queueChanged(this.queue))
-            this.syncSoundWithQueue()
-        }
+    play(queue: AudioQueue) {
+        console.log("playing", { queue })
+        console.log({ shuffle: this.shuffle })
+        this.updateQueue({
+            ...queue,
+            shuffledTracks: this.shuffle ? shuffleTracks(queue.tracks, queue.currentIdx) : queue.tracks,
+            currentIdx: this.shuffle ? 0 : queue.currentIdx,
+        })
     }
 
     /** Enqueue tracks to play at the end of the current queue */
     playLater(trackIds: string[]) {
-        this.play(q => appendToQueue(q, trackIds))
+        this.updateQueue({
+            tracks: [...this.queue.tracks, ...trackIds],
+            shuffledTracks: [...this.queue.shuffledTracks, ...shuffle(trackIds)],
+            currentIdx: this.queue.currentIdx,
+        })
+    }
+
+    private updateQueue(queue: ShuffledAudioQueue) {
+        this.queue = queue
+        this.emitEvent(player.queueChanged(this.queue))
+        this.syncSoundWithQueue()
     }
 
     /** Pauses playback and returns the position in secs at which playback is paused, unless not playing */
@@ -73,10 +85,10 @@ export class AudioPlayer {
 
     /** Skips to the next track in the queue */
     skipNext() {
-        if (this.queue.currentIdx < this.queue.tracks.length - 1) {
-            this.play(produce(q => void q.currentIdx++))
+        if (this.queue.currentIdx < this.queue.shuffledTracks.length - 1) {
+            this.updateQueue({ ...this.queue, currentIdx: this.queue.currentIdx + 1 })
         } else if (this.repeat) {
-            this.play(produce(q => void (q.currentIdx = 0)))
+            this.updateQueue({ ...this.queue, currentIdx: 0 })
         }
     }
 
@@ -85,7 +97,7 @@ export class AudioPlayer {
         if ((positionSecs !== undefined && positionSecs > 3) || this.queue.currentIdx <= 0) {
             this.seekTo(0)
         } else {
-            this.play(produce(q => void q.currentIdx--))
+            this.updateQueue({ ...this.queue, currentIdx: this.queue.currentIdx - 1 })
         }
     }
 
@@ -126,7 +138,24 @@ export class AudioPlayer {
 
     toggleRepeat() {
         this.repeat = !this.repeat
-        this.emitEvent(player.modeChanged({ repeat: this.repeat }))
+        this.emitEvent(player.modeChanged({ repeat: this.repeat, shuffle: this.shuffle }))
+    }
+
+    toggleShuffle() {
+        this.queue = this.shuffle
+            ? {
+                  ...this.queue,
+                  shuffledTracks: this.queue.tracks,
+                  currentIdx: this.queue.tracks.indexOf(this.queue.shuffledTracks[this.queue.currentIdx]!),
+              }
+            : {
+                  ...this.queue,
+                  shuffledTracks: shuffleTracks(this.queue.tracks, this.queue.currentIdx),
+                  currentIdx: 0,
+              }
+        this.emitEvent(player.queueChanged(this.queue))
+        this.shuffle = !this.shuffle
+        this.emitEvent(player.modeChanged({ repeat: this.repeat, shuffle: this.shuffle }))
     }
 
     private createHowlAndPlay(trackData: Uint8Array): { howl: Howl; howlSoundId: number } {
@@ -149,7 +178,7 @@ export class AudioPlayer {
     }
 
     private syncSoundWithQueue() {
-        const desiredTrackId = this.queue.tracks[this.queue.currentIdx]
+        const desiredTrackId = this.queue.shuffledTracks[this.queue.currentIdx]
 
         if (desiredTrackId === this.playback?.trackId) {
             return
