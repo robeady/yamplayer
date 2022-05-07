@@ -49,10 +49,15 @@ describe("library store tests", () => {
     })
 
     test("can list added tracks", async () => {
-        const artist = await library.addArtist({ id: "3", externalIds: ["3"], name: "3", imageUrl: "3" })
+        const artist = await library.addArtist({
+            id: "ext:3",
+            externalIds: ["ext:3"],
+            name: "3",
+            imageUrl: "3",
+        })
         const album = await library.addAlbum({
-            id: "2",
-            externalIds: ["2"],
+            id: "ext:2",
+            externalIds: ["ext:2"],
             artistId: artist.catalogueId,
             title: "2",
             coverImageUrl: "2",
@@ -60,8 +65,8 @@ describe("library store tests", () => {
             numTracks: 1,
         })
         const track = await library.addTrack({
-            id: "1",
-            externalIds: ["1"],
+            id: "ext:1",
+            externalIds: ["ext:1"],
             albumId: album.catalogueId,
             artistIds: [artist.catalogueId],
             title: "1",
@@ -78,7 +83,7 @@ describe("library store tests", () => {
                 [track.catalogueId]: {
                     id: track.catalogueId,
                     catalogueId: track.catalogueId,
-                    externalIds: ["1"],
+                    externalIds: ["ext:1"],
                     albumId: album.catalogueId,
                     artistIds: [artist.catalogueId],
                     title: "1",
@@ -96,7 +101,7 @@ describe("library store tests", () => {
                     id: album.catalogueId,
                     catalogueId: album.catalogueId,
                     cataloguedTimestamp: 0 as Timestamp,
-                    externalIds: ["2"],
+                    externalIds: ["ext:2"],
                     artistId: artist.catalogueId,
                     title: "2",
                     coverImageUrl: "2",
@@ -109,7 +114,7 @@ describe("library store tests", () => {
                     id: artist.catalogueId,
                     catalogueId: artist.catalogueId,
                     cataloguedTimestamp: 0 as Timestamp,
-                    externalIds: ["3"],
+                    externalIds: ["ext:3"],
                     name: "3",
                     imageUrl: "3",
                 },

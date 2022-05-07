@@ -75,9 +75,9 @@ export class LibraryStore {
             this.query(albumReference).fetch(),
             this.query(artistReference).fetch(),
         ])
-        const trackRefs = groupBy(trackRefsRows, t => parseCatalogueId(t.externalId))
-        const albumRefs = groupBy(albumRefsRows, t => parseCatalogueId(t.externalId))
-        const artistRefs = groupBy(artistRefsRows, t => parseCatalogueId(t.externalId))
+        const trackRefs = groupBy(trackRefsRows, stringifyExternalId)
+        const albumRefs = groupBy(albumRefsRows, stringifyExternalId)
+        const artistRefs = groupBy(artistRefsRows, stringifyExternalId)
 
         const tracks = {} as Dict<CataloguedTrack>
         const artists = {} as Dict<CataloguedArtist>

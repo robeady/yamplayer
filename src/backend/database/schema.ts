@@ -107,4 +107,4 @@ const migration1: DatabaseMigration = {
     sqlBackwards: sql``,
 }
 
-export const yamplayerMigrations = [migration0]
+export const yamplayerMigrations = [migration0, migration1]
