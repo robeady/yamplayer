@@ -100,7 +100,7 @@ export function TrackTable(props: {
             {props.tracks.map((track, i) => (
                 <TrackRow
                     cols={props.cols}
-                    key={track.catalogueId ?? track.externalId}
+                    key={track.id}
                     track={track}
                     play={() => dispatch(audio.play(props.buildTrackQueue(i)))}
                 />
@@ -112,7 +112,7 @@ export function TrackTable(props: {
 function TrackRow(props: { track: Track; cols: TrackTableColumnKey[]; play: () => void }) {
     const dispatch = useDispatch()
 
-    const trackId = props.track.catalogueId ?? props.track.externalId
+    const trackId = props.track.id
     const selected = useSelector(s => s.view.selectedTrackId)
     const TrackComponent = selected === trackId ? SelectedTrackFlex : TrackFlex
 

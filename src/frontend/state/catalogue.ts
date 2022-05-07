@@ -52,40 +52,12 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
                     ({ ...state, ...payload, libraryLoaded: true }),
             )
             .addCase(catalogueThunks.getAlbum.fulfilled, (state, { payload: { album, tracks, artists } }) => {
-                if (album.catalogueId === null) {
-                    state.albums[album.externalId] = album
-                } else {
-                    state.albums[album.catalogueId] = album
-                    state.albums[album.externalId] = album.catalogueId
-                }
-                for (const track of tracks) {
-                    if (track.catalogueId === null) {
-                        state.tracks[track.externalId] = track
-                    } else {
-                        state.tracks[track.catalogueId] = track
-                        state.tracks[track.externalId] = track.catalogueId
-                    }
-                }
-                for (const artist of artists) {
-                    if (artist.catalogueId === null) {
-                        state.artists[artist.externalId] = artist
-                    } else {
-                        state.artists[artist.catalogueId] = artist
-                        state.artists[artist.externalId] = artist.catalogueId
-                    }
-                }
+                fillState(state, { tracks, albums: [album], artists })
             })
             .addCase(
                 catalogueThunks.addToLibrary.fulfilled,
                 (state, { payload: { track, album, artists } }) => {
-                    state.tracks[track.catalogueId] = track
-                    state.tracks[track.externalId] = track.catalogueId
-                    state.albums[album.catalogueId] = album
-                    state.albums[album.externalId] = album.catalogueId
-                    for (const artist of artists) {
-                        state.artists[artist.catalogueId] = artist
-                        state.artists[artist.externalId] = artist.catalogueId
-                    }
+                    fillState(state, { tracks: [track], albums: album && [album], artists })
                 },
             )
             .addCase(catalogueThunks.unsaveTrack.fulfilled, (state, { meta: { arg: trackId } }) => {
@@ -123,4 +95,22 @@ export function resolveCanonical<T>(dict: Dict<T | string>, id: string | undefin
         r = dict[r]
     }
     return r
+}
+
+function fillState(
+    state: CatalogueState,
+    entities: { tracks?: Track[]; artists?: Artist[]; albums?: Album[] },
+) {
+    for (const track of entities.tracks ?? []) {
+        for (const e of track.externalIds) state.tracks[e] = track.id
+        state.tracks[track.id] = track
+    }
+    for (const album of entities.albums ?? []) {
+        for (const e of album.externalIds) state.albums[e] = album.id
+        state.albums[album.id] = album
+    }
+    for (const artist of entities.artists ?? []) {
+        for (const e of artist.externalIds) state.artists[e] = artist.id
+        state.artists[artist.id] = artist
+    }
 }

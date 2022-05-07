@@ -24,7 +24,7 @@ export function AlbumContents(props: {
                 tracks={props.tracks}
                 cols={tableCols}
                 buildTrackQueue={i => ({
-                    tracks: props.tracks.map(t => t.catalogueId ?? t.externalId),
+                    tracks: props.tracks.map(t => t.id),
                     currentIdx: i,
                 })}
             />

@@ -37,7 +37,7 @@ export async function matchItunesLibrary(
         groupBy(matchedTracks, m => `${m.track.albumName}|${m.track.albumArtist}`),
     )
 
-    for (const tracks of matchedTracksGroupedByItunesAlbum.values()) {
+    for (const tracks of matchedTracksGroupedByItunesAlbum) {
         const albumIds = tracks.map(t => t.matches.map(m => m.albumId))
         const everPresentAlbumIds = intersection(...albumIds)
         if (everPresentAlbumIds.length > 0) {
@@ -54,7 +54,7 @@ export async function matchItunesLibrary(
             itunesTrack: matchedTrack.track,
             matchedTrack: matchedTrack.matches[matchedTrack.chosenMatchIdx ?? 0]!,
         })),
-        t => t.matchedTrack.externalId,
+        t => t.matchedTrack.id,
     )
 
     return matchedTracksByExternalId

@@ -37,7 +37,7 @@ export function TrackListByAlbum(props: { trackIds: string[] }) {
                     tracks={tracks}
                     albumId={albumId}
                     buildTrackQueue={j => ({
-                        tracks: rows.flatMap(r => r.tracks).map(t => t.catalogueId ?? t.externalId),
+                        tracks: rows.flatMap(r => r.tracks).map(t => t.id),
                         currentIdx: rows.slice(0, i).flatMap(r => r.tracks).length + j,
                     })}
                 />
