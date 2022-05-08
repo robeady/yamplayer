@@ -70,4 +70,41 @@ const migration0: DatabaseMigration = {
     `,
 }
 
-export const yamplayerMigrations = [migration0]
+const migration1: DatabaseMigration = {
+    sqlForwards: sql`
+    CREATE TABLE trackReference (
+        trackId BINARY(16) NOT NULL REFERENCES track (id),
+        externalService VARCHAR(20) NOT NULL,
+        externalId VARCHAR(50) NOT NULL
+    ) DEFAULT
+        CHARSET=utf8mb4
+        COLLATE=utf8mb4_unicode_520_ci;
+
+    CREATE TABLE albumReference (
+        albumId BINARY(16) NOT NULL REFERENCES album (id),
+        externalService VARCHAR(20) NOT NULL,
+        externalId VARCHAR(50) NOT NULL
+    ) DEFAULT
+        CHARSET=utf8mb4
+        COLLATE=utf8mb4_unicode_520_ci;
+
+    CREATE TABLE artistReference (
+        artistId BINARY(16) NOT NULL REFERENCES artist (id),
+        externalService VARCHAR(20) NOT NULL,
+        externalId VARCHAR(50) NOT NULL
+    ) DEFAULT
+        CHARSET=utf8mb4
+        COLLATE=utf8mb4_unicode_520_ci;
+
+    INSERT INTO trackReference SELECT id, SUBSTRING_INDEX(externalId, ':', 1), SUBSTRING_INDEX(externalId, ':', -1) FROM track;
+    INSERT INTO albumReference SELECT id, SUBSTRING_INDEX(externalId, ':', 1), SUBSTRING_INDEX(externalId, ':', -1) FROM album;
+    INSERT INTO artistReference SELECT id, SUBSTRING_INDEX(externalId, ':', 1), SUBSTRING_INDEX(externalId, ':', -1) FROM artist;
+
+    ALTER TABLE track DROP COLUMN externalId;
+    ALTER TABLE album DROP COLUMN externalId;
+    ALTER TABLE artist DROP COLUMN externalId;
+    `,
+    sqlBackwards: sql``,
+}
+
+export const yamplayerMigrations = [migration0, migration1]

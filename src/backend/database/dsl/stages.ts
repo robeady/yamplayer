@@ -52,9 +52,9 @@ export interface FilterFunction<QueriedTables extends TableDefinitions, ReturnTy
     <T>(
         column: ColumnOfType<ColumnIn<QueriedTables>, T>,
         operator: "=" | "IS" | "IS NOT",
-        value: T | ColumnOfType<ColumnIn<QueriedTables>, T>,
+        value: ExprOfType<ColumnIn<QueriedTables>, T>,
     ): ReturnType
-    <T>(column: ColumnOfType<ColumnIn<QueriedTables>, T>, operator: "IN", value: T[]): ReturnType
+    <T>(column: ExprOfType<ColumnIn<QueriedTables>, T>, operator: "IN", value: T[]): ReturnType
 }
 
 // export interface GeneralJoinStage<QueriedTables extends TableDefinitions> {
@@ -86,6 +86,8 @@ export interface FilterFunction<QueriedTables extends TableDefinitions, ReturnTy
 export type ReferencesIn<QueriedTables extends TableDefinitions> = ColumnIn<QueriedTables>["references"]
 
 export type ColumnOfType<C, T> = C extends ColumnDefinition<Origin, T> ? C : never
+
+export type ExprOfType<C, T> = T | ColumnOfType<C, T> | (T extends (infer U)[] ? ExprOfType<C, U>[] : never)
 
 export type ColumnIn<QueriedTables> = PropOf<LiftPropsOf<QueriedTables>>
 export type PropOf<T> = T[keyof T]

@@ -37,12 +37,7 @@ export function TrackListLegacy(props: { trackIds: string[] }) {
                         }
                     }}
                     onDoubleClick={() =>
-                        dispatch(
-                            audio.play({
-                                tracks: tracksToList.map(t => t.track.catalogueId ?? t.track.externalId),
-                                currentIdx: i,
-                            }),
-                        )
+                        dispatch(audio.play({ tracks: tracksToList.map(t => t.track.id), currentIdx: i }))
                     }>
                     <CoverAndTrackTitle track={t.track} album={t.album} />
                     <TrackRating
@@ -168,7 +163,7 @@ function SaveButton(props: { trackId: string }) {
     const track = useSelector(s => resolveCanonical(s.catalogue.tracks, props.trackId)!)
     const dispatch = useDispatch()
     return track.savedTimestamp === null ? (
-        <button type="button" onClick={() => dispatch(catalogue.addToLibrary(track.externalId))}>
+        <button type="button" onClick={() => dispatch(catalogue.addToLibrary(track.id))}>
             Add
         </button>
     ) : (

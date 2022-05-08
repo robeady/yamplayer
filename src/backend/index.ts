@@ -21,16 +21,21 @@ async function main(): Promise<ListeningExpress> {
     const app = express()
     app.use(express.json({ limit: "10mb" }))
 
+    logger.info("app starting")
+
     const db = MariaDB.connect({
         user: process.env.YP_DB_USER!,
         password: process.env.YP_DB_PASSWORD!,
         database: process.env.YP_DB_NAME,
     })
+
     const deezerApiClient = await DeezerApiClient.create({ cacheDirectory: "cache/deezer" })
     const library = await LibraryStore.setup(db)
     const explorer = new Explorer(library, deezerApiClient, new Resolver())
 
     const base = process.env.YP_BASEURL ?? ""
+
+    app.get(`/${base}`, (req, res) => res.send("Hello world!"))
 
     app.use(`/${base}api/library`, serve(library))
     app.use(`/${base}api/explorer`, serve(explorer))

@@ -4,7 +4,7 @@ import Bottleneck from "bottleneck"
 import { moduleLogger } from "../../backend/logging"
 import { ExternalAlbum, ExternalArtist, ExternalTrack, SearchResults } from "../../model"
 import { Dict } from "../../util/types"
-import { parseExternalId } from "../ids"
+import { extractExternalId } from "../ids"
 import { Service, TrackSearchQuery } from "../index"
 import { FilesystemAxiosCache } from "./FilesystemAxiosCache"
 
@@ -68,7 +68,7 @@ export class DeezerApiClient implements Service {
     }
 
     async lookupTrack(id: string): Promise<ExternalTrack> {
-        const rawId = parseExternalId(id, "dz")
+        const rawId = extractExternalId(id, "dz")
         const response = await this.httpGet<TrackResponse>(`track/${rawId}`)
         if (response.data.error) {
             throw new Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
@@ -87,7 +87,8 @@ export class DeezerApiClient implements Service {
 
         // _KeepTrackParsingInSync_
         return {
-            externalId: id,
+            id,
+            externalIds: [id],
             albumId: deezerId(track.album.id),
             artistIds,
             title: track.title,
@@ -100,7 +101,7 @@ export class DeezerApiClient implements Service {
     }
 
     async lookupAlbum(id: string): Promise<ExternalAlbum> {
-        const rawId = parseExternalId(id, "dz")
+        const rawId = extractExternalId(id, "dz")
         const response = await this.httpGet<AlbumResponse>(`album/${rawId}`)
         if (response.data.error) {
             throw new Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
@@ -108,7 +109,8 @@ export class DeezerApiClient implements Service {
         const album = response.data
         return {
             // _KeepAlbumParsingInSync_
-            externalId: id,
+            id,
+            externalIds: [id],
             artistId: deezerId(album.artist.id),
             title: album.title,
             coverImageUrl: album.cover_medium,
@@ -120,7 +122,7 @@ export class DeezerApiClient implements Service {
     async lookupAlbumAndTracks(
         id: string,
     ): Promise<{ album: ExternalAlbum; tracks: ExternalTrack[]; artist: ExternalArtist }> {
-        const rawId = parseExternalId(id, "dz")
+        const rawId = extractExternalId(id, "dz")
         const [albumResponse, tracksResponse] = await Promise.all([
             this.httpGet<AlbumResponse>(`album/${rawId}`),
             // additional request required to get track number, disc number and isrc
@@ -135,7 +137,8 @@ export class DeezerApiClient implements Service {
         return {
             // _KeepAlbumParsingInSync_
             album: {
-                externalId: id,
+                id,
+                externalIds: [id],
                 artistId: deezerId(album.artist.id),
                 title: album.title,
                 coverImageUrl: album.cover_medium,
@@ -144,7 +147,8 @@ export class DeezerApiClient implements Service {
             },
             // _KeepTrackParsingInSync_
             tracks: tracks.map(track => ({
-                externalId: deezerId(track.id),
+                id: deezerId(track.id),
+                externalIds: [deezerId(track.id)],
                 albumId: id,
                 artistIds: [deezerId(track.artist.id)], // _Contributors_ only available if we query track individually
                 title: track.title,
@@ -156,7 +160,8 @@ export class DeezerApiClient implements Service {
             })),
             // _KeepArtistParsingInSync_
             artist: {
-                externalId: deezerId(album.artist.id),
+                id: deezerId(album.artist.id),
+                externalIds: [deezerId(album.artist.id)],
                 name: album.artist.name,
                 imageUrl: album.artist.picture_medium,
             },
@@ -164,7 +169,7 @@ export class DeezerApiClient implements Service {
     }
 
     async lookupArtist(id: string): Promise<ExternalArtist> {
-        const rawId = parseExternalId(id, "dz")
+        const rawId = extractExternalId(id, "dz")
         const response = await this.httpGet<ArtistResponse>(`artist/${rawId}`)
         if (response.data.error) {
             throw new Error(`artist ${id} not found: ${JSON.stringify(response.data.error)}`)
@@ -172,7 +177,8 @@ export class DeezerApiClient implements Service {
         const artist = response.data
         // _KeepArtistParsingInSync_
         return {
-            externalId: id,
+            id,
+            externalIds: [id],
             name: artist.name,
             imageUrl: artist.picture_medium,
         }
@@ -204,7 +210,8 @@ export class DeezerApiClient implements Service {
             resultExternalTrackIds.push(externalTrackId)
             // _KeepTrackParsingInSync_
             tracks[externalTrackId] = {
-                externalId: externalTrackId,
+                id: externalTrackId,
+                externalIds: [externalTrackId],
                 albumId: externalAlbumId,
                 artistIds: [externalArtistId], // _Contributors_
                 durationSecs: item.duration,
@@ -216,7 +223,8 @@ export class DeezerApiClient implements Service {
             }
             // _KeepAlbumParsingInSync_
             albums[externalAlbumId] = {
-                externalId: externalAlbumId,
+                id: externalAlbumId,
+                externalIds: [externalAlbumId],
                 artistId: externalArtistId,
                 title: item.album.title,
                 coverImageUrl: item.album.cover_medium,
@@ -225,7 +233,8 @@ export class DeezerApiClient implements Service {
             }
             // _KeepArtistParsingInSync_
             artists[externalArtistId] = {
-                externalId: externalArtistId,
+                id: externalArtistId,
+                externalIds: [externalArtistId],
                 name: item.artist.name,
                 imageUrl: item.artist.picture_medium,
             }

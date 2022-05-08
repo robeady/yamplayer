@@ -1,9 +1,27 @@
 import { CatalogueIdString } from "../backend/database/catalogueIds"
-import { Dict, Fraction, Int, OPAQUE, Timestamp } from "../util/types"
+import { Dict, Fraction, Int, Timestamp } from "../util/types"
 
-export type TrackId = number & { readonly [OPAQUE]: unique symbol }
-export type ArtistId = number & { readonly [OPAQUE]: unique symbol }
-export type AlbumId = number & { readonly [OPAQUE]: unique symbol }
+// commented out below is _ModelSimplification_
+
+// export interface Track2 {
+//     id: string
+//     catalogueId?: string
+//     externalIds: string[]
+//     cataloguedAt?: Timestamp
+//     savedAt?: Timestamp
+//     albumId: string
+//     artistIds: string[]
+//     title: string
+//     trackNumber?: Int
+//     discNumber?: Int
+//     isrc?: string
+//     durationSecs: number
+//     rating?: Fraction
+// }
+
+// export type CatalogedTrack = Require<Track2, "catalogueId" | "cataloguedAt">
+
+// export type ExternalTrack = Omit<Track2, "catalogueId" | "cataloguedAt" | "savedAt">
 
 // A track can be in various states:
 // - it can be external only, e.g. when returned in search results
@@ -25,7 +43,8 @@ export interface Track extends ExternalTrack {
 }
 
 export interface ExternalTrack {
-    externalId: string
+    id: string
+    externalIds: string[]
     albumId: string
     artistIds: string[]
     title: string
@@ -47,7 +66,8 @@ export interface Album extends ExternalAlbum {
 }
 
 export interface ExternalAlbum {
-    externalId: string
+    id: string
+    externalIds: string[]
     artistId: string
     title: string
     coverImageUrl: string | null
@@ -66,7 +86,8 @@ export interface Artist extends ExternalArtist {
 }
 
 export interface ExternalArtist {
-    externalId: string
+    id: string
+    externalIds: string[]
     name: string
     imageUrl: string | null
 }

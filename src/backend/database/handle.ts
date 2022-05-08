@@ -82,7 +82,7 @@ export class MariaDB implements DatabaseHandle {
                 throw error
             }
         } finally {
-            connection.release()
+            void connection.release() // should we await this? no idea
         }
     }
 

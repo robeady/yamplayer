@@ -33,7 +33,8 @@ export function AlbumPage(props: { albumId: string }) {
     const tracks = sortBy(
         Object.values(allTracks).filter(
             (t): t is Track =>
-                typeof t !== "string" && (t.albumId === props.albumId || t.albumId === album?.externalId),
+                typeof t !== "string" &&
+                (t.albumId === props.albumId || (album?.externalIds.includes(t.albumId) ?? false)),
         ),
         t => t.discNumber,
         t => t.trackNumber,

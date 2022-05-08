@@ -14,9 +14,7 @@ export const SubtleLink = styled(Link)`
 export function AlbumLink(props: { className?: string; album?: Album }) {
     if (props.album === undefined) return null
     return (
-        <SubtleLink
-            className={props.className}
-            to={`/album/${props.album.catalogueId ?? props.album.externalId}`}>
+        <SubtleLink className={props.className} to={`/album/${props.album.id}`}>
             {props.album.title}
         </SubtleLink>
     )
@@ -25,9 +23,7 @@ export function AlbumLink(props: { className?: string; album?: Album }) {
 export function ArtistLink(props: { className?: string; artist?: Artist }) {
     if (props.artist === undefined) return null
     return (
-        <SubtleLink
-            className={props.className}
-            to={`/artist/${props.artist.catalogueId ?? props.artist.externalId}`}>
+        <SubtleLink className={props.className} to={`/artist/${props.artist.id}`}>
             {props.artist.name}
         </SubtleLink>
     )

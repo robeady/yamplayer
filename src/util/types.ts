@@ -12,3 +12,5 @@ export type Timestamp = Int & { readonly [OPAQUE]: unique symbol }
 
 /** A number intended to be an integer */
 export type Int = number
+
+export type Require<T, K extends keyof T> = T & { [P in K]-?: T[P] }
