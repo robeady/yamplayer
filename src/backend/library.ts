@@ -1,4 +1,4 @@
-import { groupBy, map } from "lodash"
+import { groupBy, keyBy, map } from "lodash"
 import {
     CataloguedAlbum,
     CataloguedArtist,
@@ -75,9 +75,9 @@ export class LibraryStore {
             this.query(albumReference).fetch(),
             this.query(artistReference).fetch(),
         ])
-        const trackRefs = groupBy(trackRefsRows, stringifyExternalId)
-        const albumRefs = groupBy(albumRefsRows, stringifyExternalId)
-        const artistRefs = groupBy(artistRefsRows, stringifyExternalId)
+        const trackRefs = groupBy(trackRefsRows, r => stringifyCatalogueId(r.trackId))
+        const albumRefs = groupBy(albumRefsRows, r => stringifyCatalogueId(r.albumId))
+        const artistRefs = groupBy(artistRefsRows, r => stringifyCatalogueId(r.artistId))
 
         const tracks = {} as Dict<CataloguedTrack>
         const artists = {} as Dict<CataloguedArtist>
@@ -211,12 +211,14 @@ export class LibraryStore {
             })
             .execute()
 
-        const trackRefInsert = this.query(tables.trackReference).insert(
-            trackPointingToInternalArtistAndAlbum.externalIds.map(e => ({
-                ...parseExternalId(e),
-                trackId: id,
-            })),
-        )
+        const trackRefInsert = this.query(tables.trackReference)
+            .insert(
+                trackPointingToInternalArtistAndAlbum.externalIds.map(e => ({
+                    ...parseExternalId(e),
+                    trackId: id,
+                })),
+            )
+            .execute()
 
         const artistsInsert = this.query(tables.trackArtist)
             .insert(
@@ -267,6 +269,7 @@ export class LibraryStore {
 
         return {
             ...albumPointingToInternalArtist,
+            id: stringifyCatalogueId(id),
             catalogueId: stringifyCatalogueId(id),
             cataloguedTimestamp: now,
         }
@@ -283,15 +286,21 @@ export class LibraryStore {
                     imageUrl: externalArtist.imageUrl,
                 })
                 .execute(),
-            this.query(tables.artistReference).insert(
-                externalArtist.externalIds.map(e => ({ artistId: id, ...parseExternalId(e) })),
-            ),
+            this.query(tables.artistReference)
+                .insert(externalArtist.externalIds.map(e => ({ artistId: id, ...parseExternalId(e) })))
+                .execute(),
         ])
-        return { ...externalArtist, catalogueId: stringifyCatalogueId(id), cataloguedTimestamp: now }
+        return {
+            ...externalArtist,
+            id: stringifyCatalogueId(id),
+            catalogueId: stringifyCatalogueId(id),
+            cataloguedTimestamp: now,
+        }
     }
 
     async matchTracks(externalTrackIds: string[]): Promise<CataloguedTrack[]> {
         if (externalTrackIds.length === 0) return []
+
         const rows = await this.query(tables.trackReference)
             .innerJoin(tables.trackArtist)
             .on(tables.trackArtist.trackId, "=", tables.trackReference.trackId)
@@ -305,15 +314,24 @@ export class LibraryStore {
             .fetch()
 
         const tracks = {} as Dict<CataloguedTrack>
+        const trackCatalogueIds = []
         for (const row of rows) {
-            // NOCOMMIT: need to do another join to get all external IDs
             const mappedTrack = mapTrackExceptArtistIds(row.track, {})
             let existingTrack = tracks[mappedTrack.catalogueId]
             if (existingTrack === undefined) {
                 existingTrack = mappedTrack
+                trackCatalogueIds.push(row.track.id)
                 tracks[mappedTrack.catalogueId] = mappedTrack
             }
             existingTrack.artistIds.push(stringifyCatalogueId(row.trackArtist.artistId))
+        }
+
+        // doing an extra query rather than using aggregate functions for now
+        const externalIdRows = await this.query(tables.trackReference)
+            .where(tables.trackReference.trackId, "IN", trackCatalogueIds)
+            .fetch()
+        for (const row of externalIdRows) {
+            tracks[stringifyCatalogueId(row.trackId)]!.externalIds.push(stringifyExternalId(row))
         }
 
         return Object.values(tracks)
@@ -321,37 +339,71 @@ export class LibraryStore {
 
     /** No order guarantee */
     async matchAlbums(externalAlbumIds: string[]): Promise<CataloguedAlbum[]> {
-        return externalAlbumIds.length === 0
-            ? []
-            : (
-                  await this.query(tables.albumReference)
-                      .innerJoin(tables.album)
-                      .on(tables.albumReference.albumId, "=", tables.album.id)
-                      .where(
-                          [tables.albumReference.externalService, tables.albumReference.externalId],
-                          "IN",
-                          externalAlbumIds.map(splitExternalId),
-                      )
-                      .fetch()
-              ).map(element => mapAlbum(element.album, {}))
-        // NOCOMMIT: need to do another join to get all external IDs
+        if (externalAlbumIds.length === 0) return []
+
+        const albums = keyBy(
+            (
+                await this.query(tables.albumReference)
+                    .innerJoin(tables.album)
+                    .on(tables.albumReference.albumId, "=", tables.album.id)
+                    .where(
+                        [tables.albumReference.externalService, tables.albumReference.externalId],
+                        "IN",
+                        externalAlbumIds.map(splitExternalId),
+                    )
+                    .fetch()
+            ).map(element => mapAlbum(element.album, {})),
+            a => a.id,
+        )
+
+        // doing an extra query rather than using aggregate functions for now
+        const externalIdRows = await this.query(tables.albumReference)
+            .where(
+                tables.albumReference.albumId,
+                "IN",
+                map(albums, a => parseCatalogueId(a.id)),
+            )
+            .fetch()
+
+        for (const row of externalIdRows) {
+            albums[stringifyCatalogueId(row.albumId)]!.externalIds.push(stringifyExternalId(row))
+        }
+
+        return Object.values(albums)
     }
 
     async matchArtists(externalArtistIds: string[]): Promise<CataloguedArtist[]> {
-        return externalArtistIds.length === 0
-            ? []
-            : (
-                  await this.query(tables.artistReference)
-                      .innerJoin(tables.artist)
-                      .on(tables.artistReference.artistId, "=", tables.artist.id)
-                      .where(
-                          [tables.artistReference.externalService, tables.artistReference.externalId],
-                          "IN",
-                          externalArtistIds.map(splitExternalId),
-                      )
-                      .fetch()
-              ).map(element => mapArtist(element.artist, {}))
-        // NOCOMMIT: need to do another join to get all external IDs
+        if (externalArtistIds.length === 0) return []
+
+        const artists = keyBy(
+            (
+                await this.query(tables.artistReference)
+                    .innerJoin(tables.artist)
+                    .on(tables.artistReference.artistId, "=", tables.artist.id)
+                    .where(
+                        [tables.artistReference.externalService, tables.artistReference.externalId],
+                        "IN",
+                        externalArtistIds.map(splitExternalId),
+                    )
+                    .fetch()
+            ).map(element => mapArtist(element.artist, {})),
+            a => a.id,
+        )
+
+        // doing an extra query rather than using aggregate functions for now
+        const externalIdRows = await this.query(tables.artistReference)
+            .where(
+                tables.artistReference.artistId,
+                "IN",
+                map(artists, a => parseCatalogueId(a.id)),
+            )
+            .fetch()
+
+        for (const row of externalIdRows) {
+            artists[stringifyCatalogueId(row.artistId)]!.externalIds.push(stringifyExternalId(row))
+        }
+
+        return Object.values(artists)
     }
 
     async setRating(trackId: CatalogueIdString, rating: Fraction | null): Promise<void> {
