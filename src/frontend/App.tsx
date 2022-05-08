@@ -1,3 +1,4 @@
+import { MantineProvider } from "@mantine/core"
 import { css } from "linaria"
 import React, { useEffect, useState } from "react"
 import { hot } from "react-hot-loader/root"
@@ -16,23 +17,25 @@ import { TrackSearch } from "./views/TrackSearch"
 
 function App() {
     return (
-        <HashRouter>
-            <div
-                className={css`
-                    height: 100vh;
-                    display: grid;
-                    grid-template-rows: minmax(0, 1fr) auto;
-                `}>
-                <Main />
-                <footer
+        <MantineProvider>
+            <HashRouter>
+                <div
                     className={css`
-                        border-top: 1px solid gainsboro;
-                        background: ${colors.gray1};
+                        height: 100vh;
+                        display: grid;
+                        grid-template-rows: minmax(0, 1fr) auto;
                     `}>
-                    <Player />
-                </footer>
-            </div>
-        </HashRouter>
+                    <Main />
+                    <footer
+                        className={css`
+                            border-top: 1px solid gainsboro;
+                            background: ${colors.gray1};
+                        `}>
+                        <Player />
+                    </footer>
+                </div>
+            </HashRouter>
+        </MantineProvider>
     )
 }
 

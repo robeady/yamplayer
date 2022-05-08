@@ -1,4 +1,6 @@
+import { Stack, TextInput } from "@mantine/core"
 import React, { useEffect, useState } from "react"
+import { MdSearch } from "react-icons/md"
 import { useDispatch, useSelector } from "react-redux"
 import { TrackListLegacy } from "../components/TrackListLegacy"
 import { catalogue } from "../state/actions"
@@ -15,27 +17,28 @@ export function TrackSearch() {
         }
     }, [dispatch, searchQuery, searchResults])
     return (
-        <div>
+        <Stack mt="md">
             <SearchBox onSubmit={setSearchQuery} />
             <SearchResults trackIds={searchResults ? searchResults.externalTrackIds : []} />
-        </div>
+        </Stack>
     )
 }
 
 function SearchBox(props: { onSubmit: (text: string) => void }) {
     const [text, setText] = useState("")
+
     return (
-        <label>
-            Search tracks:{" "}
-            <input
-                type="text"
-                value={text}
-                onChange={e => setText(e.target.value)}
-                onKeyPress={e => {
-                    if (e.key === "Enter") props.onSubmit(text)
-                }}
-            />
-        </label>
+        <TextInput
+            size="md"
+            placeholder="Search tracks"
+            icon={<MdSearch size={24} />}
+            sx={{ maxWidth: 500 }}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyPress={e => {
+                if (e.key === "Enter") props.onSubmit(text)
+            }}
+        />
     )
 }
 
