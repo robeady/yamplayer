@@ -5,7 +5,7 @@
     "scripts": {
         "start": "concurrently -k \"yarn:backend\" \"yarn:frontend\"",
         "frontend": "cross-env YP_PORT=8280 NODE_ENV=development webpack-dev-server --hot --port 8180",
-        "backend": "cross-env YP_PORT=8280 YP_DB_USER=yamplayer_user YP_DB_PASSWORD=hunter2 ts-node-dev --type-check --no-notify src/backend/index.ts",
+        "backend": "cross-env YP_PORT=8280 YP_DB_USER=yamplayer_user YP_DB_PASSWORD=hunter2 ts-node-dev --no-notify src/backend/index.ts",
         "test": "jest",
         "compile": "tsc",
         "typecheck": "tsc --noEmit",
