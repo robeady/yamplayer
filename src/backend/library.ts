@@ -1,4 +1,4 @@
-import { groupBy, keyBy, map } from "lodash"
+import { groupBy, isEmpty, keyBy, map } from "lodash"
 import {
     CataloguedAlbum,
     CataloguedArtist,
@@ -327,9 +327,12 @@ export class LibraryStore {
         }
 
         // doing an extra query rather than using aggregate functions for now
-        const externalIdRows = await this.query(tables.trackReference)
-            .where(tables.trackReference.trackId, "IN", trackCatalogueIds)
-            .fetch()
+        const externalIdRows =
+            trackCatalogueIds.length > 0
+                ? await this.query(tables.trackReference)
+                      .where(tables.trackReference.trackId, "IN", trackCatalogueIds)
+                      .fetch()
+                : []
         for (const row of externalIdRows) {
             tracks[stringifyCatalogueId(row.trackId)]!.externalIds.push(stringifyExternalId(row))
         }
@@ -357,13 +360,15 @@ export class LibraryStore {
         )
 
         // doing an extra query rather than using aggregate functions for now
-        const externalIdRows = await this.query(tables.albumReference)
-            .where(
-                tables.albumReference.albumId,
-                "IN",
-                map(albums, a => parseCatalogueId(a.id)),
-            )
-            .fetch()
+        const externalIdRows = isEmpty(albums)
+            ? []
+            : await this.query(tables.albumReference)
+                  .where(
+                      tables.albumReference.albumId,
+                      "IN",
+                      map(albums, a => parseCatalogueId(a.id)),
+                  )
+                  .fetch()
 
         for (const row of externalIdRows) {
             albums[stringifyCatalogueId(row.albumId)]!.externalIds.push(stringifyExternalId(row))
@@ -391,13 +396,15 @@ export class LibraryStore {
         )
 
         // doing an extra query rather than using aggregate functions for now
-        const externalIdRows = await this.query(tables.artistReference)
-            .where(
-                tables.artistReference.artistId,
-                "IN",
-                map(artists, a => parseCatalogueId(a.id)),
-            )
-            .fetch()
+        const externalIdRows = isEmpty(artists)
+            ? []
+            : await this.query(tables.artistReference)
+                  .where(
+                      tables.artistReference.artistId,
+                      "IN",
+                      map(artists, a => parseCatalogueId(a.id)),
+                  )
+                  .fetch()
 
         for (const row of externalIdRows) {
             artists[stringifyCatalogueId(row.artistId)]!.externalIds.push(stringifyExternalId(row))
