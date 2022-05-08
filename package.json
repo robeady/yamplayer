@@ -18,6 +18,8 @@
         "electron:build:FORGOT_WHAT_THIS_DOES": "cross-env NODE_ENV=development webpack"
     },
     "dependencies": {
+        "@mantine/core": "^4.2.4",
+        "@mantine/hooks": "^4.2.4",
         "@popperjs/core": "^2.9.2",
         "@reduxjs/toolkit": "^1.6.1",
         "@types/plist": "^3.0.2",
