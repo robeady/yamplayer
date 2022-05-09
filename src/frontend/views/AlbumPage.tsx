@@ -62,7 +62,7 @@ export function AlbumPage(props: { albumId: string }) {
         }
     }, [dispatch, props.albumId, haveAllData])
 
-    if (album === undefined) {
+    if (!album || !albumArtist) {
         return null
     }
 
@@ -71,6 +71,7 @@ export function AlbumPage(props: { albumId: string }) {
             <AlbumSummary album={album} tracks={tracksToShow} />
             <AlbumContents
                 album={album}
+                artist={albumArtist}
                 tracks={tracksToShow}
                 showingAllTracks={showingAllTracks}
                 setShowingAllTracks={setShowingAllTracks}

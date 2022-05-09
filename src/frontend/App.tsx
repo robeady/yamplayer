@@ -17,7 +17,7 @@ import { TrackSearch } from "./views/TrackSearch"
 
 function App() {
     return (
-        <MantineProvider>
+        <MantineProvider theme={{ primaryColor: "violet" }}>
             <HashRouter>
                 <div
                     className={css`

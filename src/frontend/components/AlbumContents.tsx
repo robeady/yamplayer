@@ -1,7 +1,8 @@
+import { Anchor, Box } from "@mantine/core"
 import { css } from "linaria"
 import React, { Dispatch, SetStateAction } from "react"
 import { Link } from "react-router-dom"
-import { Album, Track } from "../../model"
+import { Album, Artist, Track } from "../../model"
 import { Heading } from "../elements"
 import { LinkButton } from "../elements/LinkButton"
 import { TrackTable, TrackTableColumnKey, TrackTableHeadings } from "./TrackTable"
@@ -10,6 +11,7 @@ const tableCols: TrackTableColumnKey[] = ["#", "title", "artist", "length"]
 
 export function AlbumContents(props: {
     album: Album
+    artist: Artist
     tracks: Track[]
     showingAllTracks: boolean
     setShowingAllTracks: Setter<boolean>
@@ -18,7 +20,7 @@ export function AlbumContents(props: {
     return (
         <div className={css`flex: 1;`}>
             <AlbumTitle title={props.album.title} />
-            <AlbumArtist />
+            <AlbumArtist artist={props.artist} />
             {props.showHeadings === true && <TrackTableHeadings cols={tableCols} />}
             <TrackTable
                 tracks={props.tracks}
@@ -52,10 +54,12 @@ function WholeAlbumToggle(props: { showingAllTracks: boolean; setShowingAllTrack
 function AlbumTitle(props: { title: string }) {
     return <Heading>{props.title}</Heading>
 }
-function AlbumArtist() {
+function AlbumArtist(props: { artist: Artist }) {
     return (
-        <div className={css`padding-bottom: 16px;`}>
-            <Link to={`/library/artist/{"catalogueId"}`}>Some Body</Link>
-        </div>
+        <Box mb="lg">
+            <Anchor component={Link} to={`/artist/${props.artist.id}`}>
+                {props.artist.name}
+            </Anchor>
+        </Box>
     )
 }
