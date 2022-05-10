@@ -23,11 +23,14 @@ require("./styles/global")
 
 async function loadTrackData(explorerClient: Remote<Explorer>, track: Track) {
     // TODO: seems like resolveTrackUrl should accept the whole track, or more stuff at least
-    const query = new URLSearchParams({ url: await explorerClient.resolveTrackUrl(track.externalIds[0]!) })
+    const id = track.externalIds?.[0] ?? track.id
+    const query = new URLSearchParams({
+        url: await explorerClient.resolveTrackUrl(id),
+    })
     const response = await fetch(`/api/proxy?${query}`)
     const buffer = await response.arrayBuffer()
     const array = new Uint8Array(buffer)
-    defaultDecoder.decodeTrackInPlace(track.externalIds[0]!, array)
+    defaultDecoder.decodeTrackInPlace(id, array)
     return array
 }
 

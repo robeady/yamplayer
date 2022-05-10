@@ -13,7 +13,6 @@ import { colors } from "../styles"
 
 interface AlbumProps {
     album: Album
-    // artist: Artist
     tracks: Track[]
 }
 
@@ -34,7 +33,7 @@ export function AlbumPage(props: { albumId: string }) {
         Object.values(allTracks).filter(
             (t): t is Track =>
                 typeof t !== "string" &&
-                (t.albumId === props.albumId || (album?.externalIds.includes(t.albumId) ?? false)),
+                (t.albumId === props.albumId || (album?.externalIds?.includes(t.albumId) ?? false)),
         ),
         t => t.discNumber,
         t => t.trackNumber,
@@ -44,7 +43,7 @@ export function AlbumPage(props: { albumId: string }) {
         tracks.flatMap(t => t.artistIds).map(a => [a, resolveCanonical(allArtists, a)]),
     )
 
-    const tracksToShow = showingAllTracks ? tracks : tracks.filter(t => t.savedTimestamp !== null)
+    const tracksToShow = showingAllTracks ? tracks : tracks.filter(t => t.savedTimestamp !== undefined)
 
     // TODO: this will fetch what's needed to show whole album even if user doesn't ask for that
     const haveAllData =
@@ -91,12 +90,12 @@ function AlbumSummary(props: AlbumProps) {
     )
 }
 
-function AlbumStats(props: { tracks: Track[]; totalTracks: number | null }) {
+function AlbumStats(props: { tracks: Track[]; totalTracks?: number }) {
     const numTracks = props.tracks.length
     const totalMinutes = Math.ceil(sumBy(props.tracks, t => t.durationSecs / 60))
 
     const numTracksText =
-        props.totalTracks !== null && numTracks === props.totalTracks
+        props.totalTracks === undefined || numTracks === props.totalTracks
             ? numTracks
             : `${numTracks} of ${props.totalTracks}`
 

@@ -63,7 +63,7 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
             .addCase(catalogueThunks.unsaveTrack.fulfilled, (state, { meta: { arg: trackId } }) => {
                 const track = state.tracks[trackId]
                 if (typeof track !== "object") throw new Error("unexpected")
-                track.savedTimestamp = null
+                track.savedTimestamp = undefined
             })
             // TODO: optimistic update somehow. or maybe we can rely on the promise returned by dispatching the thunk?
             .addCase(catalogueThunks.setTrackRating.fulfilled, (state, { meta: { arg } }) => {
@@ -72,11 +72,7 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
                 track.rating = arg.newRating
             })
             .addCase(catalogueThunks.importItunesLibrary.fulfilled, (state, { payload }) => {
-                for (const track of payload.added.tracks) state.tracks[track.catalogueId] = track
-                for (const album of payload.added.albums) state.albums[album.catalogueId] = album
-                for (const artist of payload.added.artists) state.artists[artist.catalogueId] = artist
-                for (const playlist of payload.added.playlists)
-                    state.playlists[playlist.catalogueId] = playlist
+                fillState(state, payload.added)
             })
             .addCase(catalogueThunks.fetchSearchResults.fulfilled, (state, { meta, payload }) => {
                 const query = meta.arg
@@ -99,18 +95,21 @@ export function resolveCanonical<T>(dict: Dict<T | string>, id: string | undefin
 
 function fillState(
     state: CatalogueState,
-    entities: { tracks?: Track[]; artists?: Artist[]; albums?: Album[] },
+    entities: { tracks?: Track[]; artists?: Artist[]; albums?: Album[]; playlists?: Playlist[] },
 ) {
     for (const track of entities.tracks ?? []) {
-        for (const e of track.externalIds) state.tracks[e] = track.id
+        for (const e of track.externalIds ?? []) state.tracks[e] = track.id
         state.tracks[track.id] = track
     }
     for (const album of entities.albums ?? []) {
-        for (const e of album.externalIds) state.albums[e] = album.id
+        for (const e of album.externalIds ?? []) state.albums[e] = album.id
         state.albums[album.id] = album
     }
     for (const artist of entities.artists ?? []) {
-        for (const e of artist.externalIds) state.artists[e] = artist.id
+        for (const e of artist.externalIds ?? []) state.artists[e] = artist.id
         state.artists[artist.id] = artist
+    }
+    for (const playlist of entities.playlists ?? []) {
+        state.playlists[playlist.id] = playlist
     }
 }

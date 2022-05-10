@@ -10,7 +10,7 @@ export function LibraryAlbumsPage() {
         () =>
             uniq(
                 Object.values(tracks)
-                    .filter(t => typeof t === "object" && t.savedTimestamp !== null)
+                    .filter(t => typeof t === "object" && t.savedTimestamp !== undefined)
                     .map(t => (t as Track).albumId),
             ),
         [tracks],

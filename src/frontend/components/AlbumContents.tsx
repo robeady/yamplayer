@@ -30,7 +30,7 @@ export function AlbumContents(props: {
                     currentIdx: i,
                 })}
             />
-            {props.album.numTracks === null ||
+            {props.album.numTracks === undefined ||
                 ((props.album.numTracks > props.tracks.length || props.showingAllTracks) && (
                     <WholeAlbumToggle
                         showingAllTracks={props.showingAllTracks}

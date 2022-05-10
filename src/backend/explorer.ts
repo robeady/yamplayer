@@ -1,4 +1,3 @@
-import { forEach } from "lodash"
 import {
     Album,
     Artist,
@@ -55,7 +54,7 @@ export class Explorer {
 
         const addedArtists = await Promise.all(externalArtists.map(async a => explorer.library.addArtist(a)))
         const artistIdsByExternalId = Object.fromEntries(
-            addedArtists.flatMap(a => a.externalIds.map(e => [e, a.catalogueId])),
+            addedArtists.flatMap(a => a.externalIds.map(e => [e, a.id])),
         )
         const addedAlbums = await Promise.all(
             externalAlbums.map(async a =>
@@ -63,7 +62,7 @@ export class Explorer {
             ),
         )
         const albumIdsByExternalId = Object.fromEntries(
-            addedAlbums.map(a => a.externalIds.flatMap(e => [e, a.catalogueId])),
+            addedAlbums.map(a => a.externalIds.flatMap(e => [e, a.id])),
         )
         await Promise.all(
             externalTracks.map(async t =>
@@ -121,26 +120,14 @@ export class Explorer {
             return {
                 album: {
                     ...external.album,
-                    catalogueId: internalAlbum?.catalogueId ?? null,
-                    cataloguedTimestamp: internalAlbum?.cataloguedTimestamp ?? null,
+                    id: internalAlbum?.id ?? external.album.id,
+                    cataloguedTimestamp: internalAlbum?.cataloguedTimestamp,
                 },
                 tracks: external.tracks.map(t => ({
                     ...t,
                     ...internalTracksByExternalId[t.id],
-                    // ugh, we need explicit nulls for these if there was no internal track that matched
-                    // _ModelSimplification_
-                    catalogueId: internalTracksByExternalId[t.id]?.catalogueId ?? null,
-                    cataloguedTimestamp: internalTracksByExternalId[t.id]?.cataloguedTimestamp ?? null,
-                    savedTimestamp: internalTracksByExternalId[t.id]?.savedTimestamp ?? null,
                 })),
-                artists: [
-                    ...(internalArtist ? [internalArtist] : []),
-                    ...lookedUpExternalArtists.map(a => ({
-                        ...a,
-                        catalogueId: null,
-                        cataloguedTimestamp: null,
-                    })),
-                ],
+                artists: [...(internalArtist ? [internalArtist] : []), ...lookedUpExternalArtists],
             }
         } else {
             const internal = await this.library.list({ albumId })
@@ -187,30 +174,17 @@ export class Explorer {
                             // remap external track artist IDs
                             artistIds: et.artistIds.map(
                                 externalArtistId =>
-                                    artists.find(a => a.externalIds.includes(externalArtistId))
-                                        ?.catalogueId ??
-                                    matchedArtists.find(m => m.externalIds.includes(externalArtistId))
-                                        ?.catalogueId ??
+                                    artists.find(a => a.externalIds.includes(externalArtistId))?.id ??
+                                    matchedArtists.find(m => m.externalIds.includes(externalArtistId))?.id ??
                                     externalArtistId,
                             ),
-                            catalogueId: null,
-                            cataloguedTimestamp: null,
-                            savedTimestamp: null,
                         })),
                 ]
 
                 return {
                     album,
                     tracks: combinedTracks,
-                    artists: [
-                        ...artists,
-                        ...matchedArtists,
-                        ...lookedUpExternalArtists.map(e => ({
-                            ...e,
-                            catalogueId: null,
-                            cataloguedTimestamp: null,
-                        })),
-                    ],
+                    artists: [...artists, ...matchedArtists, ...lookedUpExternalArtists],
                 }
             }
         }
@@ -224,29 +198,19 @@ export class Explorer {
             this.library.matchArtists(Object.keys(searchResponse.artists)),
         ])
 
-        const tracks: Dict<Track | string> = {}
-        forEach(searchResponse.tracks, (track, id) => {
-            tracks[id] = { ...track, catalogueId: null, cataloguedTimestamp: null, savedTimestamp: null }
-        })
-        const albums: Dict<Album | string> = {}
-        forEach(searchResponse.albums, (album, id) => {
-            albums[id] = { ...album, catalogueId: null, cataloguedTimestamp: null }
-        })
-        const artists: Dict<Artist | string> = {}
-        forEach(searchResponse.artists, (artist, id) => {
-            artists[id] = { ...artist, catalogueId: null, cataloguedTimestamp: null }
-        })
+        const { tracks, albums, artists } = searchResponse as MatchedSearchResults
+
         for (const t of matchedTracks) {
-            for (const id of t.externalIds) tracks[id] = t.catalogueId
-            tracks[t.catalogueId] = t
+            for (const id of t.externalIds) tracks[id] = t.id
+            tracks[t.id] = t
         }
         for (const a of matchedAlbums) {
-            for (const id of a.externalIds) albums[id] = a.catalogueId
-            albums[a.catalogueId] = a
+            for (const id of a.externalIds) albums[id] = a.id
+            albums[a.id] = a
         }
         for (const a of matchedArtists) {
-            for (const id of a.externalIds) artists[id] = a.catalogueId
-            artists[a.catalogueId] = a
+            for (const id of a.externalIds) artists[id] = a.id
+            artists[a.id] = a
         }
 
         return { results: searchResponse.results, tracks, albums, artists }
@@ -256,7 +220,7 @@ export class Explorer {
         return this.library.unsave(trackId)
     }
 
-    async setTrackRating(arg: { trackId: string; newRating: number | null }): Promise<void> {
+    async setTrackRating(arg: { trackId: string; newRating: number | undefined }): Promise<void> {
         return this.library.setRating(arg.trackId, arg.newRating)
     }
 
@@ -273,13 +237,13 @@ export class Explorer {
             ])
             const track = await this.library.addTrack({
                 ...externalTrack,
-                albumId: album.catalogueId,
-                artistIds: artists.map(a => a.catalogueId),
+                albumId: album.id,
+                artistIds: artists.map(a => a.id),
             })
             return { track, album, artists }
         } else {
             // already in library, just ensure it's marked as saved
-            await this.library.save(matchingTrack.catalogueId)
+            await this.library.save(matchingTrack.id)
             return { track: matchingTrack }
         }
     }
@@ -336,13 +300,13 @@ export class Explorer {
         for (const album of await this.library.matchAlbums([...externalAlbumIds])) {
             for (const e of album.externalIds) {
                 externalAlbumIds.delete(e)
-                albumIdsByExternalId.set(e, album.catalogueId)
+                albumIdsByExternalId.set(e, album.id)
             }
         }
         for (const artist of await this.library.matchArtists([...externalArtistIds])) {
             for (const e of artist.externalIds) {
                 externalArtistIds.delete(e)
-                artistIdsByExternalId.set(e, artist.catalogueId)
+                artistIdsByExternalId.set(e, artist.id)
             }
         }
 
@@ -359,7 +323,7 @@ export class Explorer {
         const addedArtists = await Promise.all(externalArtists.map(async a => this.library.addArtist(a)))
         for (const artist of addedArtists) {
             for (const e of artist.externalIds) {
-                artistIdsByExternalId.set(e, artist.catalogueId)
+                artistIdsByExternalId.set(e, artist.id)
             }
         }
 
@@ -370,7 +334,7 @@ export class Explorer {
         )
         for (const album of addedAlbums) {
             for (const e of album.externalIds) {
-                albumIdsByExternalId.set(e, album.catalogueId)
+                albumIdsByExternalId.set(e, album.id)
             }
         }
 
@@ -382,7 +346,7 @@ export class Explorer {
             externalTracks.map(async t =>
                 this.library.addTrack({
                     ...t,
-                    rating: matchedTracksByExternalId[t.id]!.itunesTrack.rating ?? null,
+                    rating: matchedTracksByExternalId[t.id]!.itunesTrack.rating,
                     albumId: albumIdsByExternalId.get(t.albumId)!,
                     artistIds: t.artistIds.map(a => artistIdsByExternalId.get(a)!),
                 }),

@@ -8,7 +8,7 @@ import { Row } from "./elements"
 export function LibraryTracks() {
     const allTracks = useSelector(s => s.catalogue.tracks)
     const libraryTrackIds = Object.entries(allTracks)
-        .filter(([, track]) => typeof track !== "string" && track.savedTimestamp !== null)
+        .filter(([, track]) => typeof track !== "string" && track.savedTimestamp !== undefined)
         .map(([id]) => id)
 
     const [view, setView] = useState("playlist" as "playlist" | "tracks")

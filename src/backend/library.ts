@@ -87,17 +87,17 @@ export class LibraryStore {
             // _Slow_ we do some unnecessary mapping here for tracks/artists/albums already encountered
             // we could do less work by mapping the IDs first and checking if they've been seen already
             const mappedTrack = mapTrackExceptArtistIds(row.track, trackRefs)
-            let existingTrack = tracks[mappedTrack.catalogueId]
+            let existingTrack = tracks[mappedTrack.id]
             if (existingTrack === undefined) {
                 existingTrack = mappedTrack
-                tracks[mappedTrack.catalogueId] = mappedTrack
+                tracks[mappedTrack.id] = mappedTrack
             }
             // _Slow_ we might have seen the album/artist before too but oh well
             const mappedAlbum = mapAlbum(row.album, albumRefs)
-            albums[mappedAlbum.catalogueId] = mappedAlbum
+            albums[mappedAlbum.id] = mappedAlbum
             const mappedArtist = mapArtist(row.artist, artistRefs)
-            artists[mappedArtist.catalogueId] = mappedArtist
-            existingTrack.artistIds.push(mappedArtist.catalogueId)
+            artists[mappedArtist.id] = mappedArtist
+            existingTrack.artistIds.push(mappedArtist.id)
         }
 
         // it would be unusual but maybe there are some extra artists that don't appear in any of the tracks
@@ -111,7 +111,7 @@ export class LibraryStore {
                 .fetch()
             for (const r of albumArtistRows) {
                 const mapped = mapArtist(r, artistRefs)
-                artists[mapped.catalogueId] = mapped
+                artists[mapped.id] = mapped
             }
         }
 
@@ -123,10 +123,10 @@ export class LibraryStore {
         const playlists = {} as Dict<Playlist>
         for (const row of playlistRows) {
             const playlist = {
-                catalogueId: stringifyCatalogueId(row.id),
+                id: stringifyCatalogueId(row.id),
                 name: row.name,
             }
-            playlists[playlist.catalogueId] = playlist
+            playlists[playlist.id] = playlist
         }
         return playlists
     }
@@ -200,24 +200,19 @@ export class LibraryStore {
             .insert({
                 id,
                 title: trackPointingToInternalArtistAndAlbum.title,
-                trackNumber: trackPointingToInternalArtistAndAlbum.trackNumber,
-                discNumber: trackPointingToInternalArtistAndAlbum.discNumber,
+                trackNumber: trackPointingToInternalArtistAndAlbum.trackNumber ?? null,
+                discNumber: trackPointingToInternalArtistAndAlbum.discNumber ?? null,
                 albumId: parseCatalogueId(trackPointingToInternalArtistAndAlbum.albumId),
                 savedTimestamp: now,
                 durationSecs: trackPointingToInternalArtistAndAlbum.durationSecs,
-                isrc: trackPointingToInternalArtistAndAlbum.isrc,
+                isrc: trackPointingToInternalArtistAndAlbum.isrc ?? null,
                 playCount: 0,
-                rating: trackPointingToInternalArtistAndAlbum.rating,
+                rating: trackPointingToInternalArtistAndAlbum.rating ?? null,
             })
             .execute()
 
         const trackRefInsert = this.query(tables.trackReference)
-            .insert(
-                trackPointingToInternalArtistAndAlbum.externalIds.map(e => ({
-                    ...externalIdToRow(e),
-                    trackId: id,
-                })),
-            )
+            .insert({ ...externalIdToRow(trackPointingToInternalArtistAndAlbum.id), trackId: id })
             .execute()
 
         const artistsInsert = this.query(tables.trackArtist)
@@ -234,10 +229,10 @@ export class LibraryStore {
 
         return {
             ...trackPointingToInternalArtistAndAlbum,
-            catalogueId: stringifyCatalogueId(id),
+            id: stringifyCatalogueId(id),
+            externalIds: [trackPointingToInternalArtistAndAlbum.id],
             cataloguedTimestamp: now,
             savedTimestamp: now,
-            rating: null,
         }
     }
 
@@ -251,26 +246,20 @@ export class LibraryStore {
                     id,
                     artistId: parseCatalogueId(albumPointingToInternalArtist.artistId),
                     title: albumPointingToInternalArtist.title,
-                    coverImageUrl: albumPointingToInternalArtist.coverImageUrl,
-                    releaseDate: albumPointingToInternalArtist.releaseDate,
-
-                    numTracks: albumPointingToInternalArtist.numTracks,
+                    coverImageUrl: albumPointingToInternalArtist.coverImageUrl ?? null,
+                    releaseDate: albumPointingToInternalArtist.releaseDate ?? null,
+                    numTracks: albumPointingToInternalArtist.numTracks ?? null,
                 })
                 .execute(),
             this.query(tables.albumReference)
-                .insert(
-                    albumPointingToInternalArtist.externalIds.map(e => ({
-                        ...externalIdToRow(e),
-                        albumId: id,
-                    })),
-                )
+                .insert({ ...externalIdToRow(albumPointingToInternalArtist.id), albumId: id })
                 .execute(),
         ])
 
         return {
             ...albumPointingToInternalArtist,
             id: stringifyCatalogueId(id),
-            catalogueId: stringifyCatalogueId(id),
+            externalIds: [albumPointingToInternalArtist.id],
             cataloguedTimestamp: now,
         }
     }
@@ -287,13 +276,13 @@ export class LibraryStore {
                 })
                 .execute(),
             this.query(tables.artistReference)
-                .insert(externalArtist.externalIds.map(e => ({ artistId: id, ...externalIdToRow(e) })))
+                .insert({ artistId: id, ...externalIdToRow(externalArtist.id) })
                 .execute(),
         ])
         return {
             ...externalArtist,
             id: stringifyCatalogueId(id),
-            catalogueId: stringifyCatalogueId(id),
+            externalIds: [externalArtist.id],
             cataloguedTimestamp: now,
         }
     }
@@ -317,11 +306,11 @@ export class LibraryStore {
         const trackCatalogueIds = []
         for (const row of rows) {
             const mappedTrack = mapTrackExceptArtistIds(row.track, {})
-            let existingTrack = tracks[mappedTrack.catalogueId]
+            let existingTrack = tracks[mappedTrack.id]
             if (existingTrack === undefined) {
                 existingTrack = mappedTrack
                 trackCatalogueIds.push(row.track.id)
-                tracks[mappedTrack.catalogueId] = mappedTrack
+                tracks[mappedTrack.id] = mappedTrack
             }
             existingTrack.artistIds.push(stringifyCatalogueId(row.trackArtist.artistId))
         }
@@ -413,8 +402,8 @@ export class LibraryStore {
         return Object.values(artists)
     }
 
-    async setRating(trackId: CatalogueIdString, rating: Fraction | null): Promise<void> {
-        if (rating !== null && (rating < 0 || rating > 1)) {
+    async setRating(trackId: CatalogueIdString, rating: Fraction | undefined): Promise<void> {
+        if (rating !== undefined && (rating < 0 || rating > 1)) {
             throw new Error(`tried to give track ${trackId} invalid rating ${rating}`)
         }
         await this.query(tables.track)
@@ -427,7 +416,7 @@ export class LibraryStore {
     async addPlaylist(playlist: { name: string }): Promise<Playlist> {
         const id = this.idGenerator.generate()
         await this.query(tables.playlist).insert({ name: playlist.name, id }).execute()
-        return { ...playlist, catalogueId: stringifyCatalogueId(id) }
+        return { ...playlist, id: stringifyCatalogueId(id) }
     }
 }
 
@@ -435,17 +424,16 @@ function mapAlbum(
     albumFromDb: RowTypeFrom<typeof tables["album"]>,
     albumRefs: Record<string, ExternalIdRow[]>,
 ): CataloguedAlbum {
-    const catalogueId = stringifyCatalogueId(albumFromDb.id)
+    const id = stringifyCatalogueId(albumFromDb.id)
     return {
-        id: catalogueId,
-        catalogueId,
+        id,
         artistId: stringifyCatalogueId(albumFromDb.artistId),
-        externalIds: (albumRefs[catalogueId] ?? []).map(stringifyExternalId),
+        externalIds: (albumRefs[id] ?? []).map(stringifyExternalId),
         title: albumFromDb.title,
-        coverImageUrl: albumFromDb.coverImageUrl,
-        releaseDate: albumFromDb.releaseDate,
+        coverImageUrl: albumFromDb.coverImageUrl ?? undefined,
+        releaseDate: albumFromDb.releaseDate ?? undefined,
         cataloguedTimestamp: extractTimestamp(albumFromDb.id),
-        numTracks: albumFromDb.numTracks,
+        numTracks: albumFromDb.numTracks ?? undefined,
     }
 }
 
@@ -453,11 +441,10 @@ function mapArtist(
     artistFromDb: RowTypeFrom<typeof tables["artist"]>,
     artistRefs: Record<string, ExternalIdRow[]>,
 ): CataloguedArtist {
-    const catalogueId = stringifyCatalogueId(artistFromDb.id)
+    const id = stringifyCatalogueId(artistFromDb.id)
     return {
-        id: catalogueId,
-        catalogueId,
-        externalIds: (artistRefs[catalogueId] ?? []).map(stringifyExternalId),
+        id,
+        externalIds: (artistRefs[id] ?? []).map(stringifyExternalId),
         name: artistFromDb.name,
         imageUrl: artistFromDb.imageUrl,
         cataloguedTimestamp: extractTimestamp(artistFromDb.id),
@@ -468,19 +455,18 @@ function mapTrackExceptArtistIds(
     trackFromDb: RowTypeFrom<typeof tables["track"]>,
     trackRefs: Record<string, ExternalIdRow[]>,
 ): CataloguedTrack {
-    const catalogueId = stringifyCatalogueId(trackFromDb.id)
+    const id = stringifyCatalogueId(trackFromDb.id)
     return {
-        id: catalogueId,
-        catalogueId,
+        id,
         albumId: stringifyCatalogueId(trackFromDb.albumId),
         artistIds: [],
-        externalIds: (trackRefs[catalogueId] ?? []).map(stringifyExternalId),
+        externalIds: (trackRefs[id] ?? []).map(stringifyExternalId),
         title: trackFromDb.title,
-        trackNumber: trackFromDb.trackNumber,
-        discNumber: trackFromDb.discNumber,
+        trackNumber: trackFromDb.trackNumber ?? undefined,
+        discNumber: trackFromDb.discNumber ?? undefined,
         durationSecs: trackFromDb.durationSecs,
-        isrc: trackFromDb.isrc,
-        rating: trackFromDb.rating,
+        isrc: trackFromDb.isrc ?? undefined,
+        rating: trackFromDb.rating ?? undefined,
         cataloguedTimestamp: extractTimestamp(trackFromDb.id),
         savedTimestamp: trackFromDb.savedTimestamp as Timestamp,
     }

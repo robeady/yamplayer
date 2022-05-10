@@ -88,15 +88,13 @@ export class DeezerApiClient implements Service {
         // _KeepTrackParsingInSync_
         return {
             id,
-            externalIds: [id],
             albumId: deezerId(track.album.id),
             artistIds,
             title: track.title,
             trackNumber: track.track_position,
             discNumber: track.disk_number,
             durationSecs: track.duration,
-            isrc: track.isrc || null, // never observed this to be absent but this seems a safe approach
-            rating: null,
+            isrc: track.isrc, // never observed this to be absent but this seems a safe approach
         }
     }
 
@@ -110,7 +108,6 @@ export class DeezerApiClient implements Service {
         return {
             // _KeepAlbumParsingInSync_
             id,
-            externalIds: [id],
             artistId: deezerId(album.artist.id),
             title: album.title,
             coverImageUrl: album.cover_medium,
@@ -138,7 +135,6 @@ export class DeezerApiClient implements Service {
             // _KeepAlbumParsingInSync_
             album: {
                 id,
-                externalIds: [id],
                 artistId: deezerId(album.artist.id),
                 title: album.title,
                 coverImageUrl: album.cover_medium,
@@ -148,20 +144,17 @@ export class DeezerApiClient implements Service {
             // _KeepTrackParsingInSync_
             tracks: tracks.map(track => ({
                 id: deezerId(track.id),
-                externalIds: [deezerId(track.id)],
                 albumId: id,
                 artistIds: [deezerId(track.artist.id)], // _Contributors_ only available if we query track individually
                 title: track.title,
                 trackNumber: track.track_position,
                 discNumber: track.disk_number,
                 durationSecs: track.duration,
-                isrc: track.isrc || null, // never observed this to be absent but this seems a safe approach
-                rating: null,
+                isrc: track.isrc,
             })),
             // _KeepArtistParsingInSync_
             artist: {
                 id: deezerId(album.artist.id),
-                externalIds: [deezerId(album.artist.id)],
                 name: album.artist.name,
                 imageUrl: album.artist.picture_medium,
             },
@@ -178,7 +171,6 @@ export class DeezerApiClient implements Service {
         // _KeepArtistParsingInSync_
         return {
             id,
-            externalIds: [id],
             name: artist.name,
             imageUrl: artist.picture_medium,
         }
@@ -211,30 +203,21 @@ export class DeezerApiClient implements Service {
             // _KeepTrackParsingInSync_
             tracks[externalTrackId] = {
                 id: externalTrackId,
-                externalIds: [externalTrackId],
                 albumId: externalAlbumId,
                 artistIds: [externalArtistId], // _Contributors_
                 durationSecs: item.duration,
                 title: item.title,
-                trackNumber: null,
-                discNumber: null,
-                isrc: null,
-                rating: null,
             }
             // _KeepAlbumParsingInSync_
             albums[externalAlbumId] = {
                 id: externalAlbumId,
-                externalIds: [externalAlbumId],
                 artistId: externalArtistId,
                 title: item.album.title,
                 coverImageUrl: item.album.cover_medium,
-                releaseDate: null,
-                numTracks: null,
             }
             // _KeepArtistParsingInSync_
             artists[externalArtistId] = {
                 id: externalArtistId,
-                externalIds: [externalArtistId],
                 name: item.artist.name,
                 imageUrl: item.artist.picture_medium,
             }

@@ -13,7 +13,7 @@ const rating = css``
 
 export function TrackRating(props: {
     enabled: boolean
-    rating: Fraction | null
+    rating?: Fraction
     onRate: (newRating: number) => void
 }) {
     return (

@@ -38,7 +38,7 @@ function PlaylistNavItems() {
     return (
         <>
             {playlists.map(p => (
-                <NavItem key={p.catalogueId} link={`/playlists/${p.catalogueId}`} text={p.name} />
+                <NavItem key={p.id} link={`/playlists/${p.id}`} text={p.name} />
             ))}
         </>
     )

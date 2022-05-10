@@ -50,10 +50,8 @@ function RatingCell(props: { track: Track }) {
     return (
         <TrackRating
             rating={props.track.rating}
-            enabled={props.track.catalogueId !== null}
-            onRate={newRating =>
-                dispatch(catalogue.setTrackRating({ trackId: props.track.catalogueId!, newRating }))
-            }
+            enabled={props.track.cataloguedTimestamp !== undefined}
+            onRate={newRating => dispatch(catalogue.setTrackRating({ trackId: props.track.id, newRating }))}
         />
     )
 }

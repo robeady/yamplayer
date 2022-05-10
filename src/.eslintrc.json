@@ -165,6 +165,7 @@
         // === jest ===
         "jest/expect-expect": ["warn", { "assertFunctionNames": ["expect*"] }],
         "jest/prefer-expect-assertions": "off",
+        "jest/prefer-strict-equal": "off",
         "jest/no-hooks": "off",
         "jest/require-top-level-describe": "off",
         "jest/consistent-test-it": ["error", { "withinDescribe": "test" }],

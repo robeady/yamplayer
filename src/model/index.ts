@@ -1,96 +1,50 @@
-import { CatalogueIdString } from "../backend/database/catalogueIds"
-import { Dict, Fraction, Int, Timestamp } from "../util/types"
+import { Dict, Fraction, Int, Require, Timestamp } from "../util/types"
 
 // commented out below is _ModelSimplification_
 
-// export interface Track2 {
-//     id: string
-//     catalogueId?: string
-//     externalIds: string[]
-//     cataloguedAt?: Timestamp
-//     savedAt?: Timestamp
-//     albumId: string
-//     artistIds: string[]
-//     title: string
-//     trackNumber?: Int
-//     discNumber?: Int
-//     isrc?: string
-//     durationSecs: number
-//     rating?: Fraction
-// }
-
-// export type CatalogedTrack = Require<Track2, "catalogueId" | "cataloguedAt">
-
-// export type ExternalTrack = Omit<Track2, "catalogueId" | "cataloguedAt" | "savedAt">
-
-// A track can be in various states:
-// - it can be external only, e.g. when returned in search results
-// - it can be in saved in the catalogue
-// - it can be in the catalogue but not saved, because the user subsequently unsaved it
-
-export interface CataloguedTrack extends Track {
-    catalogueId: CatalogueIdString
-    cataloguedTimestamp: Timestamp
-    /** When the track was (last) marked saved, or null if the track is not saved */
-    savedTimestamp: Timestamp | null
-}
-
-export interface Track extends ExternalTrack {
-    catalogueId: CatalogueIdString | null
-    cataloguedTimestamp: Timestamp | null
-    /** When the track was (last) marked saved, or null if the track is not saved */
-    savedTimestamp: Timestamp | null
-}
-
-export interface ExternalTrack {
+export interface Track {
     id: string
-    externalIds: string[]
+    externalIds?: string[]
+    cataloguedTimestamp?: Timestamp
+    /** When the track was (last) marked saved, or missing if not saved */
+    savedTimestamp?: Timestamp
     albumId: string
     artistIds: string[]
     title: string
-    trackNumber: Int | null
-    discNumber: Int | null
-    isrc: string | null
+    trackNumber?: Int
+    discNumber?: Int
+    isrc?: string
     durationSecs: number
-    rating: Fraction | null
+    rating?: Fraction
 }
 
-export interface CataloguedAlbum extends Album {
-    catalogueId: CatalogueIdString
-    cataloguedTimestamp: Timestamp
-}
+export type CataloguedTrack = Require<Track, "cataloguedTimestamp" | "externalIds">
+export type ExternalTrack = Omit<Track, "cataloguedTimestamp" | "externalIds" | "savedTimestamp">
 
-export interface Album extends ExternalAlbum {
-    catalogueId: CatalogueIdString | null
-    cataloguedTimestamp: Timestamp | null
-}
-
-export interface ExternalAlbum {
+export interface Album {
     id: string
-    externalIds: string[]
+    externalIds?: string[]
+    cataloguedTimestamp?: Timestamp
     artistId: string
     title: string
-    coverImageUrl: string | null
-    releaseDate: string | null
-    numTracks: Int | null
+    coverImageUrl?: string
+    releaseDate?: string
+    numTracks?: Int
 }
 
-export interface CataloguedArtist extends Artist {
-    catalogueId: CatalogueIdString
-    cataloguedTimestamp: Timestamp
-}
+export type CataloguedAlbum = Require<Album, "cataloguedTimestamp" | "externalIds">
+export type ExternalAlbum = Omit<Album, "cataloguedTimestamp" | "externalIds">
 
-export interface Artist extends ExternalArtist {
-    catalogueId: CatalogueIdString | null
-    cataloguedTimestamp: Timestamp | null
-}
-
-export interface ExternalArtist {
+export interface Artist {
     id: string
-    externalIds: string[]
+    externalIds?: string[]
+    cataloguedTimestamp?: Timestamp
     name: string
     imageUrl: string | null
 }
+
+export type CataloguedArtist = Require<Artist, "cataloguedTimestamp" | "externalIds">
+export type ExternalArtist = Omit<Artist, "cataloguedTimestamp" | "externalIds">
 
 export interface SearchResultLists {
     externalTrackIds: string[]
@@ -113,6 +67,6 @@ export interface MatchedSearchResults {
 }
 
 export interface Playlist {
-    catalogueId: CatalogueIdString
+    id: string
     name: string
 }

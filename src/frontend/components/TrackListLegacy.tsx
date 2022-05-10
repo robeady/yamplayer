@@ -42,9 +42,9 @@ export function TrackListLegacy(props: { trackIds: string[] }) {
                     <CoverAndTrackTitle track={t.track} album={t.album} />
                     <TrackRating
                         rating={t.track.rating}
-                        enabled={t.track.catalogueId !== null}
+                        enabled={t.track.cataloguedTimestamp !== undefined}
                         onRate={newRating =>
-                            dispatch(catalogue.setTrackRating({ trackId: t.track.catalogueId!, newRating }))
+                            dispatch(catalogue.setTrackRating({ trackId: t.track.id, newRating }))
                         }
                     />
                     <span className={css`color: rgb(90, 90, 90); &:hover { text-decoration: underline; }`}>
@@ -66,11 +66,7 @@ function CroppedStar(props: { className: string }) {
     return <Star className={props.className} viewBox="4 4 16 16" width={16} height={16} />
 }
 
-function TrackRating(props: {
-    enabled: boolean
-    rating: number | null
-    onRate: (newRating: number) => void
-}) {
+function TrackRating(props: { enabled: boolean; rating?: number; onRate: (newRating: number) => void }) {
     return (
         <div className={ratingClass}>
             {props.enabled && (
@@ -162,12 +158,12 @@ function PlayCircle(props: { displayed: boolean; size: number }) {
 function SaveButton(props: { trackId: string }) {
     const track = useSelector(s => resolveCanonical(s.catalogue.tracks, props.trackId)!)
     const dispatch = useDispatch()
-    return track.savedTimestamp === null ? (
+    return track.savedTimestamp === undefined ? (
         <button type="button" onClick={() => dispatch(catalogue.addToLibrary(track.id))}>
             Add
         </button>
     ) : (
-        <button type="button" onClick={() => dispatch(catalogue.unsaveTrack(track.catalogueId!))}>
+        <button type="button" onClick={() => dispatch(catalogue.unsaveTrack(track.id))}>
             -
         </button>
     )
