@@ -8,7 +8,7 @@ import {
     ExternalTrack,
     Playlist,
 } from "../model"
-import { parseExternalId, splitExternalId, stringifyExternalId } from "../services/ids"
+import { parseExternalId, splitExternalId } from "../services/ids"
 import { unixNow } from "../util/time"
 import { Dict, Fraction, Timestamp } from "../util/types"
 import {
@@ -214,7 +214,7 @@ export class LibraryStore {
         const trackRefInsert = this.query(tables.trackReference)
             .insert(
                 trackPointingToInternalArtistAndAlbum.externalIds.map(e => ({
-                    ...parseExternalId(e),
+                    ...externalIdToRow(e),
                     trackId: id,
                 })),
             )
@@ -260,7 +260,7 @@ export class LibraryStore {
             this.query(tables.albumReference)
                 .insert(
                     albumPointingToInternalArtist.externalIds.map(e => ({
-                        ...parseExternalId(e),
+                        ...externalIdToRow(e),
                         albumId: id,
                     })),
                 )
@@ -287,7 +287,7 @@ export class LibraryStore {
                 })
                 .execute(),
             this.query(tables.artistReference)
-                .insert(externalArtist.externalIds.map(e => ({ artistId: id, ...parseExternalId(e) })))
+                .insert(externalArtist.externalIds.map(e => ({ artistId: id, ...externalIdToRow(e) })))
                 .execute(),
         ])
         return {
@@ -433,14 +433,14 @@ export class LibraryStore {
 
 function mapAlbum(
     albumFromDb: RowTypeFrom<typeof tables["album"]>,
-    albumRefs: Record<string, { externalService: string; externalId: string }[]>,
+    albumRefs: Record<string, ExternalIdRow[]>,
 ): CataloguedAlbum {
     const catalogueId = stringifyCatalogueId(albumFromDb.id)
     return {
         id: catalogueId,
         catalogueId,
         artistId: stringifyCatalogueId(albumFromDb.artistId),
-        externalIds: (albumRefs[catalogueId] ?? []).map(e => stringifyExternalId(e)),
+        externalIds: (albumRefs[catalogueId] ?? []).map(stringifyExternalId),
         title: albumFromDb.title,
         coverImageUrl: albumFromDb.coverImageUrl,
         releaseDate: albumFromDb.releaseDate,
@@ -451,13 +451,13 @@ function mapAlbum(
 
 function mapArtist(
     artistFromDb: RowTypeFrom<typeof tables["artist"]>,
-    artistRefs: Record<string, { externalService: string; externalId: string }[]>,
+    artistRefs: Record<string, ExternalIdRow[]>,
 ): CataloguedArtist {
     const catalogueId = stringifyCatalogueId(artistFromDb.id)
     return {
         id: catalogueId,
         catalogueId,
-        externalIds: (artistRefs[catalogueId] ?? []).map(e => stringifyExternalId(e)),
+        externalIds: (artistRefs[catalogueId] ?? []).map(stringifyExternalId),
         name: artistFromDb.name,
         imageUrl: artistFromDb.imageUrl,
         cataloguedTimestamp: extractTimestamp(artistFromDb.id),
@@ -466,7 +466,7 @@ function mapArtist(
 
 function mapTrackExceptArtistIds(
     trackFromDb: RowTypeFrom<typeof tables["track"]>,
-    trackRefs: Record<string, { externalService: string; externalId: string }[]>,
+    trackRefs: Record<string, ExternalIdRow[]>,
 ): CataloguedTrack {
     const catalogueId = stringifyCatalogueId(trackFromDb.id)
     return {
@@ -474,7 +474,7 @@ function mapTrackExceptArtistIds(
         catalogueId,
         albumId: stringifyCatalogueId(trackFromDb.albumId),
         artistIds: [],
-        externalIds: (trackRefs[catalogueId] ?? []).map(e => stringifyExternalId(e)),
+        externalIds: (trackRefs[catalogueId] ?? []).map(stringifyExternalId),
         title: trackFromDb.title,
         trackNumber: trackFromDb.trackNumber,
         discNumber: trackFromDb.discNumber,
@@ -499,4 +499,18 @@ function parseCatalogueIdList(idList: Buffer): string[] {
         )
     }
     return parts.map(stringifyCatalogueId)
+}
+
+interface ExternalIdRow {
+    externalService: string
+    externalId: string
+}
+
+function stringifyExternalId(row: ExternalIdRow) {
+    return `${row.externalService}:${row.externalId}`
+}
+
+function externalIdToRow(externalId: string) {
+    const { service, entityId } = parseExternalId(externalId)
+    return { externalService: service, externalId: entityId }
 }

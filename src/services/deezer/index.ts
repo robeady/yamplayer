@@ -4,7 +4,7 @@ import Bottleneck from "bottleneck"
 import { moduleLogger } from "../../backend/logging"
 import { ExternalAlbum, ExternalArtist, ExternalTrack, SearchResults } from "../../model"
 import { Dict } from "../../util/types"
-import { extractExternalId } from "../ids"
+import { extractEntityId } from "../ids"
 import { Service, TrackSearchQuery } from "../index"
 import { FilesystemAxiosCache } from "./FilesystemAxiosCache"
 
@@ -68,7 +68,7 @@ export class DeezerApiClient implements Service {
     }
 
     async lookupTrack(id: string): Promise<ExternalTrack> {
-        const rawId = extractExternalId(id, "dz")
+        const rawId = extractEntityId(id, "dz")
         const response = await this.httpGet<TrackResponse>(`track/${rawId}`)
         if (response.data.error) {
             throw new Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
@@ -101,7 +101,7 @@ export class DeezerApiClient implements Service {
     }
 
     async lookupAlbum(id: string): Promise<ExternalAlbum> {
-        const rawId = extractExternalId(id, "dz")
+        const rawId = extractEntityId(id, "dz")
         const response = await this.httpGet<AlbumResponse>(`album/${rawId}`)
         if (response.data.error) {
             throw new Error(`album ${id} not found: ${JSON.stringify(response.data.error)}`)
@@ -122,7 +122,7 @@ export class DeezerApiClient implements Service {
     async lookupAlbumAndTracks(
         id: string,
     ): Promise<{ album: ExternalAlbum; tracks: ExternalTrack[]; artist: ExternalArtist }> {
-        const rawId = extractExternalId(id, "dz")
+        const rawId = extractEntityId(id, "dz")
         const [albumResponse, tracksResponse] = await Promise.all([
             this.httpGet<AlbumResponse>(`album/${rawId}`),
             // additional request required to get track number, disc number and isrc
@@ -169,7 +169,7 @@ export class DeezerApiClient implements Service {
     }
 
     async lookupArtist(id: string): Promise<ExternalArtist> {
-        const rawId = extractExternalId(id, "dz")
+        const rawId = extractEntityId(id, "dz")
         const response = await this.httpGet<ArtistResponse>(`artist/${rawId}`)
         if (response.data.error) {
             throw new Error(`artist ${id} not found: ${JSON.stringify(response.data.error)}`)
