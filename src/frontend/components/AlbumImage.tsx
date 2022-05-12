@@ -3,7 +3,7 @@ import React from "react"
 import { Album } from "../../model"
 import { colors } from "../styles"
 
-export function AlbumImage(props: { className: string; album?: Album; size?: number }) {
+export function AlbumImage(props: { className?: string; album?: Album; size?: number }) {
     return (
         <Img
             className={props.className}
