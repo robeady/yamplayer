@@ -4,7 +4,7 @@ import { upperFirst } from "lodash"
 import React, { CSSProperties, ReactNode } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { Track } from "../../model"
-import { Row, Subheading } from "../elements"
+import { DotDotDot, Row, Subheading } from "../elements"
 import { Date } from "../elements/dates"
 import { DropdownMenu, DropdownMenuItem, useDropdownMenu } from "../elements/DropdownMenu"
 import { formatTime } from "../formatting"
@@ -26,7 +26,7 @@ const columns: Record<TrackTableColumnKey, TrackTableColumn> = {
         style: { width: "40px", color: colors.gray5, textAlign: "right" },
         render: track => track.trackNumber,
     },
-    title: { style: { width: "340px" }, render: track => track.title },
+    title: { style: { width: "340px" }, render: track => <DotDotDot>{track.title}</DotDotDot> },
     artist: {
         style: { width: "240px" },
         render: track => <ArtistCell track={track} />,

@@ -39,7 +39,8 @@ function AppLayout() {
             <div className={css`grid-area: sidebar;`}>
                 <LeftNav />
             </div>
-            <main className={css`grid-area: main; overflow-y: auto; padding: 16px 24px;`}>
+            {/* padding at the top of the page has to be zero for sticky table headings */}
+            <main className={css`grid-area: main; overflow-y: auto; padding: 0 24px;`}>
                 <Content />
             </main>
             <footer
