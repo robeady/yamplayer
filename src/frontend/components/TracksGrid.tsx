@@ -7,16 +7,16 @@ import { resolveCanonical } from "../state/catalogue"
 import { colors } from "../styles"
 import { AlbumImage } from "./AlbumImage"
 
-export function TrackGrid(props: { tracks: string[] }) {
+export function TracksGrid(props: { tracks: string[] }) {
     return (
         <ColGrid>
             {props.tracks.map(t => (
-                <TrackGridCell key={t} track={t} />
+                <TracksGridCell key={t} track={t} />
             ))}
         </ColGrid>
     )
 }
-function TrackGridCell(props: { track: string }) {
+function TracksGridCell(props: { track: string }) {
     const track = useSelector(s => resolveCanonical(s.catalogue.tracks, props.track))
     const album = useSelector(s => resolveCanonical(s.catalogue.albums, track?.albumId))
     const artist = useSelector(s => resolveCanonical(s.catalogue.artists, track?.artistIds[0]))
@@ -37,6 +37,6 @@ const ColGrid = styled.div`
     grid-template-rows: repeat(3, 1fr);
     gap: 12px;
     width: 100%;
-    overflow-x: scroll;
+    overflow-x: auto;
     padding-bottom: 16px;
 `

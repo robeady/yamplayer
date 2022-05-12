@@ -9,6 +9,8 @@ export const Flex = styled.div`display: flex; justify-content: space-between;`
 /** A flex row */
 export const Row = styled.div`display: flex;`
 
+export const Col = styled.div`display: flex; flex-direction: column;`
+
 export const Subheading = styled.div`
     font-size: ${fontSizes.tableSmall};
     text-transform: uppercase;

@@ -1,4 +1,5 @@
 import { createSlice, Slice } from "@reduxjs/toolkit"
+import { uniq } from "lodash"
 import { Album, Artist, Playlist, SearchResultLists, Track } from "../../model"
 import { filterMap } from "../../util/collections"
 import { Dict } from "../../util/types"
@@ -59,7 +60,9 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
                         ...state,
                         ...payload,
                         /* hack */ discovery: {
-                            newReleases: [],
+                            newReleases: uniq(
+                                Object.values(filterMap(payload.tracks, t => t.savedTimestamp && t.albumId)),
+                            ),
                             topSongs: Object.keys(filterMap(payload.tracks, t => t.savedTimestamp)),
                             playlistGroups: [],
                         },

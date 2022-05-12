@@ -14,7 +14,7 @@ export function LibraryTracks() {
     const [view, setView] = useState("playlist" as "playlist" | "tracks")
     const ListComponent = view === "playlist" ? TrackListByAlbum : TrackListLegacy
     return (
-        <div>
+        <div className={css`margin-top: 16px;`}>
             <Row className={css`padding-bottom: 25px; align-items: center; gap: 10px;`}>
                 <span>View:</span>
                 <select value={view} onChange={e => setView(e.target.value as any)}>
