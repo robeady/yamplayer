@@ -9,6 +9,7 @@ import { LibraryTracks } from "./LibraryTracks"
 import { catalogue } from "./state/actions"
 import { colors } from "./styles"
 import { AlbumPage } from "./views/AlbumPage"
+import { DiscoveryPage } from "./views/DiscoveryPage"
 import { LibraryAlbumsPage } from "./views/LibraryAlbumsPage"
 import { LeftNav } from "./views/Navigation"
 import { NowPlaying } from "./views/NowPlaying"
@@ -19,65 +20,69 @@ function App() {
     return (
         <MantineProvider theme={{ primaryColor: "violet" }}>
             <HashRouter>
-                <div
-                    className={css`
-                        height: 100vh;
-                        display: grid;
-                        grid-template-rows: minmax(0, 1fr) auto;
-                    `}>
-                    <Main />
-                    <footer
-                        className={css`
-                            border-top: 1px solid gainsboro;
-                            background: ${colors.gray1};
-                        `}>
-                        <Player />
-                    </footer>
-                </div>
+                <AppLayout />
             </HashRouter>
         </MantineProvider>
     )
 }
 
-function Main() {
-    const dispatch = useDispatch()
-    useEffect(() => void dispatch(catalogue.getLibrary()), [dispatch])
+function AppLayout() {
     return (
         <div
             className={css`
-                display: flex;
+                height: 100vh;
+                display: grid;
+                grid-template-columns: min-content 1fr;
+                grid-template-rows: 1fr min-content;
+                grid-template-areas: "sidebar main" "footer footer";
             `}>
-            <LeftNav />
-            <main
-                className={css`
-                    flex: 1;
-                    overflow-y: auto;
-                    padding: 0 16px;
-                `}>
-                <Switch>
-                    <Route path="/now-playing">
-                        <NowPlaying />
-                    </Route>
-                    <Route path="/search">
-                        <TrackSearch />
-                    </Route>
-                    <Route path="/library/tracks">
-                        <LibraryTracks />
-                    </Route>
-                    <Route path="/library/albums">
-                        <LibraryAlbumsPage />
-                    </Route>
-                    <Route
-                        path="/album/:albumId"
-                        render={routeProps => <AlbumPage albumId={routeProps.match.params.albumId} />}
-                    />
-                    <Route path="/import">
-                        <Import />
-                    </Route>
-                    <Route path="/">Welcome!</Route>
-                </Switch>
+            <div className={css`grid-area: sidebar;`}>
+                <LeftNav />
+            </div>
+            <main className={css`grid-area: main; overflow-y: auto; padding: 16px 24px;`}>
+                <Content />
             </main>
+            <footer
+                className={css`
+                    grid-area: footer;
+                    border-top: 1px solid gainsboro;
+                    background: ${colors.gray1};
+                `}>
+                <Player />
+            </footer>
         </div>
+    )
+}
+
+function Content() {
+    const dispatch = useDispatch()
+    useEffect(() => void dispatch(catalogue.getLibrary()), [dispatch])
+    return (
+        <Switch>
+            <Route path="/now-playing">
+                <NowPlaying />
+            </Route>
+            <Route path="/search">
+                <TrackSearch />
+            </Route>
+            <Route path="/discover">
+                <DiscoveryPage />
+            </Route>
+            <Route path="/library/tracks">
+                <LibraryTracks />
+            </Route>
+            <Route path="/library/albums">
+                <LibraryAlbumsPage />
+            </Route>
+            <Route
+                path="/album/:albumId"
+                render={routeProps => <AlbumPage albumId={routeProps.match.params.albumId} />}
+            />
+            <Route path="/import">
+                <Import />
+            </Route>
+            <Route path="/">Welcome!</Route>
+        </Switch>
     )
 }
 

@@ -93,7 +93,7 @@ function AlbumRow(props: { tracks: Track[]; albumId: string; buildTrackQueue: (i
             className={css`
                 // TODO: we need a colour halfway between gray1 and gray2 for this border
                 border-bottom: 1px solid ${colors.gray2};
-                font-size: ${fontSizes.tableContent};
+                font-size: ${fontSizes.table};
             `}
             onContextMenu={show}>
             {props.tracks.length >= fullSizeThreshold ? (
@@ -153,7 +153,7 @@ function SmallAlbumCell(props: { album: Album; artist: Artist }) {
 
 function ArtistName({ name = "" }) {
     return (
-        <DotDotDot className={css`color: ${colors.gray6}; font-size: ${fontSizes.tableSecondary};`}>
+        <DotDotDot className={css`color: ${colors.gray6}; font-size: ${fontSizes.tableSmall};`}>
             {name}
         </DotDotDot>
     )

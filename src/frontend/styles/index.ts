@@ -67,6 +67,7 @@ export const shadows = {
 
 export const fontSizes = {
     heading: "32px",
-    tableContent: "14px",
-    tableSecondary: "12px",
+    small: "14px",
+    table: "14px",
+    tableSmall: "12px",
 }

@@ -1,5 +1,6 @@
 import { createSlice, Slice } from "@reduxjs/toolkit"
 import { Album, Artist, Playlist, SearchResultLists, Track } from "../../model"
+import { filterMap } from "../../util/collections"
 import { Dict } from "../../util/types"
 import { curriedAsyncThunks } from "./reduxThunks"
 
@@ -9,6 +10,11 @@ interface CatalogueState {
     albums: Dict<Album | string>
     artists: Dict<Artist | string>
     playlists: Dict<Playlist>
+    discovery?: {
+        topSongs: string[]
+        newReleases: string[]
+        playlistGroups: { name: string; playlists: string[] }[]
+    }
     libraryLoaded: boolean
 }
 
@@ -49,7 +55,16 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
                 catalogueThunks.getLibrary.fulfilled,
                 (state, { payload }): CatalogueState =>
                     // TODO: should we be populating external ID pointers too?
-                    ({ ...state, ...payload, libraryLoaded: true }),
+                    ({
+                        ...state,
+                        ...payload,
+                        /* hack */ discovery: {
+                            newReleases: [],
+                            topSongs: Object.keys(filterMap(payload.tracks, t => t.savedTimestamp)),
+                            playlistGroups: [],
+                        },
+                        libraryLoaded: true,
+                    }),
             )
             .addCase(catalogueThunks.getAlbum.fulfilled, (state, { payload: { album, tracks, artists } }) => {
                 fillState(state, { tracks, albums: [album], artists })

@@ -11,6 +11,7 @@ export function LeftNav() {
         <nav
             className={css`
                 width: 200px;
+                height: 100%;
                 padding-top: 24px;
                 background: ${colors.gray1};
                 border-right: 1px solid ${colors.gray2};
@@ -19,6 +20,7 @@ export function LeftNav() {
             <NavSection title="Explore">
                 <NavItem link="/now-playing" text="Now Playing" />
                 <NavItem link="/search" text="Search" />
+                <NavItem link="/discover" text="Discover" />
             </NavSection>
             <NavSection title="Library">
                 <NavItem link="/library/tracks" text="Tracks" />

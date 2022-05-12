@@ -10,7 +10,12 @@ import { AlbumImage } from "./AlbumImage"
 
 export function AlbumsGrid(props: { albumIds: string[] }) {
     return (
-        <div className={css`display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));`}>
+        <div
+            className={css`
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 32px;
+            `}>
             {props.albumIds.map(albumId => (
                 <AlbumCell key={albumId} albumId={albumId} />
             ))}
@@ -22,7 +27,7 @@ function AlbumCell(props: { albumId: string }) {
     const album = useSelector(s => resolveCanonical(s.catalogue.albums, props.albumId))
     const artist = useSelector(s => resolveCanonical(s.catalogue.artists, album?.artistId))
     return (
-        <div className={css`padding: 14px;`}>
+        <div>
             <Link to={`/album/${props.albumId}`}>
                 <AlbumImage album={album} />
             </Link>
