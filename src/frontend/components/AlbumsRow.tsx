@@ -2,10 +2,9 @@ import { css } from "linaria"
 import { styled } from "linaria/lib/react"
 import React from "react"
 import { useSelector } from "react-redux"
-import { Col, DotDotDot } from "../elements"
-import { MaxLines } from "../elements/MaxLines"
+import { Col } from "../elements"
+import { Label } from "../elements/Label"
 import { resolveCanonical } from "../state/catalogue"
-import { colors } from "../styles"
 import { AlbumImage } from "./AlbumImage"
 
 export function AlbumsRow(props: { albums: string[] }) {
@@ -24,8 +23,8 @@ function AlbumsRowItem(props: { albumId: string }) {
     return (
         <Col className={css`gap: 2px; flex: 0 0 128px; overflow: hidden; font-size: 14px;`}>
             <AlbumImage album={album} size={128} className={css`margin-bottom: 4px;`} />
-            <MaxLines lines={2}>{album?.title}</MaxLines>
-            <DotDotDot className={css`color: ${colors.gray5};`}>{artist?.name}</DotDotDot>
+            <Label lines={2}>{album?.title}</Label>
+            <Label dim>{artist?.name}</Label>
         </Col>
     )
 }

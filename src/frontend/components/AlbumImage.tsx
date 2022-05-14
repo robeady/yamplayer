@@ -7,7 +7,7 @@ export function AlbumImage(props: { className?: string; album?: Album; size?: nu
     return (
         <Img
             className={props.className}
-            src={props.album?.coverImageUrl ?? undefined}
+            src={props.album?.coverImageUrl}
             width={props.size}
             height={props.size}
         />

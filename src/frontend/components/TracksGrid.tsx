@@ -2,9 +2,9 @@ import { css } from "linaria"
 import { styled } from "linaria/lib/react"
 import React from "react"
 import { useSelector } from "react-redux"
-import { DotDotDot, Row } from "../elements"
+import { Col, Row } from "../elements"
+import { Label } from "../elements/Label"
 import { resolveCanonical } from "../state/catalogue"
-import { colors } from "../styles"
 import { AlbumImage } from "./AlbumImage"
 
 export function TracksGrid(props: { tracks: string[] }) {
@@ -23,10 +23,10 @@ function TracksGridCell(props: { track: string }) {
     return (
         <Row className={css`gap: 8px;`}>
             <AlbumImage album={album} size={48} />
-            <div className={css`width: 220px; font-size: 14px; overflow: hidden;`}>
-                <DotDotDot>{track?.title}</DotDotDot>
-                <DotDotDot className={css`color: ${colors.gray6};`}>{artist?.name}</DotDotDot>
-            </div>
+            <Col className={css`width: 220px; font-size: 14px; overflow: hidden; justify-content: center;`}>
+                <Label>{track?.title}</Label>
+                <Label dim>{artist?.name}</Label>
+            </Col>
         </Row>
     )
 }
