@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { Album, Track } from "../../model"
 import { AlbumContents } from "../components/AlbumContents"
 import { AlbumImage } from "../components/AlbumImage"
+import { Page } from "../components/Page"
 import { Row } from "../elements"
 import { plural } from "../elements/plural"
 import { catalogue } from "../state/actions"
@@ -66,17 +67,19 @@ export function AlbumPage(props: { albumId: string }) {
     }
 
     return (
-        <Row>
-            <AlbumSummary album={album} tracks={tracksToShow} />
-            <AlbumContents
-                album={album}
-                artist={albumArtist}
-                tracks={tracksToShow}
-                showingAllTracks={showingAllTracks}
-                setShowingAllTracks={setShowingAllTracks}
-                showHeadings
-            />
-        </Row>
+        <Page>
+            <Row>
+                <AlbumSummary album={album} tracks={tracksToShow} />
+                <AlbumContents
+                    album={album}
+                    artist={albumArtist}
+                    tracks={tracksToShow}
+                    showingAllTracks={showingAllTracks}
+                    setShowingAllTracks={setShowingAllTracks}
+                    showHeadings
+                />
+            </Row>
+        </Page>
     )
 }
 

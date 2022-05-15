@@ -3,6 +3,7 @@ import React, { useMemo } from "react"
 import { useSelector } from "react-redux"
 import { Track } from "../../model"
 import { AlbumsGrid } from "../components/AlbumsGrid"
+import { Page } from "../components/Page"
 
 export function LibraryAlbumsPage() {
     const tracks = useSelector(s => s.catalogue.tracks)
@@ -16,8 +17,8 @@ export function LibraryAlbumsPage() {
         [tracks],
     )
     return (
-        <div>
+        <Page title="Albums">
             <AlbumsGrid albumIds={libraryAlbums} />
-        </div>
+        </Page>
     )
 }

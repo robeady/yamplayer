@@ -1,11 +1,12 @@
 import { css } from "linaria"
 import React, { useState } from "react"
 import { useSelector } from "react-redux"
-import { TrackListByAlbum } from "./components/TrackListByAlbum"
-import { TrackListLegacy } from "./components/TrackListLegacy"
-import { Row } from "./elements"
+import { Page } from "../components/Page"
+import { TrackListByAlbum } from "../components/TrackListByAlbum"
+import { TrackListLegacy } from "../components/TrackListLegacy"
+import { Row } from "../elements"
 
-export function LibraryTracks() {
+export function LibraryTracksPage() {
     const allTracks = useSelector(s => s.catalogue.tracks)
     const libraryTrackIds = Object.entries(allTracks)
         .filter(([, track]) => typeof track !== "string" && track.savedTimestamp !== undefined)
@@ -14,7 +15,7 @@ export function LibraryTracks() {
     const [view, setView] = useState("playlist" as "playlist" | "tracks")
     const ListComponent = view === "playlist" ? TrackListByAlbum : TrackListLegacy
     return (
-        <div className={css`margin-top: 16px;`}>
+        <Page>
             <Row className={css`padding-bottom: 25px; align-items: center; gap: 10px;`}>
                 <span>View:</span>
                 <select value={view} onChange={e => setView(e.target.value as any)}>
@@ -23,6 +24,6 @@ export function LibraryTracks() {
                 </select>
             </Row>
             <ListComponent trackIds={libraryTrackIds} />
-        </div>
+        </Page>
     )
 }

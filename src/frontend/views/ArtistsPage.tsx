@@ -3,7 +3,7 @@ import React, { useMemo } from "react"
 import { useSelector } from "react-redux"
 import { Track } from "../../model"
 import { ArtistsGrid } from "../components/ArtistsGrid"
-import { PageTitle } from "../elements"
+import { Page } from "../components/Page"
 import { resolveCanonical } from "../state/catalogue"
 
 export function ArtistsPage() {
@@ -22,9 +22,8 @@ export function ArtistsPage() {
         [tracks, artists],
     )
     return (
-        <div>
-            <PageTitle>Artists</PageTitle>
+        <Page title="Artists">
             <ArtistsGrid artistIds={libraryArtists} />
-        </div>
+        </Page>
     )
 }

@@ -68,7 +68,8 @@ export const StickyTrackTableHeader = styled.div`
     position: sticky;
     top: 0px;
     background: white;
-    padding: 8px 0 0;
+    /* needed for top of page spacing when sticky */
+    padding-top: 16px;
 `
 
 export function TrackTableHeadings(props: { cols: TrackTableColumnKey[] }) {

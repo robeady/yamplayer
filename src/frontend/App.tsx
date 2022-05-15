@@ -5,13 +5,13 @@ import { hot } from "react-hot-loader/root"
 import { useDispatch } from "react-redux"
 import { HashRouter, Route, Switch } from "react-router-dom"
 import { ImportItunesResult } from "../backend/explorer"
-import { LibraryTracks } from "./LibraryTracks"
 import { catalogue } from "./state/actions"
 import { colors } from "./styles"
 import { AlbumPage } from "./views/AlbumPage"
 import { ArtistsPage } from "./views/ArtistsPage"
 import { DiscoveryPage } from "./views/DiscoveryPage"
 import { LibraryAlbumsPage } from "./views/LibraryAlbumsPage"
+import { LibraryTracksPage } from "./views/LibraryTracksPage"
 import { LeftNav } from "./views/Navigation"
 import { NowPlaying } from "./views/NowPlaying"
 import { Player } from "./views/playback/Player"
@@ -40,8 +40,7 @@ function AppLayout() {
             <div className={css`grid-area: sidebar;`}>
                 <LeftNav />
             </div>
-            {/* padding at the top of the page has to be zero for sticky table headings */}
-            <main className={css`grid-area: main; overflow-y: auto; padding: 0 24px;`}>
+            <main className={css`grid-area: main; overflow-y: auto;`}>
                 <Content />
             </main>
             <footer
@@ -71,7 +70,7 @@ function Content() {
                 <DiscoveryPage />
             </Route>
             <Route path="/library/tracks">
-                <LibraryTracks />
+                <LibraryTracksPage />
             </Route>
             <Route path="/library/albums">
                 <LibraryAlbumsPage />
