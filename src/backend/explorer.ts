@@ -231,10 +231,8 @@ export class Explorer {
         // TODO: maybe the service can return artist & album information in that call
         const [matchingTrack = undefined] = await this.library.matchTracks([externalTrack.id])
         if (matchingTrack === undefined) {
-            const [album, artists] = await Promise.all([
-                this.addAlbumForTrack(externalTrack.albumId),
-                this.addArtistsForTrack(externalTrack.artistIds),
-            ])
+            const artists = await this.addArtistsForTrack(externalTrack.artistIds)
+            const album = await this.addAlbumForTrack(externalTrack.albumId)
             const track = await this.library.addTrack({
                 ...externalTrack,
                 albumId: album.id,
@@ -251,8 +249,16 @@ export class Explorer {
     private async addAlbumForTrack(externalAlbumId: string) {
         const [matchingAlbum = undefined] = await this.library.matchAlbums([externalAlbumId])
         if (matchingAlbum === undefined) {
+            // TODO: maybe we can get artist information in this call
             const externalAlbum = await this.service.lookupAlbum(externalAlbumId)
-            return this.library.addAlbum(externalAlbum)
+            const [matchingArtist = undefined] = await this.library.matchArtists([externalAlbum.artistId])
+            const artist =
+                matchingArtist === undefined
+                    ? await this.service
+                          .lookupArtist(externalAlbum.artistId)
+                          .then(async externalArtist => this.library.addArtist(externalArtist))
+                    : matchingArtist
+            return this.library.addAlbum({ ...externalAlbum, artistId: artist.id })
         } else {
             return matchingAlbum
         }

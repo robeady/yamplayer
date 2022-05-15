@@ -99,12 +99,12 @@ function AlbumStats(props: { tracks: Track[]; totalTracks?: number }) {
 
     const numTracksText =
         props.totalTracks === undefined || numTracks === props.totalTracks
-            ? numTracks
-            : `${numTracks} of ${props.totalTracks}`
+            ? "track"
+            : `of ${props.totalTracks} track`
 
     return (
         <div className={css`color: ${colors.gray5}; padding-top: 16px;`}>
-            {numTracksText} {plural(numTracks, "track")}, {totalMinutes} {plural(totalMinutes, "minute")}.
+            {plural(numTracks, numTracksText)}, {plural(totalMinutes, "minute")}.
         </div>
     )
 }

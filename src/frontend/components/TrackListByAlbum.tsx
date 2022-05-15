@@ -1,5 +1,6 @@
 import { css } from "linaria"
 import { styled } from "linaria/lib/react"
+import { orderBy } from "lodash"
 import React, { useMemo } from "react"
 import { useSelector } from "react-redux"
 import { Album, Artist, Track } from "../../model"
@@ -51,29 +52,27 @@ interface AlbumRowData {
 }
 
 function assembleRows(trackIds: string[], allTracks: Dict<string | Track>) {
+    let penultimateAlbumId = ""
     let lastAlbumId = ""
     const rows: AlbumRowData[] = []
-    for (const trackId of trackIds) {
-        const canonicalTrack = resolveCanonical(allTracks, trackId)
+    for (const canonicalTrack of orderBy(
+        trackIds.map(tid => resolveCanonical(allTracks, tid)),
+        t => t?.savedTimestamp,
+        "desc",
+    )) {
         if (canonicalTrack === undefined) continue
         if (canonicalTrack.albumId === lastAlbumId) {
             // append to the last row
             rows[rows.length - 1]!.tracks.push(canonicalTrack)
+        } else if (canonicalTrack.albumId === penultimateAlbumId) {
+            rows[rows.length - 2]!.tracks.push(canonicalTrack)
         } else {
-            // clean up the old row, order tracks that appear together from the same album by track number then disc number
-            if (rows.length > 0) {
-                rows[rows.length - 1]!.tracks.sort(
-                    (a, b) =>
-                        (a.discNumber ?? 0) - (b.discNumber ?? 0) ||
-                        (a.trackNumber ?? 0) - (b.trackNumber ?? 0),
-                )
-            }
-            // now make a new row
             rows.push({ tracks: [canonicalTrack], albumId: canonicalTrack.albumId })
+            penultimateAlbumId = lastAlbumId
+            lastAlbumId = canonicalTrack.albumId
         }
-        lastAlbumId = canonicalTrack.albumId
     }
-    return rows
+    return rows.map(r => ({ ...r, tracks: orderBy(r.tracks, [t => t.discNumber, t => t.trackNumber]) }))
 }
 
 function AlbumRow(props: { tracks: Track[]; albumId: string; buildTrackQueue: (i: number) => AudioQueue }) {

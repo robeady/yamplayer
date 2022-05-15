@@ -11,3 +11,13 @@ export function filterMap<K extends PropertyKey, T, R>(
     }
     return result
 }
+
+export function getOrPut<K extends PropertyKey, T>(obj: Record<K, T>, key: K, value: () => T): T {
+    if (key in obj) {
+        return obj[key]
+    } else {
+        const v = value()
+        obj[key] = v
+        return v
+    }
+}

@@ -7,7 +7,7 @@ export function ArtistImage(props: { className?: string; artist?: Artist; size?:
         <Img
             className={props.className}
             src={props.artist?.imageUrl}
-            width={props.size}
+            width={props.size ?? "100%"}
             height={props.size}
         />
     )
