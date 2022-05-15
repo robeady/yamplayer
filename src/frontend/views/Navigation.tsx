@@ -25,6 +25,7 @@ export function LeftNav() {
             <NavSection title="Library">
                 <NavItem link="/library/tracks" text="Tracks" />
                 <NavItem link="/library/albums" text="Albums" />
+                <NavItem link="/library/artists" text="Artists" />
                 <NavItem link="/import" text="Import" />
             </NavSection>
             <NavSection title="Playlists">

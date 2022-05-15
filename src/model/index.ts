@@ -40,7 +40,7 @@ export interface Artist {
     externalIds?: string[]
     cataloguedTimestamp?: Timestamp
     name: string
-    imageUrl: string | null
+    imageUrl?: string
 }
 
 export type CataloguedArtist = Require<Artist, "cataloguedTimestamp" | "externalIds">

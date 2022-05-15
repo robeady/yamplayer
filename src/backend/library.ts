@@ -272,7 +272,7 @@ export class LibraryStore {
                 .insert({
                     id,
                     name: externalArtist.name,
-                    imageUrl: externalArtist.imageUrl,
+                    imageUrl: externalArtist.imageUrl ?? null,
                 })
                 .execute(),
             this.query(tables.artistReference)
@@ -446,7 +446,7 @@ function mapArtist(
         id,
         externalIds: (artistRefs[id] ?? []).map(stringifyExternalId),
         name: artistFromDb.name,
-        imageUrl: artistFromDb.imageUrl,
+        imageUrl: artistFromDb.imageUrl ?? undefined,
         cataloguedTimestamp: extractTimestamp(artistFromDb.id),
     }
 }

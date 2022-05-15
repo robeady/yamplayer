@@ -9,6 +9,7 @@ import { LibraryTracks } from "./LibraryTracks"
 import { catalogue } from "./state/actions"
 import { colors } from "./styles"
 import { AlbumPage } from "./views/AlbumPage"
+import { ArtistsPage } from "./views/ArtistsPage"
 import { DiscoveryPage } from "./views/DiscoveryPage"
 import { LibraryAlbumsPage } from "./views/LibraryAlbumsPage"
 import { LeftNav } from "./views/Navigation"
@@ -74,6 +75,9 @@ function Content() {
             </Route>
             <Route path="/library/albums">
                 <LibraryAlbumsPage />
+            </Route>
+            <Route path="/library/artists">
+                <ArtistsPage />
             </Route>
             <Route
                 path="/album/:albumId"

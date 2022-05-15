@@ -1,7 +1,6 @@
 import { css } from "linaria"
 import React from "react"
 import { useSelector } from "react-redux"
-import { Link } from "react-router-dom"
 import { AlbumLink, ArtistLink } from "../elements/links"
 import { MaxLines } from "../elements/MaxLines"
 import { resolveCanonical } from "../state/catalogue"
@@ -28,9 +27,9 @@ function AlbumCell(props: { albumId: string }) {
     const artist = useSelector(s => resolveCanonical(s.catalogue.artists, album?.artistId))
     return (
         <div>
-            <Link to={`/album/${props.albumId}`}>
+            <AlbumLink album={album}>
                 <AlbumImage album={album} />
-            </Link>
+            </AlbumLink>
             <MaxLines lines={2} className={css`line-height: 1.3; padding: 8px 0 2px;`}>
                 <AlbumLink album={album} />
             </MaxLines>
