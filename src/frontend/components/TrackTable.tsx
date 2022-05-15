@@ -126,7 +126,9 @@ function TrackRow(props: { track: Track; cols: TrackTableColumnKey[]; play: () =
             </DropdownMenu>
             <TrackComponent
                 onContextMenu={show}
-                onMouseDown={() => dispatch(view.selectedTrackChanged(trackId))}
+                onMouseDown={e => {
+                    if (e.button === 0 || e.button === 2) dispatch(view.selectedTrackChanged(trackId))
+                }}
                 onDoubleClick={() => props.play()}
                 className={css``}>
                 {props.cols.map(col => (
