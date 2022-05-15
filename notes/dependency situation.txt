@@ -1,0 +1,3 @@
+currently I am on an old version of linaria which seems to break with babel runtime 7.14 and newer
+
+this means I have to install older versions of some libs, e.g. polished
