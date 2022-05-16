@@ -8,6 +8,7 @@ import { ImportItunesResult } from "../backend/explorer"
 import { catalogue } from "./state/actions"
 import { colors } from "./styles"
 import { AlbumPage } from "./views/AlbumPage"
+import { ArtistPage } from "./views/ArtistPage"
 import { ArtistsPage } from "./views/ArtistsPage"
 import { DiscoveryPage } from "./views/DiscoveryPage"
 import { LibraryAlbumsPage } from "./views/LibraryAlbumsPage"
@@ -81,6 +82,10 @@ function Content() {
             <Route
                 path="/album/:albumId"
                 render={routeProps => <AlbumPage albumId={routeProps.match.params.albumId} />}
+            />
+            <Route
+                path="/artist/:artistId"
+                render={routeProps => <ArtistPage artistId={routeProps.match.params.artistId} />}
             />
             <Route path="/import">
                 <Import />

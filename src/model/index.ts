@@ -46,6 +46,18 @@ export interface Artist {
 export type CataloguedArtist = Require<Artist, "cataloguedTimestamp" | "externalIds">
 export type ExternalArtist = Omit<Artist, "cataloguedTimestamp" | "externalIds">
 
+export interface ArtistEtc {
+    artist: Artist
+    topTracks: Track[]
+    albums: Album[]
+}
+
+export interface ExternalArtistEtc {
+    artist: ExternalArtist
+    topTracks: ExternalTrack[]
+    albums: ExternalAlbum[]
+}
+
 export interface SearchResultLists {
     externalTrackIds: string[]
     externalAlbumIds: string[]

@@ -10,7 +10,7 @@ export function DiscoveryPage() {
     return (
         <Page title="Discovery">
             <h2>Top Songs</h2>
-            <TracksGrid tracks={discovery?.topSongs ?? []} />
+            <TracksGrid tracks={discovery?.topTracks ?? []} />
             <h2>New Releases</h2>
             <AlbumsRow albums={discovery?.newReleases ?? []} />
         </Page>

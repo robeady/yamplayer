@@ -1,6 +1,7 @@
 import {
     Album,
     Artist,
+    ArtistEtc,
     CataloguedAlbum,
     CataloguedArtist,
     CataloguedTrack,
@@ -178,6 +179,7 @@ export class Explorer {
                                     matchedArtists.find(m => m.externalIds.includes(externalArtistId))?.id ??
                                     externalArtistId,
                             ),
+                            albumId,
                         })),
                 ]
 
@@ -187,6 +189,56 @@ export class Explorer {
                     artists: [...artists, ...matchedArtists, ...lookedUpExternalArtists],
                 }
             }
+        }
+    }
+
+    /** Gets all the stuff about the artist, in and outside the library */
+    async getArtist(artistId: string): Promise<ArtistEtc> {
+        const external = isExternalId(artistId)
+
+        let internalArtist: CataloguedArtist | undefined
+        let externalId: string
+        if (external) {
+            ;[internalArtist] = await this.library.matchArtists([artistId])
+            externalId = artistId
+        } else {
+            internalArtist = (await this.library.getArtist(artistId))!
+            // for now we assume the first external ID is the one to query for
+            externalId = internalArtist.externalIds[0]!
+        }
+        // TODO handle the cases that have exclamation marks above
+
+        const artistEtc = await this.service.lookupArtistEtc(externalId)
+
+        const matchedAlbums = await this.library.matchAlbums(artistEtc.albums.map(a => a.id))
+        const matchedTracks = await this.library.matchTracks(artistEtc.topTracks.map(t => t.id))
+
+        const matchedAlbumsByExternalId = Object.fromEntries(
+            matchedAlbums.flatMap(a => a.externalIds.map(e => [e, a])),
+        )
+
+        console.log(matchedAlbumsByExternalId)
+
+        const matchedTracksByExternalId = Object.fromEntries(
+            matchedTracks.flatMap(t => t.externalIds.map(e => [e, t])),
+        )
+
+        // TODO: merge with albums and tracks already in the library?
+        // well, we probably don't do that for "top tracks" but we might for albums
+
+        return {
+            artist: internalArtist ?? artistEtc.artist,
+            // TODO: maybe we could fill in some extra info about albums and tracks above what's in the library
+            albums: artistEtc.albums.map(a => matchedAlbumsByExternalId[a.id] ?? { ...a, artistId }),
+            topTracks: artistEtc.topTracks.map(
+                t =>
+                    matchedTracksByExternalId[t.id] ??
+                    fixupTrackForeignIds(
+                        t,
+                        { [externalId]: artistId },
+                        Object.fromEntries(matchedAlbums.flatMap(a => a.externalIds.map(e => [e, a.id]))),
+                    ),
+            ),
         }
     }
 
@@ -388,5 +440,17 @@ export interface ImportItunesResult {
         albums: CataloguedAlbum[]
         artists: CataloguedArtist[]
         playlists: Playlist[]
+    }
+}
+
+function fixupTrackForeignIds(
+    track: Track,
+    externalArtistIdToInternal: Dict<string>,
+    externalAlbumIdToInternal: Dict<string>,
+): Track {
+    return {
+        ...track,
+        albumId: externalAlbumIdToInternal[track.albumId] ?? track.albumId,
+        artistIds: track.artistIds.map(a => externalArtistIdToInternal[a] ?? a),
     }
 }

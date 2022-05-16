@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios"
 import { setupCache } from "axios-cache-adapter"
 import Bottleneck from "bottleneck"
 import { moduleLogger } from "../../backend/logging"
-import { ExternalAlbum, ExternalArtist, ExternalTrack, SearchResults } from "../../model"
+import { ExternalAlbum, ExternalArtist, ExternalArtistEtc, ExternalTrack, SearchResults } from "../../model"
 import { Dict } from "../../util/types"
 import { extractEntityId } from "../ids"
 import { Service, TrackSearchQuery } from "../index"
@@ -16,6 +16,8 @@ type TrackResponse = typeof import("./trackResponse.json") & MaybeEntityNotFound
 type AlbumResponse = typeof import("./albumResponse.json") & MaybeEntityNotFoundResponse
 type AlbumTracksResponse = typeof import("./albumTracksResponse.json") & MaybeEntityNotFoundResponse
 type ArtistResponse = typeof import("./artistResponse.json") & MaybeEntityNotFoundResponse
+type ArtistTopTracksResponse = typeof import("./artistTopTracksResponse.json") & MaybeEntityNotFoundResponse
+type ArtistAlbumsResponse = typeof import("./artistAlbumsResponse.json") & MaybeEntityNotFoundResponse
 
 const logger = moduleLogger(module)
 
@@ -173,6 +175,48 @@ export class DeezerApiClient implements Service {
             id,
             name: artist.name,
             imageUrl: artist.picture_medium,
+        }
+    }
+
+    async lookupArtistEtc(id: string): Promise<ExternalArtistEtc> {
+        const rawId = extractEntityId(id, "dz")
+        const response = await this.httpGet<ArtistResponse>(`artist/${rawId}`)
+        if (response.data.error) {
+            throw new Error(`artist ${id} not found: ${JSON.stringify(response.data.error)}`)
+        }
+        const artist = response.data
+
+        // TODO: error handling for the follow up responses
+        const topTracksResponse = await this.httpGet<ArtistTopTracksResponse>(`artist/${rawId}/top?limit=20`)
+        // TODO: change this from 100, do proper pagination
+        const albumsResponse = await this.httpGet<ArtistAlbumsResponse>(`artist/${rawId}/albums?limit=100`)
+
+        return {
+            // _KeepArtistParsingInSync_
+            artist: {
+                id,
+                name: artist.name,
+                imageUrl: artist.picture_medium,
+            },
+            albums: albumsResponse.data.data.map(album => ({
+                // _KeepAlbumParsingInSync_
+                id: deezerId(album.id),
+                artistId: id,
+                title: album.title,
+                coverImageUrl: album.cover_medium,
+                releaseDate: album.release_date,
+                // nb_tracks is not available here
+            })),
+            topTracks: topTracksResponse.data.data.map(track => ({
+                // _KeepTrackParsingInSync_
+                id: deezerId(track.id),
+                albumId: id,
+                artistIds: track.contributors.map(c => deezerId(c.id)),
+                title: track.title,
+                // for some reason, track_position and disk_number are missing
+                durationSecs: track.duration,
+                // no isrc either
+            })),
         }
     }
 

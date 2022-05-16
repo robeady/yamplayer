@@ -10,9 +10,10 @@ interface CatalogueState {
     tracks: Dict<Track | string>
     albums: Dict<Album | string>
     artists: Dict<Artist | string>
+    artistTopTracks: Dict<string[]>
     playlists: Dict<Playlist>
     discovery?: {
-        topSongs: string[]
+        topTracks: string[]
         newReleases: string[]
         playlistGroups: { name: string; playlists: string[] }[]
     }
@@ -24,6 +25,7 @@ const initialState: CatalogueState = {
     tracks: {},
     albums: {},
     artists: {},
+    artistTopTracks: {},
     playlists: {},
     libraryLoaded: false,
 }
@@ -31,6 +33,7 @@ const initialState: CatalogueState = {
 export const catalogueThunks = curriedAsyncThunks({
     getLibrary: api => api.extra.explorer.getLibrary,
     getAlbum: api => api.extra.explorer.getAlbum,
+    getArtist: api => api.extra.explorer.getArtist,
     addToLibrary: api => api.extra.explorer.addTrack,
     unsaveTrack: api => api.extra.explorer.unsave,
     setTrackRating: api => api.extra.explorer.setTrackRating,
@@ -63,7 +66,7 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
                             newReleases: uniq(
                                 Object.values(filterMap(payload.tracks, t => t.savedTimestamp && t.albumId)),
                             ),
-                            topSongs: Object.keys(filterMap(payload.tracks, t => t.savedTimestamp)),
+                            topTracks: Object.keys(filterMap(payload.tracks, t => t.savedTimestamp)),
                             playlistGroups: [],
                         },
                         libraryLoaded: true,
@@ -72,6 +75,13 @@ export const catalogueSlice: Slice<CatalogueState, Record<string, never>, "catal
             .addCase(catalogueThunks.getAlbum.fulfilled, (state, { payload: { album, tracks, artists } }) => {
                 fillState(state, { tracks, albums: [album], artists })
             })
+            .addCase(
+                catalogueThunks.getArtist.fulfilled,
+                (state, { payload: { artist, albums, topTracks } }) => {
+                    fillState(state, { albums, tracks: topTracks, artists: [artist] })
+                    state.artistTopTracks[artist.id] = topTracks.map(t => t.id)
+                },
+            )
             .addCase(
                 catalogueThunks.addToLibrary.fulfilled,
                 (state, { payload: { track, album, artists } }) => {

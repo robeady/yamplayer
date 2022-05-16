@@ -1,4 +1,4 @@
-import { ExternalAlbum, ExternalArtist, ExternalTrack, SearchResults } from "../model"
+import { ExternalAlbum, ExternalArtist, ExternalArtistEtc, ExternalTrack, SearchResults } from "../model"
 import { Decoder } from "./plugins/decoder"
 
 export interface TrackSearchQuery {
@@ -16,6 +16,8 @@ export interface Service {
         externalId: string,
     ) => Promise<{ album: ExternalAlbum; tracks: ExternalTrack[]; artist: ExternalArtist }>
     lookupArtist: (externalId: string) => Promise<ExternalArtist>
+    // should this return something like ExternalArtistEtc or does it not matter
+    lookupArtistEtc: (externalId: string) => Promise<ExternalArtistEtc>
     searchTracks: (query: string | TrackSearchQuery) => Promise<SearchResults>
 }
 

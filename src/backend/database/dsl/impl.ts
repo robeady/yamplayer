@@ -91,7 +91,10 @@ interface FilterElement {
 const sqlOperators = ["=", "<>", "IN", "IS", "IS NOT"] as const
 type SqlOperator = typeof sqlOperators[number]
 
-type Expression = { type: "literal"; literal: unknown } | { type: "column"; definition: ColumnDefinition }
+type Expression =
+    | { type: "literal"; literal: unknown }
+    | { type: "column"; definition: ColumnDefinition }
+    | { type: "tuple"; expressions: Expression[] }
 
 type JoinType = "inner" | "left" | "right"
 
@@ -555,16 +558,18 @@ function parseWhereClause(left: unknown, operator: unknown, right: unknown): Fil
     }
     return {
         type: "element",
-        left:
-            typeof left === "object" && left !== null && COLUMN_DEFINITION in left
-                ? { type: "column", definition: left as ColumnDefinition }
-                : { type: "literal", literal: left },
+        left: parseExpression(left),
         op: operator as SqlOperator,
-        right:
-            typeof right === "object" && right !== null && COLUMN_DEFINITION in right
-                ? { type: "column", definition: right as ColumnDefinition }
-                : { type: "literal", literal: right },
+        right: parseExpression(right),
     }
+}
+
+function parseExpression(expr: unknown): Expression {
+    return Array.isArray(expr)
+        ? { type: "tuple", expressions: expr.map(parseExpression) }
+        : typeof expr === "object" && expr !== null && COLUMN_DEFINITION in expr
+        ? { type: "column", definition: expr as ColumnDefinition }
+        : { type: "literal", literal: expr }
 }
 
 function parseMatcher(defaultSelection: any, matcher: Dict): Filter {
@@ -727,6 +732,8 @@ class Renderer {
             case "literal":
                 // TODO: get appropriate column definition
                 return this.escape(expr.literal)
+            case "tuple":
+                return `(${expr.expressions.map(e => this.expressionSql(e)).join(", ")})`
         }
     }
 
