@@ -66,6 +66,7 @@ const config = {
 const devConfig = {
     devServer: {
         proxy: { "/api": `http://localhost:${process.env.YP_PORT}` },
+        stats: "minimal",
     },
     resolve: { alias: { "react-dom": "@hot-loader/react-dom" } },
     plugins: [new ForkTsCheckerWebpackPlugin(), new webpack.NamedModulesPlugin()],
